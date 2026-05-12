@@ -2,9 +2,10 @@
 
 AI Data Anonymizer e un'app desktop e web self-hosted per anonimizzare dati personali italiani con un motore locale ad alta precisione.
 
-Il progetto e pensato per essere pubblicato su GitHub e usato in due modi:
+Il progetto e pensato per essere pubblicato su GitHub e usato in tre modi:
 
 - app desktop macOS per lavorare su documenti locali;
+- app desktop Windows per lavorare su documenti locali;
 - web app self-hosted per ambienti controllati.
 
 Non e necessario inviare documenti a servizi esterni.
@@ -16,14 +17,14 @@ Non e necessario inviare documenti a servizi esterni.
 - Non anonimizza le date.
 - Per persone, imprese, indirizzi ed enti territoriali mantiene le iniziali invece di sostituire tutto con un placeholder.
 - Permette di copiare il testo o salvare/scaricare una versione anonimizzata del documento.
-- Funziona come app desktop installabile su Mac.
+- Funziona come app desktop installabile su Mac e Windows.
 - Elabora il testo localmente sul computer: non invia il contenuto a servizi esterni.
 
 Formati supportati:
 
 - `.txt`, `.md`, `.csv`: salva un nuovo file di testo.
 - `.docx`: salva un nuovo documento Word anonimizzato mantenendo la formattazione interna quando possibile.
-- `.doc`: viene convertito in `.docx`, anonimizzato e salvato come documento Word moderno.
+- `.doc`: disponibile su macOS, viene convertito in `.docx`, anonimizzato e salvato come documento Word moderno. Su Windows usa prima `.docx`.
 - `.pdf`: estrae il testo e salva un nuovo PDF anonimizzato. Il layout originale del PDF potrebbe non essere preservato.
 
 ## Sviluppo locale
@@ -92,6 +93,26 @@ Alla fine troverai:
 - `dist/AI Data Anonymizer.dmg`, se `dmgbuild` riesce a creare il disco installabile
 
 Sul Mac di destinazione: apri il `.dmg`, trascina l'app in Applicazioni e avviala. Se macOS blocca l'app perche non firmata, fai click destro sull'app, poi **Apri**.
+
+## Creare una app Windows
+
+Su Windows, da PowerShell:
+
+```powershell
+cd ai-data-anonymizer
+.\scripts\build_windows_app.ps1
+```
+
+Alla fine troverai:
+
+- `dist\AI Data Anonymizer\AI Data Anonymizer.exe`
+- `dist\AI-Data-Anonymizer-Windows.zip`
+
+La versione Windows base supporta `.txt`, `.md`, `.csv`, `.docx` e `.pdf`. I file `.doc` legacy non sono inclusi nella build Windows perche la conversione automatica usa `textutil`, disponibile solo su macOS.
+
+## Release automatiche
+
+Il workflow GitHub Actions `build-windows` crea lo zip Windows manualmente da **Actions** oppure automaticamente quando pubblichi un tag come `v0.1.0`. Se il tag corrisponde a una Release, lo zip viene allegato alla Release.
 
 ## Pubblicazione su GitHub
 

@@ -23,7 +23,13 @@ from PySide6.QtWidgets import (
 )
 
 from privacy_guardian import __version__
-from privacy_guardian.document_service import AnonymizedDocument, LoadedDocument, anonymize_loaded_document, load_document
+from privacy_guardian.document_service import (
+    LEGACY_DOC_SUPPORTED,
+    AnonymizedDocument,
+    LoadedDocument,
+    anonymize_loaded_document,
+    load_document,
+)
 from privacy_guardian.models import Finding
 from privacy_guardian.privacy_engine import PrivacyEngine
 from privacy_guardian.styles import APP_STYLE
@@ -164,7 +170,7 @@ class MainWindow(QMainWindow):
             self,
             "Carica documento",
             str(Path.home()),
-            "Documenti supportati (*.txt *.md *.csv *.doc *.docx *.pdf);;Tutti i file (*.*)",
+            self._document_filter(),
         )
         if not filename:
             return
@@ -264,6 +270,12 @@ class MainWindow(QMainWindow):
             cursor.setPosition(finding.start)
             cursor.setPosition(finding.end, QTextCursor.KeepAnchor)
             cursor.setCharFormat(highlight)
+
+    def _document_filter(self) -> str:
+        extensions = "*.txt *.md *.csv *.docx *.pdf"
+        if LEGACY_DOC_SUPPORTED:
+            extensions = "*.txt *.md *.csv *.doc *.docx *.pdf"
+        return f"Documenti supportati ({extensions});;Tutti i file (*.*)"
 
 
 def main() -> int:

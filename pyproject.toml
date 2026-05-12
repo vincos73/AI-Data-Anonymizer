@@ -20,6 +20,10 @@ build = [
   "dmgbuild>=1.6",
   "Pillow>=10",
 ]
+windows-build = [
+  "pyinstaller>=6.8",
+  "Pillow>=10",
+]
 
 [project.scripts]
 ai-data-anonymizer = "privacy_guardian.app:main"

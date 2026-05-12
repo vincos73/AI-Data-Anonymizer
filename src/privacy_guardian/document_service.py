@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 from textwrap import wrap
 
@@ -11,7 +12,9 @@ from privacy_guardian.models import Finding
 from privacy_guardian.privacy_engine import PrivacyEngine
 
 
-SUPPORTED_EXTENSIONS = {".txt", ".md", ".csv", ".doc", ".docx", ".pdf"}
+BASE_SUPPORTED_EXTENSIONS = {".txt", ".md", ".csv", ".docx", ".pdf"}
+LEGACY_DOC_SUPPORTED = sys.platform == "darwin" and Path("/usr/bin/textutil").exists()
+SUPPORTED_EXTENSIONS = BASE_SUPPORTED_EXTENSIONS | ({".doc"} if LEGACY_DOC_SUPPORTED else set())
 
 
 @dataclass(frozen=True)

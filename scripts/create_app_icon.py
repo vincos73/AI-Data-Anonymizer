@@ -98,6 +98,10 @@ def save_iconset() -> None:
     }
     source = draw_icon(1024)
     source.save(ASSETS / "app_icon.png")
+    source.save(
+        ASSETS / "app_icon.ico",
+        sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
+    )
     for filename, size in sizes.items():
         source.resize((size, size), Image.Resampling.LANCZOS).save(ICONSET / filename)
 
