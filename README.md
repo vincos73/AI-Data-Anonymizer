@@ -1,141 +1,178 @@
 # AI Data Anonymizer
 
-AI Data Anonymizer e un'app desktop e web self-hosted per anonimizzare dati personali italiani con un motore locale ad alta precisione.
+AI Data Anonymizer is a privacy-first tool for anonymizing Italian documents before sharing them with AI chatbots, cloud services, collaborators, or external systems.
 
-Il progetto e pensato per essere pubblicato su GitHub e usato in tre modi:
+It runs locally on your computer, or on infrastructure you control. The project focuses on high-precision Italian anonymization rules: when a match is uncertain, the app prefers not to anonymize rather than risk changing harmless text.
 
-- app desktop macOS per lavorare su documenti locali;
-- app desktop Windows per lavorare su documenti locali;
-- web app self-hosted per ambienti controllati.
+## What It Does
 
-Non e necessario inviare documenti a servizi esterni.
+- Detects and anonymizes common Italian personal and business data.
+- Works with pasted text and uploaded documents.
+- Preserves initials for people, organizations, addresses, and territorial bodies.
+- Does not anonymize dates.
+- Keeps `.docx` formatting as much as possible while replacing sensitive text.
+- Provides a desktop app and a self-hosted web app.
 
-## Cosa fa
+Detected data includes:
 
-- Incolla un testo oppure carica un documento.
-- Anonimizza email, telefoni, IBAN, codice fiscale, partita IVA, indirizzi, persone con contesto forte, enti territoriali e società italiane.
-- Non anonimizza le date.
-- Per persone, imprese, indirizzi ed enti territoriali mantiene le iniziali invece di sostituire tutto con un placeholder.
-- Permette di copiare il testo o salvare/scaricare una versione anonimizzata del documento.
-- Funziona come app desktop installabile su Mac e Windows.
-- Elabora il testo localmente sul computer: non invia il contenuto a servizi esterni.
+- email addresses
+- Italian phone numbers
+- IBANs
+- codice fiscale
+- partita IVA
+- Italian addresses with strong address signals
+- people names only with strong context
+- company names with legal forms such as `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperatives and similar
+- territorial bodies such as `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`
 
-Formati supportati:
+## Why It Exists
 
-- `.txt`, `.md`, `.csv`: salva un nuovo file di testo.
-- `.docx`: salva un nuovo documento Word anonimizzato mantenendo la formattazione interna quando possibile.
-- `.doc`: disponibile su macOS, viene convertito in `.docx`, anonimizzato e salvato come documento Word moderno. Su Windows usa prima `.docx`.
-- `.pdf`: estrae il testo e salva un nuovo PDF anonimizzato. Il layout originale del PDF potrebbe non essere preservato.
+Many people paste contracts, letters, reports, invoices, and case notes into AI tools. Those documents often contain personal data, company names, fiscal identifiers, addresses, emails, or phone numbers.
 
-## Sviluppo locale
+AI Data Anonymizer helps prepare a safer version of those documents before they leave your computer or your controlled environment.
 
-Serve Python 3.10, 3.11, 3.12 o 3.13. Se il comando `python3 --version` mostra Python 3.9, installa una versione piu recente da python.org o con Homebrew.
+It is not a legal compliance product and it does not guarantee perfect anonymization. Always review the output before sharing sensitive documents.
+
+## Supported Formats
+
+| Format | Support |
+| --- | --- |
+| `.txt`, `.md`, `.csv` | Reads and saves anonymized text files |
+| `.docx` | Reads and saves anonymized Word documents, preserving formatting where possible |
+| `.pdf` | Extracts text and creates a new anonymized PDF; original PDF layout may not be preserved |
+| `.doc` | Supported on macOS only; converted to `.docx` before anonymization |
+
+On Windows, convert legacy `.doc` files to `.docx` before using the desktop app.
+
+## Privacy Model
+
+The desktop app processes documents locally. It does not send text or files to external APIs.
+
+The web app is designed for self-hosting. It disables access logs in the app, avoids analytics, and sends no content to third-party services. However, text submitted to the web app is still sent to the server that hosts it. For sensitive documents, run it only on infrastructure you control and use HTTPS.
+
+## Desktop App
+
+Download a release artifact from the repository Releases page when available.
+
+Typical workflow:
+
+1. Open the app.
+2. Load a supported document or paste text.
+3. Analyze the content.
+4. Anonymize it.
+5. Save the anonymized result.
+
+### macOS
+
+The macOS build creates:
+
+- `AI Data Anonymizer.app`
+- `AI Data Anonymizer.dmg`
+
+Unsigned builds may be blocked by Gatekeeper. If macOS warns that the developer is unidentified, right-click the app and choose **Open**.
+
+### Windows
+
+The Windows build creates:
+
+- `AI Data Anonymizer.exe`
+- `AI-Data-Anonymizer-Windows.zip`
+
+The Windows desktop app supports `.txt`, `.md`, `.csv`, `.docx`, and `.pdf`.
+
+## Run From Source
+
+Requirements:
+
+- Python 3.10, 3.11, 3.12, or 3.13
+- Git
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/ai-data-anonymizer.git
-cd ai-data-anonymizer
+git clone https://github.com/vincos73/AI-Data-Anonymizer.git
+cd AI-Data-Anonymizer
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e ".[build]"
+pip install -e ".[build,web]"
 ai-data-anonymizer
 ```
 
-Test:
+On Windows PowerShell:
 
-```bash
-python -m unittest discover -s tests -v
+```powershell
+git clone https://github.com/vincos73/AI-Data-Anonymizer.git
+cd AI-Data-Anonymizer
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -e ".[windows-build,web]"
+ai-data-anonymizer
 ```
 
-## Versione web privata
+## Self-Hosted Web App
 
-La versione web e pensata per essere self-hosted. Non usa analytics, non salva i testi, disattiva gli access log dell'app e aggiunge header `no-store` per evitare cache del browser/proxy. Il testo viene comunque inviato al server che ospita l'app: per dati sensibili, usala solo su un server controllato da te e con HTTPS.
-
-Avvio locale:
+Run locally:
 
 ```bash
-cd ai-data-anonymizer
-./scripts/run_web.sh
+pip install -e ".[web]"
+ai-data-anonymizer-web
 ```
 
-Poi apri:
+Then open:
 
 ```text
 http://127.0.0.1:8080
 ```
 
-Avvio con Docker:
+Run with Docker:
 
 ```bash
-cd ai-data-anonymizer
 docker build -t ai-data-anonymizer .
 docker run --rm -p 8080:8080 ai-data-anonymizer
 ```
 
-Per pubblicarla online in modo ragionevole:
+Recommended production setup:
 
-- mettila dietro HTTPS, ad esempio Caddy, Nginx o Cloudflare Tunnel;
-- proteggila con password o accesso riservato;
-- disattiva i log del reverse proxy per path `/api/analyze` e `/api/anonymize`;
-- evita servizi di analytics, session replay o CDN che ispezionano il payload;
-- non usare server di terzi se i testi contengono dati davvero sensibili.
+- serve behind HTTPS;
+- require authentication for non-demo deployments;
+- disable request body logging in reverse proxies;
+- avoid analytics, session replay, or third-party scripts;
+- use conservative upload limits;
+- publish clear privacy terms for users.
 
-## Creare una app macOS installabile
+## Build Desktop Packages
+
+Build macOS package:
 
 ```bash
-cd ai-data-anonymizer
 ./scripts/build_macos_app.sh
 ```
 
-Alla fine troverai:
-
-- `dist/AI Data Anonymizer.app`
-- `dist/AI Data Anonymizer.dmg`, se `dmgbuild` riesce a creare il disco installabile
-
-Sul Mac di destinazione: apri il `.dmg`, trascina l'app in Applicazioni e avviala. Se macOS blocca l'app perche non firmata, fai click destro sull'app, poi **Apri**.
-
-## Creare una app Windows
-
-Su Windows, da PowerShell:
+Build Windows package from PowerShell:
 
 ```powershell
-cd ai-data-anonymizer
 .\scripts\build_windows_app.ps1
 ```
 
-Alla fine troverai:
+The GitHub Actions workflow `build-windows` can also create the Windows zip manually or attach it to a release when a tag such as `v0.1.0` is published.
 
-- `dist\AI Data Anonymizer\AI Data Anonymizer.exe`
-- `dist\AI-Data-Anonymizer-Windows.zip`
-
-La versione Windows base supporta `.txt`, `.md`, `.csv`, `.docx` e `.pdf`. I file `.doc` legacy non sono inclusi nella build Windows perche la conversione automatica usa `textutil`, disponibile solo su macOS.
-
-## Release automatiche
-
-Il workflow GitHub Actions `build-windows` crea lo zip Windows manualmente da **Actions** oppure automaticamente quando pubblichi un tag come `v0.1.0`. Se il tag corrisponde a una Release, lo zip viene allegato alla Release.
-
-## Pubblicazione su GitHub
-
-Prima di pubblicare:
-
-- non caricare `.venv`, `build`, `dist`, `.dmg` o `.app`;
-- scegli un nome repository, ad esempio `ai-data-anonymizer`;
-- sostituisci `YOUR-USERNAME` nel comando clone qui sopra;
-- aggiungi una descrizione chiara: "Italian privacy anonymizer for local desktop and self-hosted web usage".
-
-Esempio:
+## Tests
 
 ```bash
-git init
-git add .
-git commit -m "Initial open source release"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/ai-data-anonymizer.git
-git push -u origin main
+python -m unittest discover -s tests -v
 ```
 
-## Nota pratica
+The test suite covers Italian false positives, person and organization recognition, territorial bodies, structured identifiers, document anonymization, and `.docx` formatting preservation.
 
-PySide e il supporto documenti rendono il pacchetto abbastanza pesante. Per distribuirla in modo professionale servono firma e notarizzazione Apple; per uso familiare il `.dmg` non firmato di solito basta.
+## Project Status
 
-Se il tuo Mac e quello di tua moglie hanno architetture diverse, ad esempio uno Intel e uno Apple Silicon, conviene fare la build direttamente sul Mac di destinazione o creare due pacchetti separati.
+This is an early open-source release. The engine is rule-based and intentionally conservative. Contributions are welcome, especially for:
+
+- reducing Italian false positives;
+- improving document formatting preservation;
+- adding carefully tested recognizers;
+- improving packaging and release automation.
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
