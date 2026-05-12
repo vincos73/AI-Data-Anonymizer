@@ -1,0 +1,9 @@
+.venv
+build
+dist
+*.dmg
+*.app
+.DS_Store
+__pycache__
+*.pyc
+.git

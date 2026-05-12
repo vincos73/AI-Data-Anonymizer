@@ -1,0 +1,36 @@
+[project]
+name = "ai-data-anonymizer"
+version = "0.1.0"
+description = "Desktop app for detecting and anonymizing Italian personal data locally."
+requires-python = ">=3.10,<3.14"
+dependencies = [
+  "PySide6>=6.7",
+  "pypdf>=5.0",
+  "python-docx>=1.1",
+  "reportlab>=4.2",
+]
+
+[project.optional-dependencies]
+web = [
+  "fastapi>=0.111",
+  "uvicorn[standard]>=0.30",
+]
+build = [
+  "pyinstaller>=6.8",
+  "dmgbuild>=1.6",
+  "Pillow>=10",
+]
+
+[project.scripts]
+ai-data-anonymizer = "privacy_guardian.app:main"
+ai-data-anonymizer-web = "privacy_guardian.web_app:main"
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+privacy_guardian = ["web_static/*"]

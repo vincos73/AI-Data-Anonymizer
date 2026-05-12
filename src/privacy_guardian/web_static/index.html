@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>AI Data Anonymizer</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>AI Data Anonymizer</h1>
+          <p id="engine-status">Controllo motore in corso...</p>
+        </div>
+        <span class="badge">Nessun salvataggio</span>
+      </header>
+
+      <section class="workspace" aria-label="Editor anonimizzazione">
+        <div class="pane">
+          <div class="pane-header">
+            <h2>Testo originale</h2>
+            <button id="clear-btn" type="button">Pulisci</button>
+          </div>
+          <textarea id="source" spellcheck="false" placeholder="Incolla qui il testo da controllare"></textarea>
+        </div>
+
+        <div class="pane">
+          <div class="pane-header">
+            <h2>Testo anonimizzato</h2>
+            <button id="copy-btn" type="button">Copia</button>
+          </div>
+          <textarea id="result" spellcheck="false" readonly placeholder="Il risultato apparira qui"></textarea>
+        </div>
+      </section>
+
+      <nav class="actions" aria-label="Azioni">
+        <button id="analyze-btn" type="button">Analizza</button>
+        <button id="anonymize-btn" type="button" class="primary">Anonimizza</button>
+      </nav>
+
+      <section class="findings" aria-label="Dati rilevati">
+        <div class="findings-header">
+          <h2>Dati rilevati</h2>
+          <span id="counter">0 elementi</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Valore</th>
+                <th>Intervallo</th>
+                <th>Confidenza</th>
+                <th>Origine</th>
+              </tr>
+            </thead>
+            <tbody id="findings-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
