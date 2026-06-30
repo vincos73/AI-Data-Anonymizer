@@ -101,7 +101,7 @@ cd AI-Data-Anonymizer
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e ".[build,web]"
+pip install -e ".[desktop,web]"
 ai-data-anonymizer
 ```
 
@@ -113,7 +113,7 @@ cd AI-Data-Anonymizer
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -e ".[windows-build,web]"
+pip install -e ".[desktop,web]"
 ai-data-anonymizer
 ```
 

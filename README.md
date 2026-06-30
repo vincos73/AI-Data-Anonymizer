@@ -169,7 +169,7 @@ cd AI-Data-Anonymizer
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e ".[build,web]"
+pip install -e ".[desktop,web]"
 ai-data-anonymizer
 ```
 

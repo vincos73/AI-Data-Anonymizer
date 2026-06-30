@@ -4,23 +4,27 @@ version = "0.2.0"
 description = "Local and self-hosted app for detecting and anonymizing Italian personal data."
 requires-python = ">=3.10,<3.14"
 dependencies = [
-  "PySide6>=6.7",
   "pypdf>=5.0",
   "python-docx>=1.1",
   "reportlab>=4.2",
 ]
 
 [project.optional-dependencies]
+desktop = [
+  "PySide6>=6.7",
+]
 web = [
   "fastapi>=0.111",
   "uvicorn[standard]>=0.30",
 ]
 build = [
+  "PySide6>=6.7",
   "pyinstaller>=6.8",
   "dmgbuild>=1.6",
   "Pillow>=10",
 ]
 windows-build = [
+  "PySide6>=6.7",
   "pyinstaller>=6.8",
   "Pillow>=10",
 ]
