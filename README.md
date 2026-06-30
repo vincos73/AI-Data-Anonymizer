@@ -161,7 +161,7 @@ Build Windows package from PowerShell:
 .\scripts\build_windows_app.ps1
 ```
 
-The GitHub Actions workflow `build-windows` can also create the Windows zip manually or attach it to a release when a tag such as `v0.1.0` is published.
+The GitHub Actions workflow `build-windows` can also create the Windows zip manually or attach it to a release when a tag such as `v0.2.0` is published.
 
 ## Tests
 
