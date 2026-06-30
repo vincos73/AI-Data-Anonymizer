@@ -1,8 +1,8 @@
 # Sicurezza e Privacy
 
-AI Data Anonymizer è progettato per funzionare in locale sul computer dell'utente o su infrastruttura controllata dall'utente.
+AI Data Anonymizer è progettato prima di tutto per funzionare in locale sul computer dell'utente tramite app desktop. Questa è la modalità consigliata per la maggior parte delle persone.
 
-La versione desktop non chiama API esterne di intelligenza artificiale, OCR, analytics o trattamento documentale. La web app self-hosted elabora il testo sul server in cui viene installata.
+La versione desktop non chiama API esterne di intelligenza artificiale, OCR, analytics o trattamento documentale. La web app è un'opzione avanzata per uso locale da browser o self-hosting; in quel caso elabora il testo sul computer o server in cui viene installata.
 
 La web app applica limiti predefiniti di **100.000 caratteri** per il testo estratto e **10 MB** per file caricato. I file caricati vengono elaborati in una cartella temporanea rimossa al termine della richiesta.
 
@@ -22,9 +22,11 @@ La versione desktop lavora in locale. I documenti non vengono inviati ad API est
 
 Attenzione: se copi manualmente il risultato in un chatbot o lo carichi su un servizio cloud, quel servizio riceverà il testo che hai scelto di condividere. Controlla sempre il risultato prima di farlo.
 
-## Web App Pubblica o Self-Hosted
+## Web App Locale, Pubblica o Self-Hosted
 
-Se esponi la web app su Internet, il testo incollato dagli utenti arriva al server che la ospita. Questo può creare responsabilità legali, tecniche e organizzative.
+La web app non è necessaria per usare il prodotto come anonimizzatore locale: l'app desktop resta la scelta consigliata.
+
+Se esponi la web app su Internet o in una rete condivisa, il testo incollato dagli utenti arriva al server che la ospita. Questo può creare responsabilità legali, tecniche e organizzative.
 
 Per deploy non dimostrativi:
 

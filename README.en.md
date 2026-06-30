@@ -2,7 +2,9 @@
 
 AI Data Anonymizer is a privacy-first tool for anonymizing Italian documents before sharing them with AI chatbots, cloud services, collaborators, or external systems.
 
-It runs locally on your computer, or on infrastructure you control. The project focuses on high-precision Italian anonymization rules: when a match is uncertain, the app prefers not to anonymize rather than risk changing harmless text.
+The main product is the desktop app: install it, open a document, anonymize it locally on your computer. The software does not send files or text to external APIs.
+
+The web app exists only as an advanced option for developers, local demos, or self-hosted deployments on infrastructure you control.
 
 ## What It Does
 
@@ -13,7 +15,7 @@ It runs locally on your computer, or on infrastructure you control. The project 
 - In standard mode, does not anonymize dates.
 - In maximum-protection mode, replaces detected personal data with full placeholders and also redacts common date formats.
 - Keeps `.docx` formatting as much as possible while replacing sensitive text.
-- Provides a desktop app and a self-hosted web app.
+- Provides a desktop app, with a self-hosted web app for advanced use cases.
 
 Detected data includes:
 
@@ -32,7 +34,7 @@ Detected data includes:
 
 Many people paste contracts, letters, reports, invoices, and case notes into AI tools. Those documents often contain personal data, company names, fiscal identifiers, addresses, emails, or phone numbers.
 
-AI Data Anonymizer helps prepare a safer version of those documents before they leave your computer or your controlled environment.
+AI Data Anonymizer helps prepare a safer version of those documents before they leave your computer. In normal use, the recommended path is the desktop app.
 
 It is not a legal compliance product and it does not guarantee perfect anonymization. Always review the output before sharing sensitive documents.
 
@@ -51,7 +53,7 @@ On Windows, convert legacy `.doc` files to `.docx` before using the desktop app.
 
 The desktop app processes documents locally. It does not send text or files to external APIs.
 
-The web app is designed for self-hosting. It disables access logs in the app, avoids analytics, and sends no content to third-party services. However, text submitted to the web app is still sent to the server that hosts it. For sensitive documents, run it only on infrastructure you control and use HTTPS.
+The web app is not required for normal desktop use. If you run it locally on `127.0.0.1`, it stays on your computer as a browser interface. If you publish it on a server, text submitted to the web app is sent to that server. For sensitive documents, run it only on infrastructure you control and use HTTPS.
 
 The app rejects scanned or image-only PDFs when no selectable text can be extracted, so users do not mistake an unread PDF for a safely anonymized one. Run OCR first, then anonymize the OCR-enabled PDF.
 
@@ -101,7 +103,7 @@ cd AI-Data-Anonymizer
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e ".[desktop,web]"
+pip install -e ".[desktop]"
 ai-data-anonymizer
 ```
 
@@ -113,11 +115,19 @@ cd AI-Data-Anonymizer
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -e ".[desktop,web]"
+pip install -e ".[desktop]"
 ai-data-anonymizer
 ```
 
-## Self-Hosted Web App
+To develop the web app and API too:
+
+```bash
+pip install -e ".[desktop,web]"
+```
+
+## Advanced Option: Self-Hosted Web App
+
+Most users should use the desktop app. The web app is useful when you want a browser interface on your own machine, an internal network deployment, or a Docker-based setup.
 
 Run locally:
 
@@ -169,6 +179,7 @@ The GitHub Actions workflow `build-windows` can also create the Windows zip manu
 ## Tests
 
 ```bash
+pip install -e ".[desktop,web]"
 python -m unittest discover -s tests -v
 ```
 

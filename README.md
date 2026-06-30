@@ -2,11 +2,13 @@
 
 **AI Data Anonymizer** aiuta a preparare una versione più sicura dei documenti prima di incollarli in ChatGPT, Claude, Gemini o altri strumenti di intelligenza artificiale.
 
-Il progetto è pensato soprattutto per utenti italiani: riconosce dati personali e aziendali ricorrenti nei documenti italiani e lavora in locale sul computer, senza inviare file o testo ad API esterne.
+Il progetto è pensato soprattutto per utenti italiani e per un uso semplice: installi l'app desktop, carichi un documento, anonimizza tutto sul tuo computer. Il software non invia file o testo ad API esterne.
+
+La web app esiste solo come opzione avanzata per sviluppatori, demo locali o installazioni self-hosted su infrastruttura controllata.
 
 [English version](README.en.md)
 
-## Scarica
+## Scarica App Desktop
 
 Ultima versione: **v0.2.0**
 
@@ -110,7 +112,7 @@ I PDF scansionati o composti solo da immagini devono essere convertiti con OCR p
 
 La versione desktop lavora localmente sul computer. Non invia testo o file a OpenAI, Google, Anthropic, servizi OCR, analytics o altre API esterne.
 
-La web app è pensata per self-hosting. Se la pubblichi su un server, il testo inviato alla web app arriva comunque a quel server. Per documenti sensibili usala solo su infrastruttura sotto il tuo controllo e con HTTPS.
+La web app non è necessaria per l'uso normale. Se la avvii in locale su `127.0.0.1`, resta sul tuo computer come un'interfaccia browser. Se invece la pubblichi su un server, il testo inviato alla web app arriva a quel server: per documenti sensibili usala solo su infrastruttura sotto il tuo controllo e con HTTPS.
 
 Per i file `.docx`, l'app anonimizza il testo visibile e pulisce contenuti nascosti comuni come metadati, commenti, caselle di testo, note a piè di pagina, note di chiusura e alcune revisioni.
 
@@ -123,7 +125,9 @@ AI Data Anonymizer è uno strumento di riduzione del rischio, non una garanzia l
 - In modalità Standard alcune informazioni, come iniziali e date, possono restare utili a identificare una persona dal contesto.
 - Devi sempre rileggere il risultato prima di condividerlo con chatbot, cloud, collaboratori o terze parti.
 
-## Web App Self-Hosted
+## Opzione Avanzata: Web App Self-Hosted
+
+Per la maggior parte degli utenti è consigliata l'app desktop scaricabile dalla sezione **Scarica App Desktop**. La web app serve quando vuoi usare il motore da browser locale, in una rete interna o dentro Docker.
 
 Per avviare la web app in locale:
 
@@ -163,7 +167,7 @@ Requisiti:
 - Python 3.10, 3.11, 3.12 o 3.13;
 - Git.
 
-Avvio da sorgente:
+Avvio desktop da sorgente:
 
 ```bash
 git clone https://github.com/vincos73/AI-Data-Anonymizer.git
@@ -171,13 +175,20 @@ cd AI-Data-Anonymizer
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e ".[desktop,web]"
+pip install -e ".[desktop]"
 ai-data-anonymizer
+```
+
+Se vuoi sviluppare anche web app e API:
+
+```bash
+pip install -e ".[desktop,web]"
 ```
 
 Test:
 
 ```bash
+pip install -e ".[desktop,web]"
 python -m unittest discover -s tests -v
 ```
 
