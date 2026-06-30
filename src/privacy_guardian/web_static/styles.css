@@ -155,6 +155,18 @@ textarea {
   line-height: 1.45;
 }
 
+.report-checklist {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.report-checklist:empty {
+  display: none;
+}
+
 button {
   min-height: 36px;
   border: 1px solid #c7ced6;

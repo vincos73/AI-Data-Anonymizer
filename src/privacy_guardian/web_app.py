@@ -46,7 +46,7 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 class TextPayload(BaseModel):
     text: str
-    mode: AnonymizationMode = "standard"
+    mode: AnonymizationMode = "maximum"
 
 
 def serialize_finding(finding: Finding, text: str) -> dict[str, object]:
@@ -135,7 +135,7 @@ async def anonymize(payload: TextPayload):
 
 @app.post("/api/anonymize-document")
 async def anonymize_document(
-    mode: AnonymizationMode = Form("standard"),
+    mode: AnonymizationMode = Form("maximum"),
     file: UploadFile = File(...),
 ):
     filename = _safe_upload_filename(file.filename)

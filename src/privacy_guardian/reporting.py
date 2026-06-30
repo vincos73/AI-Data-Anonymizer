@@ -67,10 +67,27 @@ def report_payload(findings: list[Finding], mode: AnonymizationMode) -> dict[str
         "mode_label": mode_label(mode),
         "mode_note": mode_note(mode),
         "review_note": REVIEW_NOTE,
+        "checklist": review_checklist(findings, mode),
         "total": len(findings),
         "counts": finding_counts(findings),
         "summary": report_text(findings, mode),
     }
+
+
+def review_checklist(findings: list[Finding], mode: AnonymizationMode) -> list[str]:
+    items = []
+    if mode == "maximum":
+        items.append("Massima protezione è consigliata prima di condividere testi con chatbot o servizi esterni.")
+    else:
+        items.append("Standard lascia visibili iniziali e date: passa a Massima protezione per testi da condividere con chatbot.")
+
+    if findings:
+        items.append("Controlla se nel testo restano nomi, luoghi o dettagli identificativi non evidenziati.")
+    else:
+        items.append("Nessun dato riconosciuto non significa anonimizzazione garantita: rileggi il testo con attenzione.")
+
+    items.append(REVIEW_NOTE)
+    return items
 
 
 def entity_label(entity_type: str, count: int = 1) -> str:

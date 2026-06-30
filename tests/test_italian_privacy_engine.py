@@ -151,6 +151,8 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertEqual(report["counts"]["EMAIL_ADDRESS"], 1)
         self.assertEqual(report["counts"]["DATE"], 1)
         self.assertIn("Rileggi sempre", report["summary"])
+        self.assertIn("checklist", report)
+        self.assertIn("Massima protezione", report["checklist"][0])
         self.assertIn("1 persona", report["summary"])
         self.assertIn("1 data", report["summary"])
         self.assertIn("3 dati riconosciuti", report_text(findings, "maximum"))
@@ -160,6 +162,9 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
 
         self.assertIn("Standard conserva iniziali e date", report)
         self.assertIn("0 dati riconosciuti", report)
+
+        payload = report_payload([], "standard")
+        self.assertIn("Standard lascia visibili iniziali e date", payload["checklist"][0])
 
     def test_entity_labels_are_human_readable(self) -> None:
         self.assertEqual(entity_label("PERSON"), "persona")

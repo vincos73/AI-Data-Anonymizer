@@ -5,6 +5,7 @@ const counter = document.querySelector("#counter");
 const statusLabel = document.querySelector("#engine-status");
 const modeSelect = document.querySelector("#mode-select");
 const reportSummary = document.querySelector("#report-summary");
+const reportChecklist = document.querySelector("#report-checklist");
 const fileInput = document.querySelector("#file-input");
 const fileStatus = document.querySelector("#file-status");
 const documentButton = document.querySelector("#document-btn");
@@ -78,8 +79,14 @@ function renderFindings(findings) {
 }
 
 function renderReport(report) {
+  reportChecklist.replaceChildren();
   if (report && report.summary) {
     reportSummary.textContent = report.summary;
+    for (const item of report.checklist || []) {
+      const checklistItem = document.createElement("li");
+      checklistItem.textContent = item;
+      reportChecklist.appendChild(checklistItem);
+    }
     return;
   }
 
