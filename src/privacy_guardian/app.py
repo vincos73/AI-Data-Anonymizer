@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QAction, QTextCharFormat, QTextCursor
+from PySide6.QtGui import QAction, QDragEnterEvent, QDropEvent, QTextCharFormat, QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -33,7 +33,7 @@ from privacy_guardian.document_service import (
 )
 from privacy_guardian.models import AnonymizationMode, Finding, validate_anonymization_mode
 from privacy_guardian.privacy_engine import PrivacyEngine
-from privacy_guardian.reporting import mode_note, report_text
+from privacy_guardian.reporting import entity_label, mode_note, report_text
 from privacy_guardian.styles import APP_STYLE
 
 
@@ -48,15 +48,20 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("AI Data Anonymizer")
         self.resize(1160, 760)
         self.setMinimumSize(QSize(940, 640))
+        self.setAcceptDrops(True)
 
         self.input_text = QTextEdit()
-        self.input_text.setPlaceholderText("Incolla qui il testo da controllare...")
+        self.input_text.setAcceptDrops(False)
+        self.input_text.setPlaceholderText("Incolla qui il testo da controllare oppure carica un documento.")
+        self.input_text.textChanged.connect(self._sync_action_state)
 
         self.output_text = QTextEdit()
-        self.output_text.setPlaceholderText("Il testo anonimizzato apparira qui.")
+        self.output_text.setAcceptDrops(False)
+        self.output_text.setPlaceholderText("Il testo anonimizzato apparirà qui.")
+        self.output_text.textChanged.connect(self._sync_action_state)
 
-        self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(["Tipo", "Intervallo", "Confidenza", "Origine"])
+        self.table = QTableWidget(0, 5)
+        self.table.setHorizontalHeaderLabels(["Tipo", "Valore trovato", "Intervallo", "Confidenza", "Origine"])
         self.table.verticalHeader().setVisible(False)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setAlternatingRowColors(True)
@@ -67,42 +72,46 @@ class MainWindow(QMainWindow):
         self.version_label.setObjectName("VersionPill")
 
         self.mode_select = QComboBox()
-        self.mode_select.addItem("Standard", "standard")
-        self.mode_select.addItem("Massima protezione", "maximum")
+        self.mode_select.addItem("Massima protezione (consigliata)", "maximum")
+        self.mode_select.addItem("Standard (più leggibile)", "standard")
         self.mode_select.setObjectName("ModeSelect")
         self.mode_select.currentIndexChanged.connect(self._update_mode_notice)
+
+        self.document_label = QLabel("Nessun documento caricato. Puoi incollare testo o trascinare un file nella finestra.")
+        self.document_label.setObjectName("DocumentNotice")
+        self.document_label.setWordWrap(True)
 
         self.report_label = QLabel()
         self.report_label.setObjectName("ReportNotice")
         self.report_label.setWordWrap(True)
 
-        load_button = QPushButton("01  Carica documento")
-        load_button.clicked.connect(self.open_file)
-        load_button.setObjectName("WorkflowButton")
+        self.load_button = QPushButton("01  Carica o trascina file")
+        self.load_button.clicked.connect(self.open_file)
+        self.load_button.setObjectName("WorkflowButton")
 
-        analyze_button = QPushButton("02  Analizza")
-        analyze_button.clicked.connect(self.analyze_text)
-        analyze_button.setObjectName("WorkflowButton")
+        self.analyze_button = QPushButton("02  Analizza dati")
+        self.analyze_button.clicked.connect(self.analyze_text)
+        self.analyze_button.setObjectName("WorkflowButton")
 
-        anonymize_button = QPushButton("03  Anonimizza")
-        anonymize_button.clicked.connect(self.anonymize_text)
-        anonymize_button.setObjectName("PrimaryButton")
+        self.anonymize_button = QPushButton("03  Anonimizza")
+        self.anonymize_button.clicked.connect(self.anonymize_text)
+        self.anonymize_button.setObjectName("PrimaryButton")
 
-        copy_button = QPushButton("Copia")
-        copy_button.clicked.connect(self.copy_output)
-        copy_button.setObjectName("SecondaryButton")
+        self.copy_button = QPushButton("Copia risultato")
+        self.copy_button.clicked.connect(self.copy_output)
+        self.copy_button.setObjectName("SecondaryButton")
 
-        save_button = QPushButton("Salva")
-        save_button.clicked.connect(self.save_output)
-        save_button.setObjectName("SecondaryButton")
+        self.save_button = QPushButton("Salva risultato")
+        self.save_button.clicked.connect(self.save_output)
+        self.save_button.setObjectName("SecondaryButton")
 
-        clear_button = QPushButton("Pulisci")
-        clear_button.clicked.connect(self.clear_all)
-        clear_button.setObjectName("SecondaryButton")
+        self.clear_button = QPushButton("Pulisci")
+        self.clear_button.clicked.connect(self.clear_all)
+        self.clear_button.setObjectName("SecondaryButton")
 
         button_row = QHBoxLayout()
         button_row.setSpacing(8)
-        for button in (load_button, analyze_button, anonymize_button):
+        for button in (self.load_button, self.analyze_button, self.anonymize_button):
             button_row.addWidget(button)
         button_row.addWidget(self.mode_select)
         button_row.addStretch(1)
@@ -111,7 +120,7 @@ class MainWindow(QMainWindow):
         separator.setFrameShape(QFrame.VLine)
         separator.setFixedWidth(1)
         button_row.addWidget(separator)
-        for button in (copy_button, save_button, clear_button):
+        for button in (self.copy_button, self.save_button, self.clear_button):
             button_row.addWidget(button)
 
         text_splitter = QSplitter(Qt.Horizontal)
@@ -143,6 +152,7 @@ class MainWindow(QMainWindow):
         layout.setSpacing(12)
         layout.addLayout(header)
         layout.addLayout(button_row)
+        layout.addWidget(self.document_label)
         layout.addWidget(self.report_label)
         layout.addWidget(text_splitter, 4)
         layout.addWidget(findings_title)
@@ -154,6 +164,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(APP_STYLE)
         self._build_menu()
         self._update_mode_notice()
+        self._sync_action_state()
 
     def _panel(self, title: str, widget: QTextEdit) -> QWidget:
         label = QLabel(title)
@@ -189,6 +200,23 @@ class MainWindow(QMainWindow):
         )
         if not filename:
             return
+        self._load_document_from_path(filename)
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if self._first_local_drop_path(event):
+            event.acceptProposedAction()
+            return
+        super().dragEnterEvent(event)
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        path = self._first_local_drop_path(event)
+        if path is None:
+            super().dropEvent(event)
+            return
+        self._load_document_from_path(path)
+        event.acceptProposedAction()
+
+    def _load_document_from_path(self, filename: str | Path) -> None:
         try:
             self.loaded_document = load_document(filename)
         except Exception as exc:
@@ -199,10 +227,15 @@ class MainWindow(QMainWindow):
         self.input_text.setPlainText(self.loaded_document.text)
         self.output_text.clear()
         self._update_mode_notice()
-        self.statusBar().showMessage("Documento caricato. Puoi analizzarlo o anonimizzarlo.", 4000)
+        self.document_label.setText(f"Documento caricato: {self.loaded_document.path.name}")
+        self.statusBar().showMessage("Documento caricato. Massima protezione è pronta per ChatGPT e altri strumenti IA.", 5000)
+        self._sync_action_state()
 
     def analyze_text(self) -> None:
         text = self.input_text.toPlainText()
+        if not text.strip():
+            self.statusBar().showMessage("Incolla un testo o carica un documento prima di analizzare.", 5000)
+            return
         self.findings = self.engine.analyze(text, self._selected_mode())
         self._fill_table()
         self._highlight_findings()
@@ -211,6 +244,9 @@ class MainWindow(QMainWindow):
 
     def anonymize_text(self) -> None:
         mode = self._selected_mode()
+        if not self.input_text.toPlainText().strip():
+            self.statusBar().showMessage("Incolla un testo o carica un documento prima di anonimizzare.", 5000)
+            return
         if self.loaded_document and self.input_text.toPlainText() == self.loaded_document.text:
             self.anonymized_document = anonymize_loaded_document(self.loaded_document, self.engine, mode)
             self.findings = self.anonymized_document.findings
@@ -232,10 +268,16 @@ class MainWindow(QMainWindow):
         self._update_report()
 
     def copy_output(self) -> None:
+        if not self.output_text.toPlainText().strip():
+            self.statusBar().showMessage("Anonimizza prima un testo o un documento.", 4000)
+            return
         QApplication.clipboard().setText(self.output_text.toPlainText())
         self.statusBar().showMessage("Risultato copiato negli appunti.", 3000)
 
     def save_output(self) -> None:
+        if not self.output_text.toPlainText().strip() and not self.anonymized_document:
+            self.statusBar().showMessage("Anonimizza prima un testo o un documento.", 4000)
+            return
         default_name = self.anonymized_document.filename if self.anonymized_document else "testo_anonimizzato.txt"
         filename, _ = QFileDialog.getSaveFileName(
             self,
@@ -260,13 +302,17 @@ class MainWindow(QMainWindow):
         self.findings = []
         self.loaded_document = None
         self.anonymized_document = None
+        self.document_label.setText("Nessun documento caricato. Puoi incollare testo o trascinare un file nella finestra.")
         self._update_mode_notice()
+        self._sync_action_state()
 
     def _fill_table(self) -> None:
+        source_text = self.input_text.toPlainText()
         self.table.setRowCount(len(self.findings))
         for row, finding in enumerate(self.findings):
             values = [
-                finding.entity_type,
+                entity_label(finding.entity_type),
+                self._finding_preview(source_text, finding),
                 finding.text_range,
                 f"{finding.score:.2f}",
                 finding.source,
@@ -312,6 +358,31 @@ class MainWindow(QMainWindow):
         if "OCR" in message or "testo estraibile" in message or "scansionate" in message:
             return f"{message} Questo evita di considerare sicuro un PDF che l'app non può leggere."
         return f"Non riesco a caricare il documento: {message}"
+
+    def _first_local_drop_path(self, event: QDragEnterEvent | QDropEvent) -> Path | None:
+        mime_data = event.mimeData()
+        if not mime_data.hasUrls():
+            return None
+        for url in mime_data.urls():
+            if url.isLocalFile():
+                return Path(url.toLocalFile())
+        return None
+
+    def _finding_preview(self, source_text: str, finding: Finding) -> str:
+        preview = source_text[finding.start : finding.end].replace("\n", " ").strip()
+        if len(preview) > 80:
+            return f"{preview[:77]}..."
+        return preview
+
+    def _sync_action_state(self) -> None:
+        input_has_text = bool(self.input_text.toPlainText().strip())
+        output_has_text = bool(self.output_text.toPlainText().strip())
+        has_anything = input_has_text or output_has_text or self.loaded_document is not None
+        self.analyze_button.setEnabled(input_has_text)
+        self.anonymize_button.setEnabled(input_has_text)
+        self.copy_button.setEnabled(output_has_text)
+        self.save_button.setEnabled(output_has_text or self.anonymized_document is not None)
+        self.clear_button.setEnabled(has_anything)
 
 
 def main() -> int:

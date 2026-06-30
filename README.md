@@ -45,7 +45,7 @@ Su Windows i vecchi file `.doc` non sono supportati direttamente: convertili pri
 ## Come Si Usa
 
 1. Apri l'app.
-2. Carica un documento o incolla un testo.
+2. Carica un documento, trascinalo nella finestra o incolla un testo.
 3. Clicca **Analizza** per vedere quali dati sono stati riconosciuti.
 4. Scegli la modalità di protezione.
 5. Clicca **Anonimizza**.
@@ -81,6 +81,8 @@ mario@example.com -> <EMAIL_ADDRESS>
 ```
 
 Usa questa modalità quando devi condividere testo con chatbot o servizi esterni e vuoi ridurre al minimo i dettagli identificativi.
+
+Nell'app desktop è la modalità predefinita e consigliata per l'uso con ChatGPT e altri strumenti di IA.
 
 ## Dati Riconosciuti
 

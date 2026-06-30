@@ -18,7 +18,7 @@ from reportlab.pdfgen import canvas
 
 from privacy_guardian.document_service import anonymize_loaded_document, load_document
 from privacy_guardian.privacy_engine import PrivacyEngine
-from privacy_guardian.reporting import report_payload, report_text
+from privacy_guardian.reporting import entity_label, report_payload, report_text
 from privacy_guardian.web_app import (
     MAX_TEXT_LENGTH,
     TextPayload,
@@ -160,6 +160,10 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
 
         self.assertIn("Standard conserva iniziali e date", report)
         self.assertIn("0 dati riconosciuti", report)
+
+    def test_entity_labels_are_human_readable(self) -> None:
+        self.assertEqual(entity_label("PERSON"), "persona")
+        self.assertEqual(entity_label("PHONE_NUMBER", 2), "telefoni")
 
 
 class DocumentAnonymizationTest(unittest.TestCase):

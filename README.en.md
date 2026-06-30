@@ -66,11 +66,13 @@ Download a release artifact from the repository Releases page when available.
 Typical workflow:
 
 1. Open the app.
-2. Load a supported document or paste text.
+2. Load a supported document, drag it into the window, or paste text.
 3. Analyze the content.
 4. Anonymize it.
 5. Review the final report with the selected mode, detected data count, and safety warnings.
 6. Save the anonymized result.
+
+The desktop app defaults to maximum-protection mode, which is the recommended choice before sharing content with ChatGPT or other AI tools.
 
 ### macOS
 

@@ -59,6 +59,15 @@ QLabel#ReportNotice {
     line-height: 1.35;
 }
 
+QLabel#DocumentNotice {
+    background: #e9f1f5;
+    color: #15212b;
+    border: 1px solid #8fa8b8;
+    border-radius: 2px;
+    padding: 9px 11px;
+    line-height: 1.35;
+}
+
 QFrame#Panel {
     background: #38414d;
     border: 1px solid #667384;
@@ -101,13 +110,15 @@ QPushButton:pressed {
 }
 
 QPushButton#PrimaryButton {
-    background: #6f89a5;
-    border-color: #8ba1b7;
-    color: #07111a;
+    min-height: 38px;
+    background: #d9ead7;
+    border-color: #a8c5a2;
+    color: #102016;
+    font-weight: 700;
 }
 
 QPushButton#PrimaryButton:hover {
-    background: #829bb5;
+    background: #e4f2e0;
 }
 
 QPushButton#WorkflowButton {
@@ -137,6 +148,7 @@ QComboBox#ModeSelect {
     background: #303844;
     color: #f2f6f9;
     padding: 0 10px;
+    min-width: 230px;
 }
 
 QFrame#CommandSeparator {

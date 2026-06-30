@@ -46,8 +46,8 @@ def finding_types_summary(findings: list[Finding]) -> str:
         return "nessun dato riconosciuto"
 
     parts = [
-        f"{count} {_entity_label(entity_type, count)}"
-        for entity_type, count in sorted(counts.items(), key=lambda item: _entity_label(item[0], 2))
+        f"{count} {entity_label(entity_type, count)}"
+        for entity_type, count in sorted(counts.items(), key=lambda item: entity_label(item[0], 2))
     ]
     return ", ".join(parts)
 
@@ -73,7 +73,7 @@ def report_payload(findings: list[Finding], mode: AnonymizationMode) -> dict[str
     }
 
 
-def _entity_label(entity_type: str, count: int) -> str:
+def entity_label(entity_type: str, count: int = 1) -> str:
     labels = ENTITY_LABELS.get(entity_type)
     if labels is None:
         return entity_type
