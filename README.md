@@ -1,98 +1,166 @@
 # AI Data Anonymizer
 
-AI Data Anonymizer is a privacy-first tool for anonymizing Italian documents before sharing them with AI chatbots, cloud services, collaborators, or external systems.
+**AI Data Anonymizer** aiuta a preparare una versione più sicura dei documenti prima di incollarli in ChatGPT, Claude, Gemini o altri strumenti di intelligenza artificiale.
 
-It runs locally on your computer, or on infrastructure you control. The project focuses on high-precision Italian anonymization rules: when a match is uncertain, the app prefers not to anonymize rather than risk changing harmless text.
+Il progetto è pensato soprattutto per utenti italiani: riconosce dati personali e aziendali ricorrenti nei documenti italiani e lavora in locale sul computer, senza inviare file o testo ad API esterne.
 
-## What It Does
+[English version](README.en.md)
 
-- Detects and anonymizes common Italian personal and business data.
-- Works with pasted text and uploaded documents.
-- Offers a standard mode and a maximum-protection mode.
-- In standard mode, preserves initials for people, organizations, addresses, and territorial bodies.
-- In standard mode, does not anonymize dates.
-- In maximum-protection mode, replaces detected personal data with full placeholders and also redacts common date formats.
-- Keeps `.docx` formatting as much as possible while replacing sensitive text.
-- Provides a desktop app and a self-hosted web app.
+## Scarica
 
-Detected data includes:
+Ultima versione: **v0.2.0**
 
-- email addresses
-- Italian phone numbers, including common formats with spaces, dots, dashes, or slashes
-- IBANs, including spaced Italian IBANs
-- codice fiscale
-- partita IVA
-- Italian addresses with strong address signals
-- people names only with strong context, including birth/residence and payment-recipient contexts
-- company names with legal forms such as `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperatives and similar
-- territorial bodies such as `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`
-- common date formats in maximum-protection mode
-
-## Why It Exists
-
-Many people paste contracts, letters, reports, invoices, and case notes into AI tools. Those documents often contain personal data, company names, fiscal identifiers, addresses, emails, or phone numbers.
-
-AI Data Anonymizer helps prepare a safer version of those documents before they leave your computer or your controlled environment.
-
-It is not a legal compliance product and it does not guarantee perfect anonymization. Always review the output before sharing sensitive documents.
-
-## Supported Formats
-
-| Format | Support |
+| Sistema | Download |
 | --- | --- |
-| `.txt`, `.md`, `.csv` | Reads and saves anonymized text files |
-| `.docx` | Reads and saves anonymized Word documents, preserving formatting where possible |
-| `.pdf` | Extracts text and creates a new anonymized PDF; original PDF layout may not be preserved. Scanned or image-only PDFs must be converted with OCR first. |
-| `.doc` | Supported on macOS only; converted to `.docx` before anonymization |
+| Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Scarica DMG per macOS](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.2.0/AI-Data-Anonymizer-macOS-Apple-Silicon.dmg) |
+| Windows | [Scarica ZIP per Windows](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.2.0/AI-Data-Anonymizer-Windows.zip) |
 
-On Windows, convert legacy `.doc` files to `.docx` before using the desktop app.
+Tutti i file sono disponibili nella pagina [Releases](https://github.com/vincos73/AI-Data-Anonymizer/releases).
 
-## Privacy Model
+## Installazione Facile
 
-The desktop app processes documents locally. It does not send text or files to external APIs.
+### Mac
 
-The web app is designed for self-hosting. It disables access logs in the app, avoids analytics, and sends no content to third-party services. However, text submitted to the web app is still sent to the server that hosts it. For sensitive documents, run it only on infrastructure you control and use HTTPS.
+1. Scarica il file `.dmg`.
+2. Aprilo.
+3. Trascina **AI Data Anonymizer** nella cartella **Applicazioni**.
+4. Apri l'app da **Applicazioni**.
 
-The app rejects scanned or image-only PDFs when no selectable text can be extracted, so users do not mistake an unread PDF for a safely anonymized one. Run OCR first, then anonymize the OCR-enabled PDF.
+Le build attuali non sono ancora firmate/notarizzate. Se macOS mostra un avviso sullo sviluppatore non identificato:
 
-For `.docx` files, the app anonymizes visible document text and also sanitizes common hidden Office content such as metadata, comments, text boxes, footnotes, endnotes, and selected revision text.
-
-## Desktop App
-
-Download a release artifact from the repository Releases page when available.
-
-Typical workflow:
-
-1. Open the app.
-2. Load a supported document or paste text.
-3. Analyze the content.
-4. Anonymize it.
-5. Save the anonymized result.
-
-### macOS
-
-The macOS build creates:
-
-- `AI Data Anonymizer.app`
-- `AI Data Anonymizer.dmg`
-
-Unsigned builds may be blocked by Gatekeeper. If macOS warns that the developer is unidentified, right-click the app and choose **Open**.
+1. fai click destro su **AI Data Anonymizer**;
+2. scegli **Apri**;
+3. conferma di nuovo **Apri**.
 
 ### Windows
 
-The Windows build creates:
+1. Scarica il file `.zip`.
+2. Estrai lo zip in una cartella.
+3. Apri **AI Data Anonymizer.exe**.
 
-- `AI Data Anonymizer.exe`
-- `AI-Data-Anonymizer-Windows.zip`
+Su Windows i vecchi file `.doc` non sono supportati direttamente: convertili prima in `.docx`.
 
-The Windows desktop app supports `.txt`, `.md`, `.csv`, `.docx`, and `.pdf`.
+## Come Si Usa
 
-## Run From Source
+1. Apri l'app.
+2. Carica un documento o incolla un testo.
+3. Clicca **Analizza** per vedere quali dati sono stati riconosciuti.
+4. Scegli la modalità di protezione.
+5. Clicca **Anonimizza**.
+6. Controlla il risultato prima di condividerlo.
+7. Salva o copia il testo anonimizzato.
 
-Requirements:
+## Modalità di Protezione
 
-- Python 3.10, 3.11, 3.12, or 3.13
-- Git
+### Standard
+
+La modalità Standard mantiene più leggibile il testo. Per persone, organizzazioni, indirizzi ed enti territoriali conserva le iniziali.
+
+Esempio:
+
+```text
+Mario Rossi -> M. R.
+Alfa Beta S.r.l. -> A. B. S. r. l.
+```
+
+In modalità Standard le date non vengono anonimizzate.
+
+### Massima Protezione
+
+La modalità **Massima protezione** sostituisce i dati riconosciuti con segnaposto completi e anonimizza anche formati data comuni.
+
+Esempio:
+
+```text
+Mario Rossi -> <PERSON>
+10/01/1980 -> <DATE>
+mario@example.com -> <EMAIL_ADDRESS>
+```
+
+Usa questa modalità quando devi condividere testo con chatbot o servizi esterni e vuoi ridurre al minimo i dettagli identificativi.
+
+## Dati Riconosciuti
+
+AI Data Anonymizer riconosce, con regole conservative:
+
+- indirizzi email;
+- numeri di telefono italiani, inclusi formati con spazi, punti, trattini o slash;
+- IBAN italiani, anche scritti con spazi;
+- codice fiscale;
+- partita IVA;
+- indirizzi italiani con segnali forti come via, viale, piazza, corso;
+- nomi di persone con contesto forte, per esempio nascita, residenza o intestatario di pagamento;
+- aziende con forme giuridiche come `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperative e simili;
+- enti territoriali come `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`;
+- date comuni in modalità Massima protezione.
+
+## Formati Supportati
+
+| Formato | Supporto |
+| --- | --- |
+| `.txt`, `.md`, `.csv` | Legge e salva file di testo anonimizzati |
+| `.docx` | Legge e salva documenti Word preservando il più possibile la formattazione |
+| `.pdf` | Estrae il testo e crea un nuovo PDF anonimizzato; il layout originale può non essere preservato |
+| `.doc` | Supportato solo su macOS, convertito in `.docx` prima dell'anonimizzazione |
+
+I PDF scansionati o composti solo da immagini devono essere convertiti con OCR prima dell'uso. L'app li blocca quando non riesce a estrarre testo selezionabile, così l'utente non scambia un PDF non letto per un documento già sicuro.
+
+## Privacy
+
+La versione desktop lavora localmente sul computer. Non invia testo o file a OpenAI, Google, Anthropic, servizi OCR, analytics o altre API esterne.
+
+La web app è pensata per self-hosting. Se la pubblichi su un server, il testo inviato alla web app arriva comunque a quel server. Per documenti sensibili usala solo su infrastruttura sotto il tuo controllo e con HTTPS.
+
+Per i file `.docx`, l'app anonimizza il testo visibile e pulisce contenuti nascosti comuni come metadati, commenti, caselle di testo, note a piè di pagina, note di chiusura e alcune revisioni.
+
+## Limiti Importanti
+
+AI Data Anonymizer è uno strumento di riduzione del rischio, non una garanzia legale di anonimizzazione perfetta.
+
+- Il motore è basato su regole ed è volutamente conservativo.
+- Alcuni dati personali possono non essere riconosciuti.
+- In modalità Standard alcune informazioni, come iniziali e date, possono restare utili a identificare una persona dal contesto.
+- Devi sempre rileggere il risultato prima di condividerlo con chatbot, cloud, collaboratori o terze parti.
+
+## Web App Self-Hosted
+
+Per avviare la web app in locale:
+
+```bash
+pip install -e ".[web]"
+ai-data-anonymizer-web
+```
+
+Poi apri:
+
+```text
+http://127.0.0.1:8080
+```
+
+Con Docker:
+
+```bash
+docker build -t ai-data-anonymizer .
+docker run --rm -p 8080:8080 ai-data-anonymizer
+```
+
+Per deploy non dimostrativi:
+
+- usa HTTPS;
+- richiedi autenticazione;
+- disabilita log dei body HTTP nei proxy;
+- evita analytics, session replay o script terzi nelle pagine che trattano documenti;
+- usa limiti di upload conservativi;
+- pubblica termini privacy chiari.
+
+## Sviluppo
+
+Requisiti:
+
+- Python 3.10, 3.11, 3.12 o 3.13;
+- Git.
+
+Avvio da sorgente:
 
 ```bash
 git clone https://github.com/vincos73/AI-Data-Anonymizer.git
@@ -104,82 +172,37 @@ pip install -e ".[build,web]"
 ai-data-anonymizer
 ```
 
-On Windows PowerShell:
-
-```powershell
-git clone https://github.com/vincos73/AI-Data-Anonymizer.git
-cd AI-Data-Anonymizer
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -e ".[windows-build,web]"
-ai-data-anonymizer
-```
-
-## Self-Hosted Web App
-
-Run locally:
-
-```bash
-pip install -e ".[web]"
-ai-data-anonymizer-web
-```
-
-Then open:
-
-```text
-http://127.0.0.1:8080
-```
-
-Run with Docker:
-
-```bash
-docker build -t ai-data-anonymizer .
-docker run --rm -p 8080:8080 ai-data-anonymizer
-```
-
-Recommended production setup:
-
-- serve behind HTTPS;
-- require authentication for non-demo deployments;
-- disable request body logging in reverse proxies;
-- avoid analytics, session replay, or third-party scripts;
-- use conservative upload limits;
-- publish clear privacy terms for users.
-
-## Build Desktop Packages
-
-Build macOS package:
-
-```bash
-./scripts/build_macos_app.sh
-```
-
-Build Windows package from PowerShell:
-
-```powershell
-.\scripts\build_windows_app.ps1
-```
-
-The GitHub Actions workflow `build-windows` can also create the Windows zip manually or attach it to a release when a tag such as `v0.2.0` is published.
-
-## Tests
+Test:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-The test suite covers Italian false positives, person and organization recognition, territorial bodies, structured identifiers, standard and maximum-protection anonymization, document anonymization, `.docx` formatting preservation, hidden `.docx` metadata/content sanitization, and unreadable/scanned PDF rejection.
+La suite copre falsi positivi italiani, riconoscimento di persone e organizzazioni, enti territoriali, identificativi strutturati, modalità Standard e Massima protezione, anonimizzazione documenti, preservazione della formattazione `.docx`, pulizia di contenuti nascosti `.docx` e rifiuto dei PDF scansionati/non leggibili.
 
-## Project Status
+## Build Desktop
 
-This is an early open-source release. The engine is rule-based and intentionally conservative. Contributions are welcome, especially for:
+Build macOS:
 
-- reducing Italian false positives;
-- improving document formatting preservation;
-- adding carefully tested recognizers;
-- improving packaging and release automation.
+```bash
+./scripts/build_macos_app.sh
+```
 
-## License
+Build Windows da PowerShell:
 
-MIT License. See [LICENSE](LICENSE).
+```powershell
+.\scripts\build_windows_app.ps1
+```
+
+## Stato del Progetto
+
+Questa è una release open source iniziale. Contributi utili:
+
+- ridurre falsi positivi e falsi negativi italiani;
+- migliorare la preservazione della formattazione;
+- aggiungere nuovi riconoscitori con test accurati;
+- migliorare packaging, firma delle app e automazione delle release.
+
+## Licenza
+
+MIT License. Vedi [LICENSE](LICENSE).
