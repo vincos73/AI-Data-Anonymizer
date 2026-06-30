@@ -15,6 +15,7 @@ from reportlab.pdfgen import canvas
 
 from privacy_guardian.document_service import anonymize_loaded_document, load_document
 from privacy_guardian.privacy_engine import PrivacyEngine
+from privacy_guardian.reporting import report_payload, report_text
 
 
 class ItalianPrivacyEngineTest(unittest.TestCase):
@@ -130,6 +131,26 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertEqual(anonymized.count("<PHONE_NUMBER>"), 2)
         self.assertNotIn("IT60 X054", anonymized)
         self.assertNotIn("0123 456", anonymized)
+
+    def test_report_summarizes_mode_counts_and_review_warning(self) -> None:
+        text = "Il sottoscritto Mario Rossi email mario@example.com nato il 10/01/1980."
+        findings = self.engine.analyze(text, mode="maximum")
+        report = report_payload(findings, "maximum")
+
+        self.assertEqual(report["mode_label"], "Massima protezione")
+        self.assertEqual(report["counts"]["PERSON"], 1)
+        self.assertEqual(report["counts"]["EMAIL_ADDRESS"], 1)
+        self.assertEqual(report["counts"]["DATE"], 1)
+        self.assertIn("Rileggi sempre", report["summary"])
+        self.assertIn("1 persona", report["summary"])
+        self.assertIn("1 data", report["summary"])
+        self.assertIn("3 dati riconosciuti", report_text(findings, "maximum"))
+
+    def test_standard_report_warns_about_initials_and_dates(self) -> None:
+        report = report_text([], "standard")
+
+        self.assertIn("Standard conserva iniziali e date", report)
+        self.assertIn("0 dati riconosciuti", report)
 
 
 class DocumentAnonymizationTest(unittest.TestCase):

@@ -47,8 +47,9 @@ Su Windows i vecchi file `.doc` non sono supportati direttamente: convertili pri
 3. Clicca **Analizza** per vedere quali dati sono stati riconosciuti.
 4. Scegli la modalità di protezione.
 5. Clicca **Anonimizza**.
-6. Controlla il risultato prima di condividerlo.
-7. Salva o copia il testo anonimizzato.
+6. Leggi il report finale con modalità usata, numero di dati riconosciuti e avvisi di controllo.
+7. Controlla il risultato prima di condividerlo.
+8. Salva o copia il testo anonimizzato.
 
 ## Modalità di Protezione
 

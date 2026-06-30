@@ -50,6 +50,15 @@ QLabel#SectionTitle {
     font-weight: 650;
 }
 
+QLabel#ReportNotice {
+    background: #26313b;
+    color: #dce7ef;
+    border: 1px solid #667384;
+    border-radius: 2px;
+    padding: 9px 11px;
+    line-height: 1.35;
+}
+
 QFrame#Panel {
     background: #38414d;
     border: 1px solid #667384;

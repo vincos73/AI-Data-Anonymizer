@@ -33,6 +33,7 @@ from privacy_guardian.document_service import (
 )
 from privacy_guardian.models import AnonymizationMode, Finding, validate_anonymization_mode
 from privacy_guardian.privacy_engine import PrivacyEngine
+from privacy_guardian.reporting import mode_note, report_text
 from privacy_guardian.styles import APP_STYLE
 
 
@@ -69,6 +70,11 @@ class MainWindow(QMainWindow):
         self.mode_select.addItem("Standard", "standard")
         self.mode_select.addItem("Massima protezione", "maximum")
         self.mode_select.setObjectName("ModeSelect")
+        self.mode_select.currentIndexChanged.connect(self._update_mode_notice)
+
+        self.report_label = QLabel()
+        self.report_label.setObjectName("ReportNotice")
+        self.report_label.setWordWrap(True)
 
         load_button = QPushButton("01  Carica documento")
         load_button.clicked.connect(self.open_file)
@@ -137,6 +143,7 @@ class MainWindow(QMainWindow):
         layout.setSpacing(12)
         layout.addLayout(header)
         layout.addLayout(button_row)
+        layout.addWidget(self.report_label)
         layout.addWidget(text_splitter, 4)
         layout.addWidget(findings_title)
         layout.addWidget(self.table, 2)
@@ -146,6 +153,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(container)
         self.setStyleSheet(APP_STYLE)
         self._build_menu()
+        self._update_mode_notice()
 
     def _panel(self, title: str, widget: QTextEdit) -> QWidget:
         label = QLabel(title)
@@ -184,12 +192,13 @@ class MainWindow(QMainWindow):
         try:
             self.loaded_document = load_document(filename)
         except Exception as exc:
-            self.statusBar().showMessage(f"Non riesco a caricare il documento: {exc}", 6000)
+            self.statusBar().showMessage(self._friendly_error_message(exc), 9000)
             return
 
         self.anonymized_document = None
         self.input_text.setPlainText(self.loaded_document.text)
         self.output_text.clear()
+        self._update_mode_notice()
         self.statusBar().showMessage("Documento caricato. Puoi analizzarlo o anonimizzarlo.", 4000)
 
     def analyze_text(self) -> None:
@@ -197,6 +206,7 @@ class MainWindow(QMainWindow):
         self.findings = self.engine.analyze(text, self._selected_mode())
         self._fill_table()
         self._highlight_findings()
+        self._update_report()
         self.statusBar().showMessage(f"Elementi rilevati: {len(self.findings)}.", 4000)
 
     def anonymize_text(self) -> None:
@@ -207,6 +217,7 @@ class MainWindow(QMainWindow):
             self.output_text.setPlainText(self.anonymized_document.text)
             self._fill_table()
             self._highlight_findings()
+            self._update_report()
             self.statusBar().showMessage(
                 f"Documento pronto: {self.anonymized_document.filename}. Elementi rilevati: {len(self.findings)}.",
                 5000,
@@ -218,6 +229,7 @@ class MainWindow(QMainWindow):
         self.analyze_text()
         text = self.input_text.toPlainText()
         self.output_text.setPlainText(self.engine.anonymize(text, self.findings, mode))
+        self._update_report()
 
     def copy_output(self) -> None:
         QApplication.clipboard().setText(self.output_text.toPlainText())
@@ -248,6 +260,7 @@ class MainWindow(QMainWindow):
         self.findings = []
         self.loaded_document = None
         self.anonymized_document = None
+        self._update_mode_notice()
 
     def _fill_table(self) -> None:
         self.table.setRowCount(len(self.findings))
@@ -287,6 +300,18 @@ class MainWindow(QMainWindow):
 
     def _selected_mode(self) -> AnonymizationMode:
         return validate_anonymization_mode(str(self.mode_select.currentData()))
+
+    def _update_mode_notice(self, *args) -> None:
+        self.report_label.setText(mode_note(self._selected_mode()))
+
+    def _update_report(self) -> None:
+        self.report_label.setText(report_text(self.findings, self._selected_mode()))
+
+    def _friendly_error_message(self, exc: Exception) -> str:
+        message = str(exc)
+        if "OCR" in message or "testo estraibile" in message or "scansionate" in message:
+            return f"{message} Questo evita di considerare sicuro un PDF che l'app non può leggere."
+        return f"Non riesco a caricare il documento: {message}"
 
 
 def main() -> int:

@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from privacy_guardian import __version__
 from privacy_guardian.models import ANONYMIZATION_MODES, AnonymizationMode, Finding
 from privacy_guardian.privacy_engine import PrivacyEngine
+from privacy_guardian.reporting import mode_note, report_payload
 
 MAX_TEXT_LENGTH = 100_000
 
@@ -74,16 +75,18 @@ async def health():
         "engine_status": engine.status,
         "max_text_length": MAX_TEXT_LENGTH,
         "modes": ANONYMIZATION_MODES,
+        "mode_notes": {mode: mode_note(mode) for mode in ANONYMIZATION_MODES},
     }
 
 
 @app.post("/api/analyze")
 async def analyze(payload: TextPayload):
     if not payload.text.strip():
-        return {"findings": [], "engine_status": engine.status}
+        return {"findings": [], "report": report_payload([], payload.mode), "engine_status": engine.status}
     findings = engine.analyze(payload.text, payload.mode)
     return {
         "findings": [serialize_finding(finding, payload.text) for finding in findings],
+        "report": report_payload(findings, payload.mode),
         "engine_status": engine.status,
     }
 
@@ -91,11 +94,12 @@ async def analyze(payload: TextPayload):
 @app.post("/api/anonymize")
 async def anonymize(payload: TextPayload):
     if not payload.text.strip():
-        return {"text": "", "findings": [], "engine_status": engine.status}
+        return {"text": "", "findings": [], "report": report_payload([], payload.mode), "engine_status": engine.status}
     findings = engine.analyze(payload.text, payload.mode)
     return {
         "text": engine.anonymize(payload.text, findings, payload.mode),
         "findings": [serialize_finding(finding, payload.text) for finding in findings],
+        "report": report_payload(findings, payload.mode),
         "engine_status": engine.status,
     }
 

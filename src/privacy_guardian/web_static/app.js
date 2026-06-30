@@ -4,6 +4,11 @@ const findingsBody = document.querySelector("#findings-body");
 const counter = document.querySelector("#counter");
 const statusLabel = document.querySelector("#engine-status");
 const modeSelect = document.querySelector("#mode-select");
+const reportSummary = document.querySelector("#report-summary");
+let modeNotes = {
+  standard: "Standard conserva iniziali e date: per testo da condividere con chatbot valuta Massima protezione.",
+  maximum: "Massima protezione usa segnaposto completi e redige anche date comuni riconosciute.",
+};
 
 async function postJson(path, text) {
   const response = await fetch(path, {
@@ -45,6 +50,15 @@ function renderFindings(findings) {
   }
 }
 
+function renderReport(report) {
+  if (report && report.summary) {
+    reportSummary.textContent = report.summary;
+    return;
+  }
+
+  reportSummary.textContent = modeNotes[modeSelect.value] || "";
+}
+
 function setBusy(isBusy) {
   document.querySelectorAll("button").forEach((button) => {
     button.disabled = isBusy;
@@ -57,8 +71,10 @@ async function analyze() {
     const data = await postJson("/api/analyze", source.value);
     statusLabel.textContent = data.engine_status;
     renderFindings(data.findings);
+    renderReport(data.report);
   } catch (error) {
     statusLabel.textContent = error.message;
+    reportSummary.textContent = error.message;
   } finally {
     setBusy(false);
   }
@@ -71,8 +87,10 @@ async function anonymize() {
     result.value = data.text;
     statusLabel.textContent = data.engine_status;
     renderFindings(data.findings);
+    renderReport(data.report);
   } catch (error) {
     statusLabel.textContent = error.message;
+    reportSummary.textContent = error.message;
   } finally {
     setBusy(false);
   }
@@ -84,6 +102,7 @@ document.querySelector("#clear-btn").addEventListener("click", () => {
   source.value = "";
   result.value = "";
   renderFindings([]);
+  renderReport(null);
 });
 document.querySelector("#copy-btn").addEventListener("click", async () => {
   await navigator.clipboard.writeText(result.value);
@@ -93,7 +112,13 @@ fetch("/api/health", {cache: "no-store"})
   .then((response) => response.json())
   .then((data) => {
     statusLabel.textContent = data.engine_status;
+    modeNotes = data.mode_notes || modeNotes;
+    renderReport(null);
   })
   .catch(() => {
     statusLabel.textContent = "Server non raggiungibile.";
   });
+
+modeSelect.addEventListener("change", () => {
+  renderReport(null);
+});

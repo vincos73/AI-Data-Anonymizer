@@ -67,7 +67,8 @@ Typical workflow:
 2. Load a supported document or paste text.
 3. Analyze the content.
 4. Anonymize it.
-5. Save the anonymized result.
+5. Review the final report with the selected mode, detected data count, and safety warnings.
+6. Save the anonymized result.
 
 ### macOS
 
