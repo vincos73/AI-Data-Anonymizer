@@ -8,7 +8,7 @@ Contributions are welcome, especially for Italian anonymization rules and false-
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e ".[build,web]"
+pip install -e ".[desktop,web]"
 python -m unittest discover -s tests -v
 ```
 

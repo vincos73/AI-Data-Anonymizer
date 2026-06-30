@@ -28,7 +28,8 @@ textarea {
 .topbar,
 .pane-header,
 .findings-header,
-.actions {
+.actions,
+.document-panel {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -89,6 +90,7 @@ p,
 }
 
 .pane,
+.document-panel,
 .report,
 .findings {
   background: #ffffff;
@@ -120,6 +122,25 @@ textarea {
   margin: 16px 0;
 }
 
+.document-panel {
+  margin-top: 16px;
+  padding: 12px 14px;
+}
+
+.document-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#file-input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .report {
   margin-bottom: 16px;
   padding: 12px 14px;
@@ -141,6 +162,20 @@ button {
   border-radius: 6px;
   color: #26323f;
   padding: 0 13px;
+  cursor: pointer;
+}
+
+.file-button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  border: 1px solid #c7ced6;
+  border-radius: 6px;
+  color: #26323f;
+  font-size: inherit;
+  font-weight: 400;
+  padding: 0 13px;
+  background: #ffffff;
   cursor: pointer;
 }
 
@@ -204,6 +239,15 @@ td {
   }
 
   .top-controls {
+    flex-wrap: wrap;
+  }
+
+  .document-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .document-actions {
     flex-wrap: wrap;
   }
 }

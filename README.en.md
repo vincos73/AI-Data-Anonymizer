@@ -132,6 +132,8 @@ Then open:
 http://127.0.0.1:8080
 ```
 
+The web app supports pasted text and supported document uploads, then downloads the anonymized file. By default it accepts up to **100,000 characters** of extracted text and **10 MB** per file.
+
 Run with Docker:
 
 ```bash

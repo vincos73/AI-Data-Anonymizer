@@ -4,6 +4,8 @@ AI Data Anonymizer è progettato per funzionare in locale sul computer dell'uten
 
 La versione desktop non chiama API esterne di intelligenza artificiale, OCR, analytics o trattamento documentale. La web app self-hosted elabora il testo sul server in cui viene installata.
 
+La web app applica limiti predefiniti di **100.000 caratteri** per il testo estratto e **10 MB** per file caricato. I file caricati vengono elaborati in una cartella temporanea rimossa al termine della richiesta.
+
 ## Cosa Significa Anonimizzazione
 
 AI Data Anonymizer riduce il rischio prima di condividere documenti con chatbot, cloud, collaboratori o sistemi esterni. Non è un prodotto di conformità legale e non garantisce anonimizzazione perfetta.
@@ -30,9 +32,8 @@ Per deploy non dimostrativi:
 - richiedi autenticazione;
 - disabilita i log dei body HTTP in proxy, server applicativi e strumenti di osservabilità;
 - non aggiungere analytics, session replay o script terzi nelle pagine che trattano documenti;
-- usa limiti di upload conservativi;
-- tratta i documenti in memoria quando possibile;
-- elimina immediatamente file temporanei se aggiungi endpoint di upload;
+- mantieni limiti di upload conservativi;
+- elimina immediatamente eventuali file temporanei se personalizzi gli endpoint di upload;
 - pubblica termini privacy chiari per gli utenti.
 
 ## Segnalare Problemi

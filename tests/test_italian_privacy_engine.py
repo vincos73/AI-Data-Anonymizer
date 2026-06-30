@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 from io import BytesIO
 import tempfile
@@ -7,8 +8,10 @@ import subprocess
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 from docx import Document
+from fastapi import HTTPException, UploadFile
 from pypdf import PdfReader, PdfWriter
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
@@ -16,6 +19,12 @@ from reportlab.pdfgen import canvas
 from privacy_guardian.document_service import anonymize_loaded_document, load_document
 from privacy_guardian.privacy_engine import PrivacyEngine
 from privacy_guardian.reporting import report_payload, report_text
+from privacy_guardian.web_app import (
+    MAX_TEXT_LENGTH,
+    TextPayload,
+    anonymize as anonymize_text_endpoint,
+    anonymize_document,
+)
 
 
 class ItalianPrivacyEngineTest(unittest.TestCase):
@@ -287,6 +296,41 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertEqual(result.filename, "legacy_anonimizzato.docx")
         self.assertIn("M. R.", result.text)
         self.assertTrue(result.data)
+
+
+class WebAppTest(unittest.TestCase):
+    def test_rejects_oversized_text_with_clear_message(self) -> None:
+        payload = TextPayload(text="a" * (MAX_TEXT_LENGTH + 1), mode="standard")
+
+        with self.assertRaises(HTTPException) as context:
+            asyncio.run(anonymize_text_endpoint(payload))
+
+        self.assertEqual(context.exception.status_code, 413)
+        self.assertIn("Testo troppo lungo", context.exception.detail)
+
+    def test_anonymizes_uploaded_document_and_returns_download_payload(self) -> None:
+        upload = UploadFile(
+            BytesIO(b"Il sottoscritto Mario Rossi email mario@example.com"),
+            filename="contratto.txt",
+        )
+        payload = asyncio.run(anonymize_document(mode="maximum", file=upload))
+
+        decoded = base64.b64decode(payload["content_base64"]).decode("utf-8")
+        self.assertEqual(payload["filename"], "contratto_anonimizzato.txt")
+        self.assertIn("<PERSON>", decoded)
+        self.assertIn("<EMAIL_ADDRESS>", decoded)
+        self.assertNotIn("Mario Rossi", decoded)
+        self.assertIn("report", payload)
+
+    def test_rejects_oversized_uploaded_document(self) -> None:
+        upload = UploadFile(BytesIO(b"123456789"), filename="troppo.txt")
+
+        with patch("privacy_guardian.web_app.MAX_FILE_BYTES", 8):
+            with self.assertRaises(HTTPException) as context:
+                asyncio.run(anonymize_document(mode="standard", file=upload))
+
+        self.assertEqual(context.exception.status_code, 413)
+        self.assertIn("File troppo grande", context.exception.detail)
 
 
 _ONE_PIXEL_PNG_BASE64 = (

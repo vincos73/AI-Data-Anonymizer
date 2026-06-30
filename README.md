@@ -138,6 +138,8 @@ Poi apri:
 http://127.0.0.1:8080
 ```
 
+La web app permette di incollare testo oppure caricare documenti supportati e scaricare il file anonimizzato. Per impostazione predefinita accetta fino a **100.000 caratteri** per il testo estratto e **10 MB** per file.
+
 Con Docker:
 
 ```bash
