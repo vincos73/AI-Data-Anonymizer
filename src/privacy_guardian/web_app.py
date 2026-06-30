@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from privacy_guardian import __version__
-from privacy_guardian.models import Finding
+from privacy_guardian.models import ANONYMIZATION_MODES, AnonymizationMode, Finding
 from privacy_guardian.privacy_engine import PrivacyEngine
 
 MAX_TEXT_LENGTH = 100_000
@@ -32,6 +32,7 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 class TextPayload(BaseModel):
     text: str = Field(max_length=MAX_TEXT_LENGTH)
+    mode: AnonymizationMode = "standard"
 
 
 def serialize_finding(finding: Finding, text: str) -> dict[str, object]:
@@ -68,14 +69,19 @@ async def index():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "engine_status": engine.status, "max_text_length": MAX_TEXT_LENGTH}
+    return {
+        "ok": True,
+        "engine_status": engine.status,
+        "max_text_length": MAX_TEXT_LENGTH,
+        "modes": ANONYMIZATION_MODES,
+    }
 
 
 @app.post("/api/analyze")
 async def analyze(payload: TextPayload):
     if not payload.text.strip():
         return {"findings": [], "engine_status": engine.status}
-    findings = engine.analyze(payload.text)
+    findings = engine.analyze(payload.text, payload.mode)
     return {
         "findings": [serialize_finding(finding, payload.text) for finding in findings],
         "engine_status": engine.status,
@@ -86,9 +92,9 @@ async def analyze(payload: TextPayload):
 async def anonymize(payload: TextPayload):
     if not payload.text.strip():
         return {"text": "", "findings": [], "engine_status": engine.status}
-    findings = engine.analyze(payload.text)
+    findings = engine.analyze(payload.text, payload.mode)
     return {
-        "text": engine.anonymize(payload.text, findings),
+        "text": engine.anonymize(payload.text, findings, payload.mode),
         "findings": [serialize_finding(finding, payload.text) for finding in findings],
         "engine_status": engine.status,
     }

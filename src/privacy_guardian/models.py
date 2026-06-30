@@ -1,6 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal, cast
+
+
+AnonymizationMode = Literal["standard", "maximum"]
+ANONYMIZATION_MODES: tuple[AnonymizationMode, ...] = ("standard", "maximum")
+
+
+def validate_anonymization_mode(mode: str) -> AnonymizationMode:
+    if mode in ANONYMIZATION_MODES:
+        return cast(AnonymizationMode, mode)
+    raise ValueError(f"Modalità anonimizzazione non supportata: {mode}")
 
 
 @dataclass(frozen=True)

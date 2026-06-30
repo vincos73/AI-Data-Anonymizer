@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from privacy_guardian.models import Finding
+from privacy_guardian.models import AnonymizationMode, Finding
 
 LETTER = r"A-Za-zÀ-ÖØ-öø-ÿ"
 CAPITAL_WORD = rf"[A-ZÀ-ÖØ-Þ][{LETTER}'’.-]+"
@@ -19,9 +19,16 @@ class ItalianPrivacyRecognizer:
         re.IGNORECASE,
     )
     PARTITA_IVA = re.compile(r"\b(?:IT[\s-]?)?([0-9]{11})\b", re.IGNORECASE)
-    IBAN = re.compile(r"\bIT[0-9]{2}[A-Z][0-9]{10}[A-Z0-9]{12}\b", re.IGNORECASE)
+    IBAN = re.compile(r"\bIT[\s-]*[0-9]{2}[\s-]*[A-Z](?:[\s-]*[A-Z0-9]){22}\b", re.IGNORECASE)
     PHONE_NUMBER = re.compile(
-        r"(?<!\w)(?:\+39[\s.-]?)?(?:3[0-9]{2}|0[0-9]{1,4})[\s.-]?[0-9]{3,4}[\s.-]?[0-9]{3,4}(?!\w)"
+        r"(?<!\w)(?:\+39[\s./-]?)?(?:3[0-9]{2}|0[0-9]{1,4})[\s./-]?[0-9]{3,4}[\s./-]?[0-9]{3,4}(?!\w)"
+    )
+    DATE = re.compile(
+        r"(?<!\d)(?:[0-3]?\d)[/\-.](?:0?\d|1[0-2])[/\-.](?:\d{2}|\d{4})(?!\d)"
+        r"|(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)"
+        r"|\b(?:[0-3]?\d)\s+"
+        r"(?i:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)"
+        r"\s+(?:\d{2}|\d{4})\b"
     )
     ADDRESS = re.compile(
         rf"\b(?i:via|v\.|viale|v\.le|piazza|p\.zza|piazzale|corso|c\.so|vicolo|largo|strada|contrada|"
@@ -46,8 +53,14 @@ class ItalianPrivacyRecognizer:
         rf"\b(?:(?:il|la)\s+)?"
         r"(?i:sig\.?ra?|signora|signor|dott\.?ssa|dott\.?|avv\.?|ing\.?|geom\.?|rag\.?|"
         r"prof\.?ssa|prof\.?|sottoscritto|sottoscritta|cliente|referente|rappresentante|"
-        r"titolare|nato|nata)\s+"
+        r"titolare|nato|nata|intestatario|intestataria|intestato\s+a|intestata\s+a|"
+        r"beneficiario|beneficiaria)\s+"
         rf"(?P<name>{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{1,3}})",
+    )
+    PERSON_TRAILING_CONTEXT = re.compile(
+        rf"\b(?P<name>{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{1,3}})\b"
+        r"(?=\s*,?\s+(?i:nato|nata|residente|domiciliato|domiciliata|codice\s+fiscale|"
+        r"c\.?\s*f\.?|email|e-mail|pec|tel\.?|telefono|cell\.?|cellulare)\b)"
     )
     TERRITORIAL_BODY = re.compile(
         rf"\b(?i:provincia|regione|comune|citt[aà]\s+metropolitana|municipio|unione\s+dei\s+comuni|"
@@ -71,7 +84,7 @@ class ItalianPrivacyRecognizer:
         "Nata",
     }
 
-    def analyze(self, text: str) -> list[Finding]:
+    def analyze(self, text: str, mode: AnonymizationMode = "standard") -> list[Finding]:
         findings: list[Finding] = []
         findings.extend(self._regex_findings(text, "EMAIL_ADDRESS", self.EMAIL, 0.98))
         findings.extend(self._regex_findings(text, "PHONE_NUMBER", self.PHONE_NUMBER, 0.94))
@@ -82,16 +95,23 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._organization_findings(text))
         findings.extend(self._territorial_body_findings(text))
         findings.extend(self._person_findings(text))
+        if mode == "maximum":
+            findings.extend(self._regex_findings(text, "DATE", self.DATE, 0.82))
         return self._dedupe(findings)
 
-    def anonymize(self, text: str, findings: list[Finding] | None = None) -> str:
-        findings = findings if findings is not None else self.analyze(text)
+    def anonymize(
+        self,
+        text: str,
+        findings: list[Finding] | None = None,
+        mode: AnonymizationMode = "standard",
+    ) -> str:
+        findings = findings if findings is not None else self.analyze(text, mode)
         chunks: list[str] = []
         cursor = 0
 
         for finding in sorted(findings, key=lambda item: item.start):
             chunks.append(text[cursor : finding.start])
-            chunks.append(self._replacement(text[finding.start : finding.end], finding.entity_type))
+            chunks.append(self._replacement(text[finding.start : finding.end], finding.entity_type, mode))
             cursor = finding.end
 
         chunks.append(text[cursor:])
@@ -130,7 +150,7 @@ class ItalianPrivacyRecognizer:
         return [
             Finding("IBAN", match.start(), match.end(), 0.97)
             for match in self.IBAN.finditer(text)
-            if self._valid_iban(match.group(0).upper())
+            if self._valid_iban(self._compact_iban(match.group(0)))
         ]
 
     def _organization_findings(self, text: str) -> list[Finding]:
@@ -143,13 +163,20 @@ class ItalianPrivacyRecognizer:
 
     def _person_findings(self, text: str) -> list[Finding]:
         findings: list[Finding] = []
-        for match in self.PERSON.finditer(text):
-            name = match.group("name").strip()
-            words = name.split()
-            if len(words) < 2 or any(word.strip(" .") in self.PERSON_STOPWORDS for word in words):
-                continue
-            findings.append(Finding("PERSON", match.start("name"), match.end("name"), 0.84))
+        for pattern in (self.PERSON, self.PERSON_TRAILING_CONTEXT):
+            for match in pattern.finditer(text):
+                start = match.start("name")
+                end = self._trim_end(text, match.end("name"), trim_period=True)
+                name = text[start:end].strip()
+                if self._looks_like_person_name(name):
+                    findings.append(Finding("PERSON", start, end, 0.84))
         return findings
+
+    def _looks_like_person_name(self, name: str) -> bool:
+        words = name.split()
+        if len(words) < 2 or any(word.strip(" .") in self.PERSON_STOPWORDS for word in words):
+            return False
+        return True
 
     def _dedupe(self, findings: list[Finding]) -> list[Finding]:
         priority = {
@@ -162,6 +189,7 @@ class ItalianPrivacyRecognizer:
             "TERRITORIAL_BODY": 6,
             "PERSON": 5,
             "ADDRESS": 4,
+            "DATE": 3,
         }
         ordered = sorted(
             findings,
@@ -199,6 +227,9 @@ class ItalianPrivacyRecognizer:
         while end > 0 and text[end - 1] in chars:
             end -= 1
         return end
+
+    def _compact_iban(self, value: str) -> str:
+        return re.sub(r"[\s-]", "", value).upper()
 
     def _valid_iban(self, iban: str) -> bool:
         rearranged = iban[4:] + iban[:4]
@@ -261,7 +292,9 @@ class ItalianPrivacyRecognizer:
 
         return chr(ord("A") + total % 26) == value[-1]
 
-    def _replacement(self, value: str, entity_type: str) -> str:
+    def _replacement(self, value: str, entity_type: str, mode: AnonymizationMode) -> str:
+        if mode == "maximum":
+            return f"<{entity_type}>"
         if entity_type in {"PERSON", "ORGANIZATION", "TERRITORIAL_BODY", "ADDRESS"}:
             return self._initials(value)
         return f"<{entity_type}>"

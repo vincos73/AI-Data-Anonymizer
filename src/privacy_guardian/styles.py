@@ -121,6 +121,15 @@ QPushButton#SecondaryButton:hover {
     background: #3b4654;
 }
 
+QComboBox#ModeSelect {
+    min-height: 34px;
+    border: 1px solid #7a8797;
+    border-radius: 2px;
+    background: #303844;
+    color: #f2f6f9;
+    padding: 0 10px;
+}
+
 QFrame#CommandSeparator {
     background: #6a7788;
     border: 0;

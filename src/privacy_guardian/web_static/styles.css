@@ -14,6 +14,7 @@ body {
 }
 
 button,
+select,
 textarea {
   font: inherit;
 }
@@ -36,6 +37,18 @@ textarea {
 
 .topbar {
   margin-bottom: 18px;
+}
+
+.top-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+label {
+  color: #52606d;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 h1,
@@ -116,6 +129,15 @@ button {
   cursor: pointer;
 }
 
+select {
+  min-height: 36px;
+  border: 1px solid #c7ced6;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #26323f;
+  padding: 0 12px;
+}
+
 button.primary {
   background: #265f73;
   border-color: #265f73;
@@ -164,5 +186,9 @@ td {
   .topbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .top-controls {
+    flex-wrap: wrap;
   }
 }

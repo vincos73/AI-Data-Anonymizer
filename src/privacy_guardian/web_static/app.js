@@ -3,13 +3,14 @@ const result = document.querySelector("#result");
 const findingsBody = document.querySelector("#findings-body");
 const counter = document.querySelector("#counter");
 const statusLabel = document.querySelector("#engine-status");
+const modeSelect = document.querySelector("#mode-select");
 
 async function postJson(path, text) {
   const response = await fetch(path, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     cache: "no-store",
-    body: JSON.stringify({text}),
+    body: JSON.stringify({text, mode: modeSelect.value}),
   });
 
   if (!response.ok) {

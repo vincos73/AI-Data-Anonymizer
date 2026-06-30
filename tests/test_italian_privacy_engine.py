@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import base64
+from io import BytesIO
 import tempfile
 import subprocess
 import unittest
+import zipfile
 from pathlib import Path
 
 from docx import Document
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
 from privacy_guardian.document_service import anonymize_loaded_document, load_document
@@ -30,11 +34,49 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertNotIn(("DATE_TIME", "10/01/1980"), findings)
         self.assertEqual(self.findings_for("Mario andrà domani a Milano."), [])
 
+    def test_detects_person_when_strong_context_follows_name(self) -> None:
+        findings = self.findings_for("Mario Rossi, nato a Roma il 10/01/1980.")
+        self.assertIn(("PERSON", "Mario Rossi"), findings)
+
+        findings = self.findings_for("Maria Bianchi residente in Via Appia 12.")
+        self.assertIn(("PERSON", "Maria Bianchi"), findings)
+
+        findings = self.findings_for("Bonifico intestato a Mario Rossi.")
+        self.assertIn(("PERSON", "Mario Rossi"), findings)
+
+        self.assertEqual(self.findings_for("Mario Rossi andrà domani a Milano."), [])
+
     def test_does_not_anonymize_dates(self) -> None:
         text = "Il sottoscritto Mario Rossi nato il 10/01/1980 e residente dal 5 maggio 2020."
         anonymized = self.engine.anonymize(text)
         self.assertIn("10/01/1980", anonymized)
         self.assertIn("5 maggio 2020", anonymized)
+
+    def test_maximum_protection_redacts_dates_and_initials(self) -> None:
+        text = (
+            "Il sottoscritto Mario Rossi nato il 10/01/1980 lavora per "
+            "Alfa Beta S.r.l. in Via Appia 12."
+        )
+        anonymized = self.engine.anonymize(text, mode="maximum")
+
+        self.assertIn("<PERSON>", anonymized)
+        self.assertIn("<DATE>", anonymized)
+        self.assertIn("<ORGANIZATION>", anonymized)
+        self.assertIn("<ADDRESS>", anonymized)
+        self.assertNotIn("M. R.", anonymized)
+        self.assertNotIn("10/01/1980", anonymized)
+
+    def test_dates_are_findings_only_in_maximum_protection(self) -> None:
+        text = "Il sottoscritto Mario Rossi nato il 5 maggio 2020."
+
+        standard_findings = self.findings_for(text)
+        maximum_findings = [
+            (finding.entity_type, text[finding.start : finding.end])
+            for finding in self.engine.analyze(text, mode="maximum")
+        ]
+
+        self.assertNotIn(("DATE", "5 maggio 2020"), standard_findings)
+        self.assertIn(("DATE", "5 maggio 2020"), maximum_findings)
 
     def test_detects_italian_organizations(self) -> None:
         findings = self.findings_for("Alfa Beta S.r.l. invierà la fattura.")
@@ -75,6 +117,19 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn("<CODICE_FISCALE>", anonymized)
         self.assertIn("<EMAIL_ADDRESS>", anonymized)
         self.assertIn("<PHONE_NUMBER>", anonymized)
+
+    def test_detects_common_italian_number_formats(self) -> None:
+        text = "IBAN IT60 X054 2811 1010 0000 0123 456 tel 06/12345678 cell +39 333/1234567"
+        findings = self.findings_for(text)
+        anonymized = self.engine.anonymize(text)
+
+        self.assertIn(("IBAN", "IT60 X054 2811 1010 0000 0123 456"), findings)
+        self.assertIn(("PHONE_NUMBER", "06/12345678"), findings)
+        self.assertIn(("PHONE_NUMBER", "+39 333/1234567"), findings)
+        self.assertIn("<IBAN>", anonymized)
+        self.assertEqual(anonymized.count("<PHONE_NUMBER>"), 2)
+        self.assertNotIn("IT60 X054", anonymized)
+        self.assertNotIn("0123 456", anonymized)
 
 
 class DocumentAnonymizationTest(unittest.TestCase):
@@ -131,6 +186,70 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertIn("V. A.", output_paragraph.text)
         self.assertTrue(any(run.text == "M. R." and run.bold for run in output_paragraph.runs))
 
+    def test_docx_maximum_protection_uses_full_placeholders(self) -> None:
+        docx_path = self.base / "maximum.docx"
+        doc = Document()
+        doc.add_paragraph("Il sottoscritto Mario Rossi nato il 10/01/1980.")
+        doc.save(docx_path)
+
+        result = anonymize_loaded_document(load_document(docx_path), self.engine, mode="maximum")
+        out_docx = self.base / result.filename
+        out_docx.write_bytes(result.data)
+
+        output_text = Document(out_docx).paragraphs[0].text
+        self.assertIn("<PERSON>", output_text)
+        self.assertIn("<DATE>", output_text)
+        self.assertNotIn("Mario Rossi", output_text)
+        self.assertNotIn("10/01/1980", output_text)
+
+    def test_docx_anonymization_sanitizes_hidden_ooxml_and_metadata(self) -> None:
+        docx_path = self.base / "hidden.docx"
+        doc = Document()
+        doc.add_paragraph("Relazione senza dati personali visibili.")
+        doc.core_properties.author = "Mario Rossi"
+        doc.core_properties.title = "Contratto Mario Rossi"
+        doc.core_properties.comments = "Email mario@example.com"
+        doc.save(docx_path)
+        _add_hidden_docx_content(docx_path)
+
+        result = anonymize_loaded_document(load_document(docx_path), self.engine)
+        out_docx = self.base / result.filename
+        out_docx.write_bytes(result.data)
+
+        xml_text = _docx_xml_text(out_docx)
+        output_doc = Document(out_docx)
+        self.assertNotIn("Mario Rossi", xml_text)
+        self.assertNotIn("Maria Bianchi", xml_text)
+        self.assertNotIn("mario@example.com", xml_text)
+        self.assertNotIn("06/12345678", xml_text)
+        self.assertIn("M. R.", xml_text)
+        self.assertIn("M. B.", xml_text)
+        self.assertIn("&lt;EMAIL_ADDRESS&gt;", xml_text)
+        self.assertIn("&lt;PHONE_NUMBER&gt;", xml_text)
+        self.assertNotIn("Mario Rossi", output_doc.core_properties.author or "")
+        self.assertNotIn("Mario Rossi", output_doc.core_properties.title or "")
+        self.assertNotIn("mario@example.com", output_doc.core_properties.comments or "")
+
+    def test_rejects_image_only_pdf_before_anonymization(self) -> None:
+        pdf_path = self.base / "scanned.pdf"
+        image = ImageReader(BytesIO(base64.b64decode(_ONE_PIXEL_PNG_BASE64)))
+        pdf = canvas.Canvas(str(pdf_path))
+        pdf.drawImage(image, 72, 720, width=120, height=40)
+        pdf.save()
+
+        with self.assertRaisesRegex(ValueError, "pagine: 1"):
+            load_document(pdf_path)
+
+    def test_rejects_pdf_without_extractable_text(self) -> None:
+        pdf_path = self.base / "blank.pdf"
+        writer = PdfWriter()
+        writer.add_blank_page(width=612, height=792)
+        with pdf_path.open("wb") as output:
+            writer.write(output)
+
+        with self.assertRaisesRegex(ValueError, "non contiene testo estraibile"):
+            load_document(pdf_path)
+
     @unittest.skipUnless(Path("/usr/bin/textutil").exists(), "textutil is required for .doc support")
     def test_accepts_legacy_doc_and_outputs_docx(self) -> None:
         source_txt = self.base / "legacy-source.txt"
@@ -147,6 +266,67 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertEqual(result.filename, "legacy_anonimizzato.docx")
         self.assertIn("M. R.", result.text)
         self.assertTrue(result.data)
+
+
+_ONE_PIXEL_PNG_BASE64 = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+)
+
+
+def _add_hidden_docx_content(path: Path) -> None:
+    with zipfile.ZipFile(path, "r") as source:
+        files = {name: source.read(name) for name in source.namelist()}
+
+    content_types = files["[Content_Types].xml"].decode("utf-8")
+    if "/word/comments.xml" not in content_types:
+        content_types = content_types.replace(
+            "</Types>",
+            '<Override PartName="/word/comments.xml" '
+            'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/></Types>',
+        )
+    files["[Content_Types].xml"] = content_types.encode("utf-8")
+
+    rels = files["word/_rels/document.xml.rels"].decode("utf-8")
+    if "relationships/comments" not in rels:
+        rels = rels.replace(
+            "</Relationships>",
+            '<Relationship Id="rIdHiddenComments" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" '
+            'Target="comments.xml"/></Relationships>',
+        )
+    files["word/_rels/document.xml.rels"] = rels.encode("utf-8")
+
+    document_xml = files["word/document.xml"].decode("utf-8")
+    hidden_textbox = (
+        '<w:p><w:r><w:pict><v:shape xmlns:v="urn:schemas-microsoft-com:vml">'
+        "<v:textbox><w:txbxContent><w:p><w:r>"
+        "<w:t>Textbox signora Maria Bianchi tel 06/12345678</w:t>"
+        "</w:r></w:p></w:txbxContent></v:textbox></v:shape></w:pict></w:r></w:p>"
+    )
+    document_xml = document_xml.replace("</w:body>", f"{hidden_textbox}</w:body>")
+    files["word/document.xml"] = document_xml.encode("utf-8")
+
+    files["word/comments.xml"] = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        '<w:comment w:id="0" w:author="Mario Rossi" w:initials="MR">'
+        "<w:p><w:r><w:t>Commento di Mario</w:t></w:r>"
+        "<w:r><w:t> Rossi email mario@example.com</w:t></w:r></w:p>"
+        "</w:comment></w:comments>"
+    ).encode("utf-8")
+
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target:
+        for name, data in files.items():
+            target.writestr(name, data)
+
+
+def _docx_xml_text(path: Path) -> str:
+    with zipfile.ZipFile(path, "r") as archive:
+        return "\n".join(
+            archive.read(name).decode("utf-8", errors="replace")
+            for name in archive.namelist()
+            if name.endswith(".xml")
+        )
 
 
 if __name__ == "__main__":

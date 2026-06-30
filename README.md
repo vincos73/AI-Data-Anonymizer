@@ -8,22 +8,25 @@ It runs locally on your computer, or on infrastructure you control. The project 
 
 - Detects and anonymizes common Italian personal and business data.
 - Works with pasted text and uploaded documents.
-- Preserves initials for people, organizations, addresses, and territorial bodies.
-- Does not anonymize dates.
+- Offers a standard mode and a maximum-protection mode.
+- In standard mode, preserves initials for people, organizations, addresses, and territorial bodies.
+- In standard mode, does not anonymize dates.
+- In maximum-protection mode, replaces detected personal data with full placeholders and also redacts common date formats.
 - Keeps `.docx` formatting as much as possible while replacing sensitive text.
 - Provides a desktop app and a self-hosted web app.
 
 Detected data includes:
 
 - email addresses
-- Italian phone numbers
-- IBANs
+- Italian phone numbers, including common formats with spaces, dots, dashes, or slashes
+- IBANs, including spaced Italian IBANs
 - codice fiscale
 - partita IVA
 - Italian addresses with strong address signals
-- people names only with strong context
+- people names only with strong context, including birth/residence and payment-recipient contexts
 - company names with legal forms such as `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperatives and similar
 - territorial bodies such as `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`
+- common date formats in maximum-protection mode
 
 ## Why It Exists
 
@@ -39,7 +42,7 @@ It is not a legal compliance product and it does not guarantee perfect anonymiza
 | --- | --- |
 | `.txt`, `.md`, `.csv` | Reads and saves anonymized text files |
 | `.docx` | Reads and saves anonymized Word documents, preserving formatting where possible |
-| `.pdf` | Extracts text and creates a new anonymized PDF; original PDF layout may not be preserved |
+| `.pdf` | Extracts text and creates a new anonymized PDF; original PDF layout may not be preserved. Scanned or image-only PDFs must be converted with OCR first. |
 | `.doc` | Supported on macOS only; converted to `.docx` before anonymization |
 
 On Windows, convert legacy `.doc` files to `.docx` before using the desktop app.
@@ -49,6 +52,10 @@ On Windows, convert legacy `.doc` files to `.docx` before using the desktop app.
 The desktop app processes documents locally. It does not send text or files to external APIs.
 
 The web app is designed for self-hosting. It disables access logs in the app, avoids analytics, and sends no content to third-party services. However, text submitted to the web app is still sent to the server that hosts it. For sensitive documents, run it only on infrastructure you control and use HTTPS.
+
+The app rejects scanned or image-only PDFs when no selectable text can be extracted, so users do not mistake an unread PDF for a safely anonymized one. Run OCR first, then anonymize the OCR-enabled PDF.
+
+For `.docx` files, the app anonymizes visible document text and also sanitizes common hidden Office content such as metadata, comments, text boxes, footnotes, endnotes, and selected revision text.
 
 ## Desktop App
 
@@ -162,7 +169,7 @@ The GitHub Actions workflow `build-windows` can also create the Windows zip manu
 python -m unittest discover -s tests -v
 ```
 
-The test suite covers Italian false positives, person and organization recognition, territorial bodies, structured identifiers, document anonymization, and `.docx` formatting preservation.
+The test suite covers Italian false positives, person and organization recognition, territorial bodies, structured identifiers, standard and maximum-protection anonymization, document anonymization, `.docx` formatting preservation, hidden `.docx` metadata/content sanitization, and unreadable/scanned PDF rejection.
 
 ## Project Status
 

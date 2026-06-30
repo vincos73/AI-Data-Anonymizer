@@ -7,6 +7,7 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QAction, QTextCharFormat, QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -30,7 +31,7 @@ from privacy_guardian.document_service import (
     anonymize_loaded_document,
     load_document,
 )
-from privacy_guardian.models import Finding
+from privacy_guardian.models import AnonymizationMode, Finding, validate_anonymization_mode
 from privacy_guardian.privacy_engine import PrivacyEngine
 from privacy_guardian.styles import APP_STYLE
 
@@ -64,6 +65,11 @@ class MainWindow(QMainWindow):
         self.version_label = QLabel(f"v{__version__}")
         self.version_label.setObjectName("VersionPill")
 
+        self.mode_select = QComboBox()
+        self.mode_select.addItem("Standard", "standard")
+        self.mode_select.addItem("Massima protezione", "maximum")
+        self.mode_select.setObjectName("ModeSelect")
+
         load_button = QPushButton("01  Carica documento")
         load_button.clicked.connect(self.open_file)
         load_button.setObjectName("WorkflowButton")
@@ -92,6 +98,7 @@ class MainWindow(QMainWindow):
         button_row.setSpacing(8)
         for button in (load_button, analyze_button, anonymize_button):
             button_row.addWidget(button)
+        button_row.addWidget(self.mode_select)
         button_row.addStretch(1)
         separator = QFrame()
         separator.setObjectName("CommandSeparator")
@@ -187,14 +194,15 @@ class MainWindow(QMainWindow):
 
     def analyze_text(self) -> None:
         text = self.input_text.toPlainText()
-        self.findings = self.engine.analyze(text)
+        self.findings = self.engine.analyze(text, self._selected_mode())
         self._fill_table()
         self._highlight_findings()
         self.statusBar().showMessage(f"Elementi rilevati: {len(self.findings)}.", 4000)
 
     def anonymize_text(self) -> None:
+        mode = self._selected_mode()
         if self.loaded_document and self.input_text.toPlainText() == self.loaded_document.text:
-            self.anonymized_document = anonymize_loaded_document(self.loaded_document, self.engine)
+            self.anonymized_document = anonymize_loaded_document(self.loaded_document, self.engine, mode)
             self.findings = self.anonymized_document.findings
             self.output_text.setPlainText(self.anonymized_document.text)
             self._fill_table()
@@ -209,7 +217,7 @@ class MainWindow(QMainWindow):
         self.anonymized_document = None
         self.analyze_text()
         text = self.input_text.toPlainText()
-        self.output_text.setPlainText(self.engine.anonymize(text, self.findings))
+        self.output_text.setPlainText(self.engine.anonymize(text, self.findings, mode))
 
     def copy_output(self) -> None:
         QApplication.clipboard().setText(self.output_text.toPlainText())
@@ -276,6 +284,9 @@ class MainWindow(QMainWindow):
         if LEGACY_DOC_SUPPORTED:
             extensions = "*.txt *.md *.csv *.doc *.docx *.pdf"
         return f"Documenti supportati ({extensions});;Tutti i file (*.*)"
+
+    def _selected_mode(self) -> AnonymizationMode:
+        return validate_anonymization_mode(str(self.mode_select.currentData()))
 
 
 def main() -> int:
