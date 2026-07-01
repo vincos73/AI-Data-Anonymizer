@@ -23,6 +23,19 @@ class ItalianPrivacyRecognizer:
     PHONE_NUMBER = re.compile(
         r"(?<!\w)(?:\+39[\s./-]?)?(?:3[0-9]{2}|0[0-9]{1,4})[\s./-]?[0-9]{3,4}[\s./-]?[0-9]{3,4}(?!\w)"
     )
+    IDENTITY_DOCUMENT = re.compile(
+        r"\b(?i:carta\s+d['’]?\s*identit[aà]|carta\s+identit[aà]|documento\s+d['’]?\s*identit[aà]|"
+        r"documento\s+identit[aà]|passaporto|patente|c\.?\s*i\.?)"
+        r"\s*(?i:n\.?|num\.?|nr\.?|numero)?\s*[:#-]?\s*"
+        r"(?P<document>[A-Z]{1,3}[\s.-]?\d{4,8}[\s.-]?[A-Z]{0,3}|\d{6,10})\b",
+        re.IGNORECASE,
+    )
+    VEHICLE_PLATE = re.compile(
+        r"\b(?i:targa|targato|targata|veicolo\s+targato|auto\s+targata|autovettura\s+targata)"
+        r"\s*(?i:n\.?|num\.?|nr\.?|numero)?\s*[:#-]?\s*"
+        r"(?P<plate>[A-Z]{2}\s*\d{3}\s*[A-Z]{2}|[A-Z]{1,2}\s*\d{5,6}|[A-Z]{2}\s*\d{5})\b",
+        re.IGNORECASE,
+    )
     DATE = re.compile(
         r"(?<!\d)(?:[0-3]?\d)[/\-.](?:0?\d|1[0-2])[/\-.](?:\d{2}|\d{4})(?!\d)"
         r"|(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)"
@@ -91,6 +104,8 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._codice_fiscale_findings(text))
         findings.extend(self._partita_iva_findings(text))
         findings.extend(self._iban_findings(text))
+        findings.extend(self._identity_document_findings(text))
+        findings.extend(self._vehicle_plate_findings(text))
         findings.extend(self._regex_findings(text, "ADDRESS", self.ADDRESS, 0.86))
         findings.extend(self._organization_findings(text))
         findings.extend(self._territorial_body_findings(text))
@@ -153,6 +168,20 @@ class ItalianPrivacyRecognizer:
             if self._valid_iban(self._compact_iban(match.group(0)))
         ]
 
+    def _identity_document_findings(self, text: str) -> list[Finding]:
+        return [
+            Finding("IDENTITY_DOCUMENT", match.start("document"), match.end("document"), 0.92)
+            for match in self.IDENTITY_DOCUMENT.finditer(text)
+            if self._valid_contextual_code(match.group("document"))
+        ]
+
+    def _vehicle_plate_findings(self, text: str) -> list[Finding]:
+        return [
+            Finding("VEHICLE_PLATE", match.start("plate"), match.end("plate"), 0.91)
+            for match in self.VEHICLE_PLATE.finditer(text)
+            if self._valid_contextual_code(match.group("plate"))
+        ]
+
     def _organization_findings(self, text: str) -> list[Finding]:
         findings = self._regex_findings(text, "ORGANIZATION", self.COMPANY_SUFFIX, 0.9, trim_period=False)
         findings.extend(self._regex_findings(text, "ORGANIZATION", self.COMPANY_PREFIX, 0.88, trim_period=False))
@@ -185,6 +214,8 @@ class ItalianPrivacyRecognizer:
             "IBAN": 7,
             "EMAIL_ADDRESS": 7,
             "PHONE_NUMBER": 7,
+            "IDENTITY_DOCUMENT": 7,
+            "VEHICLE_PLATE": 7,
             "ORGANIZATION": 6,
             "TERRITORIAL_BODY": 6,
             "PERSON": 5,
@@ -291,6 +322,10 @@ class ItalianPrivacyRecognizer:
             return False
 
         return chr(ord("A") + total % 26) == value[-1]
+
+    def _valid_contextual_code(self, value: str) -> bool:
+        compact = re.sub(r"[\s.-]", "", value).upper()
+        return 5 <= len(compact) <= 12 and any(char.isdigit() for char in compact)
 
     def _replacement(self, value: str, entity_type: str, mode: AnonymizationMode) -> str:
         if mode == "maximum":

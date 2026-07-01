@@ -24,6 +24,8 @@ Detected data includes:
 - IBANs, including spaced Italian IBANs
 - codice fiscale
 - partita IVA
+- identity documents, passports, and driving licences when explicit context is present
+- vehicle plates when explicit context is present
 - Italian addresses with strong address signals
 - people names only with strong context, including birth/residence and payment-recipient contexts
 - company names with legal forms such as `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperatives and similar

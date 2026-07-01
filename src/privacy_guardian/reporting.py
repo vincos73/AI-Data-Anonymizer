@@ -11,11 +11,13 @@ ENTITY_LABELS = {
     "DATE": ("data", "date"),
     "EMAIL_ADDRESS": ("email", "email"),
     "IBAN": ("IBAN", "IBAN"),
+    "IDENTITY_DOCUMENT": ("documento d'identità", "documenti d'identità"),
     "ORGANIZATION": ("organizzazione", "organizzazioni"),
     "PARTITA_IVA": ("partita IVA", "partite IVA"),
     "PERSON": ("persona", "persone"),
     "PHONE_NUMBER": ("telefono", "telefoni"),
     "TERRITORIAL_BODY": ("ente territoriale", "enti territoriali"),
+    "VEHICLE_PLATE": ("targa veicolo", "targhe veicolo"),
 }
 MODE_LABELS = {
     "standard": "Standard",

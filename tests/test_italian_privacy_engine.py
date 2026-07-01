@@ -141,6 +141,29 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertNotIn("IT60 X054", anonymized)
         self.assertNotIn("0123 456", anonymized)
 
+    def test_detects_identity_documents_and_vehicle_plates_with_context(self) -> None:
+        text = (
+            "Carta d'identità n. CA12345AA, passaporto n. YA1234567, "
+            "patente n. U1234567A e targa AB123CD."
+        )
+        findings = self.findings_for(text)
+        anonymized = self.engine.anonymize(text)
+
+        self.assertIn(("IDENTITY_DOCUMENT", "CA12345AA"), findings)
+        self.assertIn(("IDENTITY_DOCUMENT", "YA1234567"), findings)
+        self.assertIn(("IDENTITY_DOCUMENT", "U1234567A"), findings)
+        self.assertIn(("VEHICLE_PLATE", "AB123CD"), findings)
+        self.assertEqual(anonymized.count("<IDENTITY_DOCUMENT>"), 3)
+        self.assertIn("<VEHICLE_PLATE>", anonymized)
+        self.assertNotIn("CA12345AA", anonymized)
+        self.assertNotIn("AB123CD", anonymized)
+
+    def test_document_and_plate_codes_require_clear_context(self) -> None:
+        text = "La pratica CA12345AA e la sigla AB123CD non sono sufficienti da sole."
+
+        self.assertNotIn(("IDENTITY_DOCUMENT", "CA12345AA"), self.findings_for(text))
+        self.assertNotIn(("VEHICLE_PLATE", "AB123CD"), self.findings_for(text))
+
     def test_report_summarizes_mode_counts_and_review_warning(self) -> None:
         text = "Il sottoscritto Mario Rossi email mario@example.com nato il 10/01/1980."
         findings = self.engine.analyze(text, mode="maximum")
@@ -169,6 +192,8 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
     def test_entity_labels_are_human_readable(self) -> None:
         self.assertEqual(entity_label("PERSON"), "persona")
         self.assertEqual(entity_label("PHONE_NUMBER", 2), "telefoni")
+        self.assertEqual(entity_label("IDENTITY_DOCUMENT"), "documento d'identità")
+        self.assertEqual(entity_label("VEHICLE_PLATE", 2), "targhe veicolo")
 
 
 class DocumentAnonymizationTest(unittest.TestCase):
