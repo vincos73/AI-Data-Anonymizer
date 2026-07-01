@@ -1,0 +1,115 @@
+name: release-v0.3.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/release-v0.3.0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: v0.3.0
+  RELEASE_TITLE: OMISSIS v0.3.0
+
+jobs:
+  prepare-release:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create tag if missing
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --tags origin "refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Tag ${RELEASE_TAG} already exists"
+          else
+            git tag -a "${RELEASE_TAG}" -m "${RELEASE_TITLE}"
+            git push origin "refs/tags/${RELEASE_TAG}"
+          fi
+
+      - name: Write release notes
+        run: |
+          cat > release-notes.md <<'TXT'
+          ## OMISSIS v0.3.0
+
+          Questa release consolida il cambio nome da AI Data Anonymizer a OMISSIS e introduce una versione desktop piu curata, pensata per anonimizzare documenti localmente prima di usarli con ChatGPT o altri strumenti di IA.
+
+          ### Novita principali
+          - Nuova identita OMISSIS con logo, logotipo e icona applicazione aggiornati.
+          - Interfaccia desktop ridisegnata con geometrie nette e stile piu pulito.
+          - Sezione About con versione, build, autore Vincenzo Cosenza aka Vincos, sito vincos.it e link alla repo.
+          - Riconoscimento esteso di dati italiani: documenti, passaporti, patente, codice SDI, targhe, PEC, protocolli e altri identificativi.
+          - Modalita Massima protezione per sostituzioni piu conservative.
+          - Migliore gestione dei DOCX con conservazione della formattazione.
+          - Supporto PDF con redazione rasterizzata per evitare testo sensibile recuperabile.
+
+          ### Download
+          - macOS Apple Silicon: scarica `OMISSIS-macOS-Apple-Silicon.dmg`.
+          - Windows: scarica `OMISSIS-Windows.zip`.
+
+          ### Nota privacy
+          OMISSIS lavora in locale: i documenti non vengono inviati a servizi esterni dall'applicazione.
+          TXT
+
+      - name: Create release if missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Release ${RELEASE_TAG} already exists"
+          else
+            gh release create "${RELEASE_TAG}" \
+              --title "${RELEASE_TITLE}" \
+              --notes-file release-notes.md \
+              --latest
+          fi
+
+  build-macos:
+    name: Build macOS package
+    needs: prepare-release
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build macOS app
+        run: ./scripts/build_macos_app.sh
+
+      - name: Upload macOS package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${RELEASE_TAG}" \
+            "dist/OMISSIS-macOS-Apple-Silicon.dmg" \
+            --clobber
+
+  build-windows:
+    name: Build Windows package
+    needs: prepare-release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build Windows app
+        shell: pwsh
+        run: .\scripts\build_windows_app.ps1
+
+      - name: Upload Windows package
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload $env:RELEASE_TAG `
+            "dist/OMISSIS-Windows.zip" `
+            --clobber
