@@ -22,6 +22,7 @@ from privacy_guardian.reporting import entity_label, entity_placeholder, report_
 from privacy_guardian.web_app import (
     MAX_TEXT_LENGTH,
     TextPayload,
+    analyze_document,
     anonymize as anonymize_text_endpoint,
     anonymize_document,
 )
@@ -428,6 +429,18 @@ class WebAppTest(unittest.TestCase):
         self.assertIn("report", payload)
         self.assertTrue(all("label" in finding for finding in payload["findings"]))
         self.assertTrue(all("source_label" in finding for finding in payload["findings"]))
+
+    def test_analyzes_uploaded_document_without_downloading_result(self) -> None:
+        upload = UploadFile(
+            BytesIO(b"Documento d'identita n. CA12345AA e targa veicolo aziendale AB123CD"),
+            filename="controllo.txt",
+        )
+        payload = asyncio.run(analyze_document(mode="maximum", file=upload))
+
+        self.assertEqual(payload["filename"], "controllo.txt")
+        self.assertNotIn("content_base64", payload)
+        self.assertEqual(payload["report"]["counts"]["IDENTITY_DOCUMENT"], 1)
+        self.assertEqual(payload["report"]["counts"]["VEHICLE_PLATE"], 1)
 
     def test_web_findings_include_human_readable_labels(self) -> None:
         payload = asyncio.run(

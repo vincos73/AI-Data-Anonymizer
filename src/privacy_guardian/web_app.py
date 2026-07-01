@@ -172,6 +172,41 @@ async def anonymize_document(
     }
 
 
+@app.post("/api/analyze-document")
+async def analyze_document(
+    mode: AnonymizationMode = Form("maximum"),
+    file: UploadFile = File(...),
+):
+    filename = _safe_upload_filename(file.filename)
+    extension = Path(filename).suffix.lower()
+    if extension not in SUPPORTED_EXTENSIONS:
+        supported = ", ".join(sorted(SUPPORTED_EXTENSIONS))
+        raise HTTPException(status_code=400, detail=f"Formato non supportato. Usa uno di questi: {supported}")
+
+    content = await _read_upload(file)
+    if not content:
+        raise HTTPException(status_code=400, detail="Il file caricato è vuoto.")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        input_path = Path(tmpdir) / filename
+        input_path.write_bytes(content)
+        try:
+            loaded = load_document(input_path)
+            _validate_text_length(loaded.text)
+            findings = engine.analyze(loaded.text, mode)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "filename": filename,
+        "findings": [serialize_finding(finding, loaded.text) for finding in findings],
+        "report": report_payload(findings, mode),
+        "engine_status": engine.status,
+    }
+
+
 def _validate_text_length(text: str) -> None:
     if len(text) > MAX_TEXT_LENGTH:
         raise HTTPException(

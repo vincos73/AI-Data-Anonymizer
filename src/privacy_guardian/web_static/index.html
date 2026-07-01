@@ -4,67 +4,57 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="referrer" content="no-referrer" />
-    <title>AI Data Anonymizer Web</title>
+    <title>AI Data Anonymizer</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
     <main class="shell">
       <header class="topbar">
-        <div>
-          <h1>AI Data Anonymizer Web</h1>
-          <p id="engine-status">Interfaccia locale/self-hosted in avvio...</p>
+        <div class="brand-row">
+          <h1>AI DATA ANONYMIZER</h1>
+          <span class="byline">by vincos</span>
         </div>
-        <div class="top-controls">
-          <label for="mode-select">Protezione</label>
-          <select id="mode-select">
-            <option value="maximum">Massima protezione</option>
-            <option value="standard">Standard</option>
-          </select>
-          <span class="badge">Uso avanzato</span>
-          <span class="badge">Nessun salvataggio</span>
-        </div>
+        <span id="engine-status" class="version-pill">avvio...</span>
       </header>
+
+      <nav class="command-row" aria-label="Azioni principali">
+        <label class="workflow-button" for="file-input">01&nbsp;&nbsp;Carica o trascina file</label>
+        <input id="file-input" type="file" accept=".txt,.md,.csv,.doc,.docx,.pdf" aria-hidden="true" tabindex="-1" />
+        <button id="analyze-btn" type="button" class="workflow-button">02&nbsp;&nbsp;Analizza dati</button>
+        <button id="anonymize-btn" type="button" class="primary">03&nbsp;&nbsp;Anonimizza</button>
+        <select id="mode-select" aria-label="Modalità protezione">
+          <option value="maximum">Massima protezione (consigliata)</option>
+          <option value="standard">Standard (più leggibile)</option>
+        </select>
+        <span class="command-spacer"></span>
+        <span class="command-separator" aria-hidden="true"></span>
+        <button id="copy-btn" type="button" class="secondary">Copia risultato</button>
+        <button id="save-btn" type="button" class="secondary">Salva risultato</button>
+        <button id="clear-btn" type="button" class="secondary">Pulisci</button>
+      </nav>
+
+      <section class="document-notice" aria-label="Documento caricato">
+        <p id="file-status">Nessun documento caricato. Puoi incollare testo o trascinare un file nella finestra.</p>
+      </section>
+
+      <section class="report" aria-label="Report anonimizzazione">
+        <p id="report-summary">Massima protezione usa segnaposto completi e redige anche date comuni riconosciute.</p>
+        <ul id="report-checklist" class="report-checklist"></ul>
+      </section>
 
       <section class="workspace" aria-label="Editor anonimizzazione">
         <div class="pane">
           <div class="pane-header">
             <h2>Testo originale</h2>
-            <button id="clear-btn" type="button">Pulisci</button>
           </div>
-          <textarea id="source" spellcheck="false" placeholder="Incolla qui il testo da controllare"></textarea>
+          <textarea id="source" spellcheck="false" placeholder="Incolla qui il testo da controllare oppure carica un documento."></textarea>
         </div>
 
         <div class="pane">
           <div class="pane-header">
             <h2>Testo anonimizzato</h2>
-            <button id="copy-btn" type="button">Copia</button>
           </div>
-          <textarea id="result" spellcheck="false" readonly placeholder="Il risultato apparira qui"></textarea>
-        </div>
-      </section>
-
-      <section class="document-panel" aria-label="Documento">
-        <div>
-          <h2>Documento</h2>
-          <p id="file-status">Nessun file selezionato</p>
-        </div>
-        <div class="document-actions">
-          <label class="file-button" for="file-input">Scegli file</label>
-          <input id="file-input" type="file" accept=".txt,.md,.csv,.doc,.docx,.pdf" />
-          <button id="document-btn" type="button">Anonimizza documento</button>
-        </div>
-      </section>
-
-      <nav class="actions" aria-label="Azioni">
-        <button id="analyze-btn" type="button">Analizza</button>
-        <button id="anonymize-btn" type="button" class="primary">Anonimizza</button>
-      </nav>
-
-      <section class="report" aria-label="Report anonimizzazione">
-        <div>
-          <h2>Report</h2>
-          <p id="report-summary">Massima protezione usa segnaposto completi e redige anche date comuni riconosciute.</p>
-          <ul id="report-checklist" class="report-checklist"></ul>
+          <textarea id="result" spellcheck="false" readonly placeholder="Il testo anonimizzato apparirà qui."></textarea>
         </div>
       </section>
 
