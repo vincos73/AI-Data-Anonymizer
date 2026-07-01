@@ -24,6 +24,20 @@ class ItalianPrivacyRecognizer:
     PHONE_NUMBER = re.compile(
         r"(?<!\w)(?:\+39[\s./-]?)?(?:3[0-9]{2}|0[0-9]{1,4})[\s./-]?[0-9]{3,4}[\s./-]?[0-9]{3,4}(?!\w)"
     )
+    SDI_CODE = re.compile(
+        r"\b(?i:codice\s+(?:destinatario(?:\s+sdi)?|sdi|univoco(?:\s+ufficio)?)|"
+        r"cod\.?\s*(?:destinatario|sdi|univoco)|sdi)"
+        r"\s*(?i:n\.?|num\.?|nr\.?|numero|cod\.?)?\s*[:#-]?\s*"
+        r"(?P<sdi>[A-Z0-9]{6,7})\b",
+        re.IGNORECASE,
+    )
+    HEALTH_CARD = re.compile(
+        r"\b(?i:(?:(?:numero|codice|cod\.?)\s+(?:della\s+)?)?tessera\s+sanitaria|"
+        r"ts[\s-]*cns|carta\s+nazionale\s+dei\s+servizi)"
+        r"\s*(?i:n\.?|num\.?|nr\.?|numero|codice|cod\.?)?\s*[:#-]?\s*"
+        r"(?P<card>(?:\d[\s.-]?){19}\d)\b",
+        re.IGNORECASE,
+    )
     IDENTITY_DOCUMENT = re.compile(
         r"\b(?i:carta\s+d['’]?\s*identit[aà]|carta\s+identit[aà]|documento\s+d['’]?\s*identit[aà]|"
         r"documento\s+identit[aà]|passaporto|patente|c\.?\s*i\.?)"
@@ -105,6 +119,8 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._codice_fiscale_findings(text))
         findings.extend(self._partita_iva_findings(text))
         findings.extend(self._iban_findings(text))
+        findings.extend(self._sdi_code_findings(text))
+        findings.extend(self._health_card_findings(text))
         findings.extend(self._identity_document_findings(text))
         findings.extend(self._vehicle_plate_findings(text))
         findings.extend(self._regex_findings(text, "ADDRESS", self.ADDRESS, 0.86))
@@ -169,6 +185,20 @@ class ItalianPrivacyRecognizer:
             if self._valid_iban(self._compact_iban(match.group(0)))
         ]
 
+    def _sdi_code_findings(self, text: str) -> list[Finding]:
+        return [
+            Finding("SDI_CODE", match.start("sdi"), match.end("sdi"), 0.9)
+            for match in self.SDI_CODE.finditer(text)
+            if self._valid_sdi_code(match.group("sdi"))
+        ]
+
+    def _health_card_findings(self, text: str) -> list[Finding]:
+        return [
+            Finding("HEALTH_CARD", match.start("card"), match.end("card"), 0.9)
+            for match in self.HEALTH_CARD.finditer(text)
+            if self._valid_health_card(match.group("card"))
+        ]
+
     def _identity_document_findings(self, text: str) -> list[Finding]:
         return [
             Finding("IDENTITY_DOCUMENT", match.start("document"), match.end("document"), 0.92)
@@ -215,6 +245,8 @@ class ItalianPrivacyRecognizer:
             "IBAN": 7,
             "EMAIL_ADDRESS": 7,
             "PHONE_NUMBER": 7,
+            "SDI_CODE": 7,
+            "HEALTH_CARD": 7,
             "IDENTITY_DOCUMENT": 7,
             "VEHICLE_PLATE": 7,
             "ORGANIZATION": 6,
@@ -327,6 +359,14 @@ class ItalianPrivacyRecognizer:
     def _valid_contextual_code(self, value: str) -> bool:
         compact = re.sub(r"[\s.-]", "", value).upper()
         return 5 <= len(compact) <= 12 and any(char.isdigit() for char in compact)
+
+    def _valid_sdi_code(self, value: str) -> bool:
+        compact = value.upper()
+        return len(compact) in {6, 7} and compact.isalnum()
+
+    def _valid_health_card(self, value: str) -> bool:
+        compact = re.sub(r"[\s.-]", "", value)
+        return len(compact) == 20 and compact.isdigit()
 
     def _replacement(self, value: str, entity_type: str, mode: AnonymizationMode) -> str:
         if mode == "maximum":

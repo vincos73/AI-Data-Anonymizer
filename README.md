@@ -93,6 +93,8 @@ AI Data Anonymizer riconosce, con regole conservative:
 - IBAN italiani, anche scritti con spazi;
 - codice fiscale;
 - partita IVA;
+- codici SDI, codici destinatario e codici univoci ufficio quando indicati con contesto esplicito;
+- numeri di tessera sanitaria quando indicati con contesto esplicito;
 - documenti d'identità, passaporti e patenti quando indicati con contesto esplicito;
 - targhe veicolo quando indicate con contesto esplicito;
 - indirizzi italiani con segnali forti come via, viale, piazza, corso;

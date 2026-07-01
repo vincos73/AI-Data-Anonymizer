@@ -141,6 +141,28 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertNotIn("IT60 X054", anonymized)
         self.assertNotIn("0123 456", anonymized)
 
+    def test_detects_invoice_and_health_identifiers_with_context(self) -> None:
+        text = (
+            "Codice destinatario SDI ABC1234, codice univoco ufficio A1B2C3 "
+            "e tessera sanitaria n. 8038 0000 0000 0000 0000."
+        )
+        findings = self.findings_for(text)
+        anonymized = self.engine.anonymize(text)
+
+        self.assertIn(("SDI_CODE", "ABC1234"), findings)
+        self.assertIn(("SDI_CODE", "A1B2C3"), findings)
+        self.assertIn(("HEALTH_CARD", "8038 0000 0000 0000 0000"), findings)
+        self.assertEqual(anonymized.count("<CODICE_SDI>"), 2)
+        self.assertIn("<TESSERA_SANITARIA>", anonymized)
+        self.assertNotIn("ABC1234", anonymized)
+        self.assertNotIn("8038 0000", anonymized)
+
+    def test_invoice_and_health_codes_require_clear_context(self) -> None:
+        text = "La sigla ABC1234 e il numero 80380000000000000000 non bastano da soli."
+
+        self.assertNotIn(("SDI_CODE", "ABC1234"), self.findings_for(text))
+        self.assertNotIn(("HEALTH_CARD", "80380000000000000000"), self.findings_for(text))
+
     def test_detects_identity_documents_and_vehicle_plates_with_context(self) -> None:
         text = (
             "Carta d'identità n. CA12345AA, passaporto n. YA1234567, "
@@ -194,9 +216,13 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertEqual(entity_label("PHONE_NUMBER", 2), "telefoni")
         self.assertEqual(entity_label("IDENTITY_DOCUMENT"), "documento d'identità")
         self.assertEqual(entity_label("VEHICLE_PLATE", 2), "targhe veicolo")
+        self.assertEqual(entity_label("HEALTH_CARD"), "tessera sanitaria")
+        self.assertEqual(entity_label("SDI_CODE", 2), "codici SDI")
         self.assertEqual(entity_placeholder("PERSON"), "<PERSONA>")
         self.assertEqual(entity_placeholder("IDENTITY_DOCUMENT"), "<DOCUMENTO_IDENTITA>")
         self.assertEqual(entity_placeholder("PHONE_NUMBER"), "<TELEFONO>")
+        self.assertEqual(entity_placeholder("HEALTH_CARD"), "<TESSERA_SANITARIA>")
+        self.assertEqual(entity_placeholder("SDI_CODE"), "<CODICE_SDI>")
         self.assertEqual(source_label("italian_rules"), "Regole italiane locali")
 
 

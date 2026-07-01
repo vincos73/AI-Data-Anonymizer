@@ -24,6 +24,8 @@ Detected data includes:
 - IBANs, including spaced Italian IBANs
 - codice fiscale
 - partita IVA
+- SDI, recipient, and office unique codes when explicit context is present
+- Italian health card numbers when explicit context is present
 - identity documents, passports, and driving licences when explicit context is present
 - vehicle plates when explicit context is present
 - Italian addresses with strong address signals
