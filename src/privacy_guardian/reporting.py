@@ -19,6 +19,20 @@ ENTITY_LABELS = {
     "TERRITORIAL_BODY": ("ente territoriale", "enti territoriali"),
     "VEHICLE_PLATE": ("targa veicolo", "targhe veicolo"),
 }
+ENTITY_PLACEHOLDERS = {
+    "ADDRESS": "INDIRIZZO",
+    "CODICE_FISCALE": "CODICE_FISCALE",
+    "DATE": "DATA",
+    "EMAIL_ADDRESS": "EMAIL",
+    "IBAN": "IBAN",
+    "IDENTITY_DOCUMENT": "DOCUMENTO_IDENTITA",
+    "ORGANIZATION": "ORGANIZZAZIONE",
+    "PARTITA_IVA": "PARTITA_IVA",
+    "PERSON": "PERSONA",
+    "PHONE_NUMBER": "TELEFONO",
+    "TERRITORIAL_BODY": "ENTE_TERRITORIALE",
+    "VEHICLE_PLATE": "TARGA_VEICOLO",
+}
 MODE_LABELS = {
     "standard": "Standard",
     "maximum": "Massima protezione",
@@ -101,6 +115,10 @@ def entity_label(entity_type: str, count: int = 1) -> str:
         return entity_type
     singular, plural = labels
     return singular if count == 1 else plural
+
+
+def entity_placeholder(entity_type: str) -> str:
+    return f"<{ENTITY_PLACEHOLDERS.get(entity_type, entity_type)}>"
 
 
 def source_label(source: str) -> str:

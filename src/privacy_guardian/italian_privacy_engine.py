@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from privacy_guardian.models import AnonymizationMode, Finding
+from privacy_guardian.reporting import entity_placeholder
 
 LETTER = r"A-Za-zÀ-ÖØ-öø-ÿ"
 CAPITAL_WORD = rf"[A-ZÀ-ÖØ-Þ][{LETTER}'’.-]+"
@@ -329,12 +330,12 @@ class ItalianPrivacyRecognizer:
 
     def _replacement(self, value: str, entity_type: str, mode: AnonymizationMode) -> str:
         if mode == "maximum":
-            return f"<{entity_type}>"
+            return entity_placeholder(entity_type)
         if entity_type in {"PERSON", "ORGANIZATION", "TERRITORIAL_BODY", "ADDRESS"}:
             return self._initials(value)
-        return f"<{entity_type}>"
+        return entity_placeholder(entity_type)
 
     def _initials(self, value: str) -> str:
         tokens = re.findall(r"[A-Za-zÀ-ÖØ-öø-ÿ0-9]+", value)
         initials = [f"{token[0]}." for token in tokens if token and not token.isdigit()]
-        return " ".join(initials) if initials else "<ANONYMIZED>"
+        return " ".join(initials) if initials else "<ANONIMIZZATO>"

@@ -18,7 +18,7 @@ from reportlab.pdfgen import canvas
 
 from privacy_guardian.document_service import anonymize_loaded_document, load_document
 from privacy_guardian.privacy_engine import PrivacyEngine
-from privacy_guardian.reporting import entity_label, report_payload, report_text, source_label
+from privacy_guardian.reporting import entity_label, entity_placeholder, report_payload, report_text, source_label
 from privacy_guardian.web_app import (
     MAX_TEXT_LENGTH,
     TextPayload,
@@ -69,10 +69,10 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         )
         anonymized = self.engine.anonymize(text, mode="maximum")
 
-        self.assertIn("<PERSON>", anonymized)
-        self.assertIn("<DATE>", anonymized)
-        self.assertIn("<ORGANIZATION>", anonymized)
-        self.assertIn("<ADDRESS>", anonymized)
+        self.assertIn("<PERSONA>", anonymized)
+        self.assertIn("<DATA>", anonymized)
+        self.assertIn("<ORGANIZZAZIONE>", anonymized)
+        self.assertIn("<INDIRIZZO>", anonymized)
         self.assertNotIn("M. R.", anonymized)
         self.assertNotIn("10/01/1980", anonymized)
 
@@ -106,8 +106,8 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn("M. R.", anonymized)
         self.assertIn("A. B. S. r. l.", anonymized)
         self.assertIn("P. d. P.", anonymized)
-        self.assertNotIn("<PERSON>", anonymized)
-        self.assertNotIn("<ORGANIZATION>", anonymized)
+        self.assertNotIn("<PERSONA>", anonymized)
+        self.assertNotIn("<ORGANIZZAZIONE>", anonymized)
 
     def test_detects_territorial_bodies(self) -> None:
         findings = self.findings_for("Provincia di Potenza, regione Basilicata e Comune di Roma.")
@@ -125,8 +125,8 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         anonymized = self.engine.anonymize(text)
         self.assertIn("<IBAN>", anonymized)
         self.assertIn("<CODICE_FISCALE>", anonymized)
-        self.assertIn("<EMAIL_ADDRESS>", anonymized)
-        self.assertIn("<PHONE_NUMBER>", anonymized)
+        self.assertIn("<EMAIL>", anonymized)
+        self.assertIn("<TELEFONO>", anonymized)
 
     def test_detects_common_italian_number_formats(self) -> None:
         text = "IBAN IT60 X054 2811 1010 0000 0123 456 tel 06/12345678 cell +39 333/1234567"
@@ -137,7 +137,7 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn(("PHONE_NUMBER", "06/12345678"), findings)
         self.assertIn(("PHONE_NUMBER", "+39 333/1234567"), findings)
         self.assertIn("<IBAN>", anonymized)
-        self.assertEqual(anonymized.count("<PHONE_NUMBER>"), 2)
+        self.assertEqual(anonymized.count("<TELEFONO>"), 2)
         self.assertNotIn("IT60 X054", anonymized)
         self.assertNotIn("0123 456", anonymized)
 
@@ -153,8 +153,8 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn(("IDENTITY_DOCUMENT", "YA1234567"), findings)
         self.assertIn(("IDENTITY_DOCUMENT", "U1234567A"), findings)
         self.assertIn(("VEHICLE_PLATE", "AB123CD"), findings)
-        self.assertEqual(anonymized.count("<IDENTITY_DOCUMENT>"), 3)
-        self.assertIn("<VEHICLE_PLATE>", anonymized)
+        self.assertEqual(anonymized.count("<DOCUMENTO_IDENTITA>"), 3)
+        self.assertIn("<TARGA_VEICOLO>", anonymized)
         self.assertNotIn("CA12345AA", anonymized)
         self.assertNotIn("AB123CD", anonymized)
 
@@ -194,6 +194,9 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertEqual(entity_label("PHONE_NUMBER", 2), "telefoni")
         self.assertEqual(entity_label("IDENTITY_DOCUMENT"), "documento d'identità")
         self.assertEqual(entity_label("VEHICLE_PLATE", 2), "targhe veicolo")
+        self.assertEqual(entity_placeholder("PERSON"), "<PERSONA>")
+        self.assertEqual(entity_placeholder("IDENTITY_DOCUMENT"), "<DOCUMENTO_IDENTITA>")
+        self.assertEqual(entity_placeholder("PHONE_NUMBER"), "<TELEFONO>")
         self.assertEqual(source_label("italian_rules"), "Regole italiane locali")
 
 
@@ -262,8 +265,8 @@ class DocumentAnonymizationTest(unittest.TestCase):
         out_docx.write_bytes(result.data)
 
         output_text = Document(out_docx).paragraphs[0].text
-        self.assertIn("<PERSON>", output_text)
-        self.assertIn("<DATE>", output_text)
+        self.assertIn("<PERSONA>", output_text)
+        self.assertIn("<DATA>", output_text)
         self.assertNotIn("Mario Rossi", output_text)
         self.assertNotIn("10/01/1980", output_text)
 
@@ -289,8 +292,8 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertNotIn("06/12345678", xml_text)
         self.assertIn("M. R.", xml_text)
         self.assertIn("M. B.", xml_text)
-        self.assertIn("&lt;EMAIL_ADDRESS&gt;", xml_text)
-        self.assertIn("&lt;PHONE_NUMBER&gt;", xml_text)
+        self.assertIn("&lt;EMAIL&gt;", xml_text)
+        self.assertIn("&lt;TELEFONO&gt;", xml_text)
         self.assertNotIn("Mario Rossi", output_doc.core_properties.author or "")
         self.assertNotIn("Mario Rossi", output_doc.core_properties.title or "")
         self.assertNotIn("mario@example.com", output_doc.core_properties.comments or "")
@@ -352,8 +355,8 @@ class WebAppTest(unittest.TestCase):
 
         decoded = base64.b64decode(payload["content_base64"]).decode("utf-8")
         self.assertEqual(payload["filename"], "contratto_anonimizzato.txt")
-        self.assertIn("<PERSON>", decoded)
-        self.assertIn("<EMAIL_ADDRESS>", decoded)
+        self.assertIn("<PERSONA>", decoded)
+        self.assertIn("<EMAIL>", decoded)
         self.assertNotIn("Mario Rossi", decoded)
         self.assertIn("report", payload)
         self.assertTrue(all("label" in finding for finding in payload["findings"]))

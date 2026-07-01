@@ -75,9 +75,9 @@ La modalità **Massima protezione** sostituisce i dati riconosciuti con segnapos
 Esempio:
 
 ```text
-Mario Rossi -> <PERSON>
-10/01/1980 -> <DATE>
-mario@example.com -> <EMAIL_ADDRESS>
+Mario Rossi -> <PERSONA>
+10/01/1980 -> <DATA>
+mario@example.com -> <EMAIL>
 ```
 
 Usa questa modalità quando devi condividere testo con chatbot o servizi esterni e vuoi ridurre al minimo i dettagli identificativi.
