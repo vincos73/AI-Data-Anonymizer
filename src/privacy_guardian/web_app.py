@@ -17,7 +17,7 @@ from privacy_guardian import __version__
 from privacy_guardian.document_service import SUPPORTED_EXTENSIONS, anonymize_loaded_document, load_document
 from privacy_guardian.models import ANONYMIZATION_MODES, AnonymizationMode, Finding
 from privacy_guardian.privacy_engine import PrivacyEngine
-from privacy_guardian.reporting import mode_note, report_payload
+from privacy_guardian.reporting import entity_label, mode_note, report_payload, source_label
 
 MAX_TEXT_LENGTH = 100_000
 MAX_FILE_BYTES = 10 * 1024 * 1024
@@ -52,10 +52,12 @@ class TextPayload(BaseModel):
 def serialize_finding(finding: Finding, text: str) -> dict[str, object]:
     return {
         "entity_type": finding.entity_type,
+        "label": entity_label(finding.entity_type),
         "start": finding.start,
         "end": finding.end,
         "score": round(finding.score, 4),
         "source": finding.source,
+        "source_label": source_label(finding.source),
         "preview": text[finding.start : finding.end],
     }
 

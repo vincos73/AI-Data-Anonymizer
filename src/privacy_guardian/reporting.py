@@ -27,6 +27,9 @@ MODE_NOTES = {
     "standard": "Standard conserva iniziali e date: per testo da condividere con chatbot valuta Massima protezione.",
     "maximum": "Massima protezione usa segnaposto completi e redige anche date comuni riconosciute.",
 }
+SOURCE_LABELS = {
+    "italian_rules": "Regole italiane locali",
+}
 REVIEW_NOTE = "Rileggi sempre il risultato prima di condividerlo."
 
 
@@ -98,3 +101,7 @@ def entity_label(entity_type: str, count: int = 1) -> str:
         return entity_type
     singular, plural = labels
     return singular if count == 1 else plural
+
+
+def source_label(source: str) -> str:
+    return SOURCE_LABELS.get(source, source)

@@ -18,7 +18,7 @@ from reportlab.pdfgen import canvas
 
 from privacy_guardian.document_service import anonymize_loaded_document, load_document
 from privacy_guardian.privacy_engine import PrivacyEngine
-from privacy_guardian.reporting import entity_label, report_payload, report_text
+from privacy_guardian.reporting import entity_label, report_payload, report_text, source_label
 from privacy_guardian.web_app import (
     MAX_TEXT_LENGTH,
     TextPayload,
@@ -194,6 +194,7 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertEqual(entity_label("PHONE_NUMBER", 2), "telefoni")
         self.assertEqual(entity_label("IDENTITY_DOCUMENT"), "documento d'identità")
         self.assertEqual(entity_label("VEHICLE_PLATE", 2), "targhe veicolo")
+        self.assertEqual(source_label("italian_rules"), "Regole italiane locali")
 
 
 class DocumentAnonymizationTest(unittest.TestCase):
@@ -355,6 +356,20 @@ class WebAppTest(unittest.TestCase):
         self.assertIn("<EMAIL_ADDRESS>", decoded)
         self.assertNotIn("Mario Rossi", decoded)
         self.assertIn("report", payload)
+        self.assertTrue(all("label" in finding for finding in payload["findings"]))
+        self.assertTrue(all("source_label" in finding for finding in payload["findings"]))
+
+    def test_web_findings_include_human_readable_labels(self) -> None:
+        payload = asyncio.run(
+            anonymize_text_endpoint(
+                TextPayload(text="Carta d'identità n. CA12345AA e targa AB123CD.", mode="maximum")
+            )
+        )
+
+        findings_by_type = {finding["entity_type"]: finding for finding in payload["findings"]}
+        self.assertEqual(findings_by_type["IDENTITY_DOCUMENT"]["label"], "documento d'identità")
+        self.assertEqual(findings_by_type["VEHICLE_PLATE"]["label"], "targa veicolo")
+        self.assertEqual(findings_by_type["VEHICLE_PLATE"]["source_label"], "Regole italiane locali")
 
     def test_rejects_oversized_uploaded_document(self) -> None:
         upload = UploadFile(BytesIO(b"123456789"), filename="troppo.txt")

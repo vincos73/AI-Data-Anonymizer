@@ -33,7 +33,7 @@ from privacy_guardian.document_service import (
 )
 from privacy_guardian.models import AnonymizationMode, Finding, validate_anonymization_mode
 from privacy_guardian.privacy_engine import PrivacyEngine
-from privacy_guardian.reporting import entity_label, mode_note, report_text
+from privacy_guardian.reporting import entity_label, mode_note, report_text, source_label
 from privacy_guardian.styles import APP_STYLE
 
 
@@ -315,7 +315,7 @@ class MainWindow(QMainWindow):
                 self._finding_preview(source_text, finding),
                 finding.text_range,
                 f"{finding.score:.2f}",
-                finding.source,
+                source_label(finding.source),
             ]
             for col, value in enumerate(values):
                 item = QTableWidgetItem(value)

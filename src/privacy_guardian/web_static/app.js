@@ -61,11 +61,11 @@ function renderFindings(findings) {
   for (const finding of findings) {
     const row = document.createElement("tr");
     const cells = [
-      finding.entity_type,
+      finding.label || finding.entity_type,
       finding.preview,
       `${finding.start}-${finding.end}`,
       Number(finding.score).toFixed(2),
-      finding.source,
+      finding.source_label || finding.source,
     ];
 
     for (const value of cells) {
