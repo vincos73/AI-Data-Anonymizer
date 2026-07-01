@@ -296,6 +296,47 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertNotIn("Mario Rossi", output_text)
         self.assertNotIn("10/01/1980", output_text)
 
+    def test_docx_anonymizes_table_values_using_row_context(self) -> None:
+        docx_path = self.base / "table-context.docx"
+        doc = Document()
+        table = doc.add_table(rows=0, cols=2)
+        rows = [
+            ("Documento d'identita", "CA12345AA"),
+            ("Passaporto", "YA1234567"),
+            ("Patente", "U1234567A"),
+            ("Codice destinatario SDI", "ABC1234"),
+            ("Codice univoco ufficio", "A1B2C3"),
+            ("Targa veicolo aziendale", "AB123CD"),
+            ("Tessera sanitaria", "8038 0000 0000 0000 0000"),
+        ]
+        for label, value in rows:
+            cells = table.add_row().cells
+            cells[0].text = label
+            cells[1].text = value
+        doc.save(docx_path)
+
+        result = anonymize_loaded_document(load_document(docx_path), self.engine, mode="maximum")
+        out_docx = self.base / result.filename
+        out_docx.write_bytes(result.data)
+
+        output_text = "\n".join(
+            cell.text
+            for table in Document(out_docx).tables
+            for row in table.rows
+            for cell in row.cells
+        )
+        self.assertEqual(output_text.count("<DOCUMENTO_IDENTITA>"), 3)
+        self.assertEqual(output_text.count("<CODICE_SDI>"), 2)
+        self.assertIn("<TARGA_VEICOLO>", output_text)
+        self.assertIn("<TESSERA_SANITARIA>", output_text)
+        self.assertNotIn("CA12345AA", output_text)
+        self.assertNotIn("YA1234567", output_text)
+        self.assertNotIn("U1234567A", output_text)
+        self.assertNotIn("ABC1234", output_text)
+        self.assertNotIn("A1B2C3", output_text)
+        self.assertNotIn("AB123CD", output_text)
+        self.assertNotIn("8038 0000", output_text)
+
     def test_docx_anonymization_sanitizes_hidden_ooxml_and_metadata(self) -> None:
         docx_path = self.base / "hidden.docx"
         doc = Document()

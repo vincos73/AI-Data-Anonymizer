@@ -46,7 +46,8 @@ class ItalianPrivacyRecognizer:
         re.IGNORECASE,
     )
     VEHICLE_PLATE = re.compile(
-        r"\b(?i:targa|targato|targata|veicolo\s+targato|auto\s+targata|autovettura\s+targata)"
+        r"\b(?i:targa(?:\s+(?:veicolo|auto|autovettura|aziendale)){0,3}|targato|targata|"
+        r"veicolo\s+targato|auto\s+targata|autovettura\s+targata)"
         r"\s*(?i:n\.?|num\.?|nr\.?|numero)?\s*[:#-]?\s*"
         r"(?P<plate>[A-Z]{2}\s*\d{3}\s*[A-Z]{2}|[A-Z]{1,2}\s*\d{5,6}|[A-Z]{2}\s*\d{5})\b",
         re.IGNORECASE,

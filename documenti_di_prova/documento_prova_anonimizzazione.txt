@@ -1,0 +1,35 @@
+DOCUMENTO DI PROVA - DATI FITTIZI
+
+Questo file contiene esclusivamente dati inventati per testare AI Data Anonymizer.
+Non usare questi dati come informazioni reali.
+
+Oggetto: bozza di incarico professionale e allegati amministrativi
+
+Il sottoscritto Mario Rossi, nato a Roma il 10/01/1980 e residente in Via Appia 12, 00183 Roma, conferma di voler affidare un incarico di consulenza alla societa Alfa Beta S.r.l., con sede in Viale Europa 45, Milano.
+
+Dati anagrafici e di contatto del cliente:
+- Nome: Mario Rossi
+- Codice fiscale: RSSMRA80A01H501U
+- Email personale: mario.rossi@example.com
+- PEC: mario.rossi@pec.example.com
+- Telefono: +39 333 123 4567
+- Documento d'identita n. CA12345AA
+- Passaporto n. YA1234567
+- Patente n. U1234567A
+- Tessera sanitaria n. 8038 0000 0000 0000 0000
+
+Dati amministrativi e di fatturazione:
+- Ragione sociale: Alfa Beta S.r.l.
+- Partita IVA: 12345678903
+- IBAN: IT60 X054 2811 1010 0000 0123 456
+- Codice destinatario SDI: ABC1234
+- Codice univoco ufficio: A1B2C3
+- Targa veicolo aziendale: AB123CD
+
+Note operative:
+Il referente della pratica e Maria Bianchi, domiciliata in Piazza Garibaldi 8, Napoli, telefono 06/12345678.
+La documentazione verra trasmessa al Comune di Roma e alla Provincia di Potenza entro il 5 maggio 2020.
+
+Test di controllo:
+La sigla ZZ999ZZ, se non accompagnata da una parola come targa, non dovrebbe essere anonimizzata.
+Il codice QWERTY1, se non accompagnato da codice SDI o codice destinatario, non dovrebbe essere anonimizzato.
