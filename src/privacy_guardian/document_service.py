@@ -6,7 +6,6 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from textwrap import wrap
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -17,6 +16,8 @@ from privacy_guardian.privacy_engine import PrivacyEngine
 BASE_SUPPORTED_EXTENSIONS = {".txt", ".md", ".csv", ".docx", ".pdf"}
 LEGACY_DOC_SUPPORTED = sys.platform == "darwin" and Path("/usr/bin/textutil").exists()
 SUPPORTED_EXTENSIONS = BASE_SUPPORTED_EXTENSIONS | ({".doc"} if LEGACY_DOC_SUPPORTED else set())
+PDF_REDACTION_SCALE = 2.0
+PDF_REDACTION_PADDING = 1.75
 OOXML_NAMESPACES = {
     "cp": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
     "dc": "http://purl.org/dc/elements/1.1/",
@@ -30,7 +31,6 @@ OOXML_NAMESPACES = {
 }
 TEXT_NODE_NAMES = {"t", "delText", "instrText"}
 PERSONAL_ATTRIBUTE_NAMES = {"author", "initials", "lastModifiedBy"}
-HIDDEN_TEXT_CONTAINER_NAMES = {"txbxContent", "del", "moveFrom"}
 
 for prefix, uri in OOXML_NAMESPACES.items():
     ET.register_namespace(prefix, uri)
@@ -49,6 +49,14 @@ class AnonymizedDocument:
     data: bytes
     text: str
     findings: list[Finding]
+
+
+@dataclass(frozen=True)
+class PdfRedactionRect:
+    left: float
+    bottom: float
+    right: float
+    top: float
 
 
 def load_document(path: str | Path) -> LoadedDocument:
@@ -87,7 +95,7 @@ def anonymize_loaded_document(
     elif document.extension == ".docx":
         data = _anonymize_docx(document.path, engine, mode)
     else:
-        data = _write_pdf(anonymized_text)
+        data = _anonymize_pdf(document.path, engine, mode)
 
     return AnonymizedDocument(filename=output_name, data=data, text=anonymized_text, findings=findings)
 
@@ -111,18 +119,7 @@ def _read_docx(path: Path) -> str:
 
 
 def _anonymize_docx(path: Path, engine: PrivacyEngine, mode: AnonymizationMode) -> bytes:
-    from docx import Document
-
-    document = Document(path)
-
-    for paragraph in _iter_docx_standalone_paragraphs(document):
-        _anonymize_paragraph_runs(paragraph, engine, mode)
-    for table in _iter_docx_tables(document):
-        _anonymize_table_rows(table, engine, mode)
-
-    output = BytesIO()
-    document.save(output)
-    return _sanitize_docx_package(output.getvalue(), engine, mode)
+    return _sanitize_docx_package(path.read_bytes(), engine, mode)
 
 
 def _read_legacy_doc(path: Path) -> str:
@@ -135,6 +132,135 @@ def _anonymize_legacy_doc(path: Path, engine: PrivacyEngine, mode: Anonymization
         converted_path = Path(tmpdir) / f"{path.stem}.docx"
         _run_textutil("-convert", "docx", "-output", str(converted_path), str(path))
         return _anonymize_docx(converted_path, engine, mode)
+
+
+def _anonymize_pdf(path: Path, engine: PrivacyEngine, mode: AnonymizationMode) -> bytes:
+    import pypdfium2 as pdfium
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfgen import canvas
+
+    source_pdf = pdfium.PdfDocument(str(path))
+    output = BytesIO()
+    redacted_pdf = canvas.Canvas(output)
+
+    try:
+        for page_index in range(len(source_pdf)):
+            page = source_pdf[page_index]
+            width, height = page.get_size()
+            text_page = page.get_textpage()
+            page_text = text_page.get_text_range()
+            findings = engine.analyze(page_text, mode)
+            redaction_rects = _pdf_redaction_rects(text_page, page_text, findings, page_index)
+            bitmap = page.render(scale=PDF_REDACTION_SCALE)
+            try:
+                image = bitmap.to_pil().convert("RGB")
+            finally:
+                close = getattr(bitmap, "close", None)
+                if close:
+                    close()
+            _draw_pdf_redactions(image, (width, height), redaction_rects)
+            redacted_pdf.setPageSize((width, height))
+            redacted_pdf.drawImage(ImageReader(image), 0, 0, width=width, height=height)
+            redacted_pdf.showPage()
+    finally:
+        close = getattr(source_pdf, "close", None)
+        if close:
+            close()
+
+    redacted_pdf.save()
+    return output.getvalue()
+
+
+def _pdf_redaction_rects(
+    text_page,
+    page_text: str,
+    findings: list[Finding],
+    page_index: int,
+) -> list[PdfRedactionRect]:
+    rects: list[PdfRedactionRect] = []
+    unmapped_findings: list[str] = []
+
+    for finding in findings:
+        finding_rects = _pdf_finding_rects(text_page, page_text, finding)
+        if not finding_rects:
+            unmapped_findings.append(finding.entity_type)
+            continue
+        rects.extend(finding_rects)
+
+    if unmapped_findings:
+        entities = ", ".join(sorted(set(unmapped_findings)))
+        raise ValueError(
+            "Non riesco a redigere il PDF in modo sicuro: alcuni dati rilevati non hanno coordinate affidabili "
+            f"nella pagina {page_index + 1} ({entities})."
+        )
+
+    return rects
+
+
+def _pdf_finding_rects(text_page, page_text: str, finding: Finding) -> list[PdfRedactionRect]:
+    char_boxes = []
+    for index in range(finding.start, finding.end):
+        if index >= len(page_text) or page_text[index].isspace():
+            continue
+        try:
+            box = text_page.get_charbox(index, loose=True)
+        except Exception:
+            continue
+        if _is_valid_pdf_box(box):
+            char_boxes.append(PdfRedactionRect(*box))
+
+    return _merge_pdf_char_boxes(char_boxes)
+
+
+def _is_valid_pdf_box(box) -> bool:
+    if not box or len(box) != 4:
+        return False
+    left, bottom, right, top = box
+    return right > left and top > bottom
+
+
+def _merge_pdf_char_boxes(boxes: list[PdfRedactionRect]) -> list[PdfRedactionRect]:
+    lines: list[list[PdfRedactionRect]] = []
+
+    for box in sorted(boxes, key=lambda item: (-(item.bottom + item.top) / 2, item.left)):
+        box_center = (box.bottom + box.top) / 2
+        box_height = box.top - box.bottom
+        for line in lines:
+            line_bottom = min(item.bottom for item in line)
+            line_top = max(item.top for item in line)
+            line_center = (line_bottom + line_top) / 2
+            line_height = line_top - line_bottom
+            if abs(box_center - line_center) <= max(box_height, line_height, 1.0) * 0.7:
+                line.append(box)
+                break
+        else:
+            lines.append([box])
+
+    return [
+        PdfRedactionRect(
+            min(box.left for box in line),
+            min(box.bottom for box in line),
+            max(box.right for box in line),
+            max(box.top for box in line),
+        )
+        for line in lines
+    ]
+
+
+def _draw_pdf_redactions(image, page_size: tuple[float, float], rects: list[PdfRedactionRect]) -> None:
+    from PIL import ImageDraw
+
+    _, page_height = page_size
+    draw = ImageDraw.Draw(image)
+    image_width, image_height = image.size
+
+    for rect in rects:
+        left = max(0, int((rect.left - PDF_REDACTION_PADDING) * PDF_REDACTION_SCALE))
+        top = max(0, int((page_height - rect.top - PDF_REDACTION_PADDING) * PDF_REDACTION_SCALE))
+        right = min(image_width, int((rect.right + PDF_REDACTION_PADDING) * PDF_REDACTION_SCALE) + 1)
+        bottom = min(image_height, int((page_height - rect.bottom + PDF_REDACTION_PADDING) * PDF_REDACTION_SCALE) + 1)
+        if right > left and bottom > top:
+            draw.rectangle((left, top, right, bottom), fill=(0, 0, 0))
 
 
 def _run_textutil(*args: str) -> subprocess.CompletedProcess[bytes]:
@@ -165,135 +291,12 @@ def _iter_docx_paragraphs(document):
             yield from _iter_table_paragraphs(table)
 
 
-def _iter_docx_standalone_paragraphs(document):
-    yield from document.paragraphs
-    for section in document.sections:
-        yield from section.header.paragraphs
-        yield from section.footer.paragraphs
-
-
-def _iter_docx_tables(document):
-    yield from document.tables
-    for table in document.tables:
-        yield from _iter_nested_tables(table)
-    for section in document.sections:
-        yield from section.header.tables
-        for table in section.header.tables:
-            yield from _iter_nested_tables(table)
-        yield from section.footer.tables
-        for table in section.footer.tables:
-            yield from _iter_nested_tables(table)
-
-
-def _iter_nested_tables(table):
-    for row in table.rows:
-        for cell in row.cells:
-            yield from cell.tables
-            for nested_table in cell.tables:
-                yield from _iter_nested_tables(nested_table)
-
-
 def _iter_table_paragraphs(table):
     for row in table.rows:
         for cell in row.cells:
             yield from cell.paragraphs
             for nested_table in cell.tables:
                 yield from _iter_table_paragraphs(nested_table)
-
-
-def _anonymize_table_rows(table, engine: PrivacyEngine, mode: AnonymizationMode) -> None:
-    for row in table.rows:
-        paragraph_offsets = []
-        row_parts: list[str] = []
-        cursor = 0
-
-        for cell in row.cells:
-            for paragraph in cell.paragraphs:
-                text = "".join(run.text for run in paragraph.runs)
-                if row_parts:
-                    row_parts.append("\n")
-                    cursor += 1
-                start = cursor
-                row_parts.append(text)
-                cursor += len(text)
-                paragraph_offsets.append((paragraph, start, cursor, text))
-
-        row_text = "".join(row_parts)
-        if not row_text:
-            continue
-
-        findings = engine.analyze(row_text, mode)
-        if not findings:
-            continue
-
-        for paragraph, paragraph_start, paragraph_end, paragraph_text in paragraph_offsets:
-            local_findings = [
-                Finding(
-                    finding.entity_type,
-                    finding.start - paragraph_start,
-                    finding.end - paragraph_start,
-                    finding.score,
-                )
-                for finding in findings
-                if paragraph_start <= finding.start and finding.end <= paragraph_end
-            ]
-            if local_findings:
-                _replace_paragraph_findings(paragraph, paragraph_text, local_findings, engine, mode)
-
-
-def _anonymize_paragraph_runs(paragraph, engine: PrivacyEngine, mode: AnonymizationMode) -> None:
-    if not paragraph.runs:
-        return
-
-    text = "".join(run.text for run in paragraph.runs)
-    if not text:
-        return
-
-    findings = engine.analyze(text, mode)
-    if not findings:
-        return
-
-    _replace_paragraph_findings(paragraph, text, findings, engine, mode)
-
-
-def _replace_paragraph_findings(
-    paragraph,
-    text: str,
-    findings: list[Finding],
-    engine: PrivacyEngine,
-    mode: AnonymizationMode,
-) -> None:
-    replacements = [
-        (
-            finding.start,
-            finding.end,
-            engine.anonymize(
-                text[finding.start : finding.end],
-                [Finding(finding.entity_type, 0, finding.end - finding.start, finding.score)],
-                mode,
-            ),
-        )
-        for finding in findings
-    ]
-    cursor = 0
-    for run in paragraph.runs:
-        run_start = cursor
-        run_end = run_start + len(run.text)
-        cursor = run_end
-        pieces: list[str] = []
-        text_cursor = run_start
-
-        for start, end, replacement in replacements:
-            if end <= run_start or start >= run_end:
-                continue
-            if start >= text_cursor:
-                pieces.append(text[text_cursor:start])
-            if run_start <= start < run_end:
-                pieces.append(replacement)
-            text_cursor = max(text_cursor, min(end, run_end))
-
-        pieces.append(text[text_cursor:run_end])
-        run.text = "".join(pieces)
 
 
 def _sanitize_docx_package(data: bytes, engine: PrivacyEngine, mode: AnonymizationMode) -> bytes:
@@ -314,7 +317,7 @@ def _sanitize_docx_part(name: str, data: bytes, engine: PrivacyEngine, mode: Ano
     if _is_docx_metadata_part(name):
         return _scrub_metadata_xml(data)
     if _is_docx_text_part(name):
-        return _anonymize_ooxml_text(data, engine, mode, hidden_only=_is_docx_primary_story_part(name))
+        return _anonymize_ooxml_text(data, engine, mode, use_table_context=_is_docx_primary_story_part(name))
     return data
 
 
@@ -367,7 +370,7 @@ def _anonymize_ooxml_text(
     engine: PrivacyEngine,
     mode: AnonymizationMode,
     *,
-    hidden_only: bool,
+    use_table_context: bool,
 ) -> bytes:
     try:
         root = ET.fromstring(data)
@@ -375,8 +378,18 @@ def _anonymize_ooxml_text(
         return data
 
     _strip_personal_ooxml_attributes(root)
-    for container in _iter_text_containers(root, hidden_only=hidden_only):
-        _anonymize_text_nodes(list(_iter_text_nodes(container)), engine, mode)
+    processed_nodes: set[int] = set()
+
+    if use_table_context:
+        for table_row in _iter_elements_by_local_name(root, "tr"):
+            nodes = list(_iter_text_nodes(table_row))
+            _anonymize_text_nodes(nodes, engine, mode)
+            processed_nodes.update(id(node) for node in nodes)
+
+    for container in _iter_text_containers(root):
+        nodes = [node for node in _iter_text_nodes(container) if id(node) not in processed_nodes]
+        _anonymize_text_nodes(nodes, engine, mode)
+        processed_nodes.update(id(node) for node in nodes)
 
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
@@ -388,22 +401,13 @@ def _strip_personal_ooxml_attributes(root: ET.Element) -> None:
                 element.attrib[attr_name] = ""
 
 
-def _iter_text_containers(root: ET.Element, *, hidden_only: bool):
-    search_roots = list(_iter_hidden_text_roots(root)) if hidden_only else [root]
+def _iter_text_containers(root: ET.Element):
     seen: set[int] = set()
-
-    for search_root in search_roots:
-        for container in _iter_containers_below(search_root):
-            identity = id(container)
-            if identity not in seen:
-                seen.add(identity)
-                yield container
-
-
-def _iter_hidden_text_roots(root: ET.Element):
-    for element in root.iter():
-        if _local_name(element.tag) in HIDDEN_TEXT_CONTAINER_NAMES:
-            yield element
+    for container in _iter_containers_below(root):
+        identity = id(container)
+        if identity not in seen:
+            seen.add(identity)
+            yield container
 
 
 def _iter_containers_below(root: ET.Element):
@@ -422,6 +426,12 @@ def _iter_containers_below(root: ET.Element):
 def _iter_text_nodes(container: ET.Element):
     for element in container.iter():
         if _local_name(element.tag) in TEXT_NODE_NAMES:
+            yield element
+
+
+def _iter_elements_by_local_name(root: ET.Element, local_name: str):
+    for element in root.iter():
+        if _local_name(element.tag) == local_name:
             yield element
 
 
@@ -449,6 +459,7 @@ def _anonymize_text_nodes(nodes: list[ET.Element], engine: PrivacyEngine, mode: 
         )
         for finding in findings
     ]
+    replacements.sort(key=lambda replacement: replacement[0])
     cursor = 0
 
     for node in nodes:
@@ -535,29 +546,3 @@ def _pdf_object(value):
     if hasattr(value, "get_object"):
         return value.get_object()
     return value
-
-
-def _write_pdf(text: str) -> bytes:
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import mm
-    from reportlab.pdfgen import canvas
-
-    output = BytesIO()
-    pdf = canvas.Canvas(output, pagesize=A4)
-    width, height = A4
-    x = 20 * mm
-    y = height - 22 * mm
-    line_height = 13
-
-    for paragraph in text.splitlines() or [""]:
-        lines = wrap(paragraph, width=92) if paragraph else [""]
-        for line in lines:
-            if y < 22 * mm:
-                pdf.showPage()
-                y = height - 22 * mm
-            pdf.drawString(x, y, line)
-            y -= line_height
-        y -= 4
-
-    pdf.save()
-    return output.getvalue()

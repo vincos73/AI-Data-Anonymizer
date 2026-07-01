@@ -11,6 +11,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from docx import Document
+from docx.enum.section import WD_ORIENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt
 from fastapi import HTTPException, UploadFile
 from pypdf import PdfReader, PdfWriter
 from reportlab.lib.utils import ImageReader
@@ -276,7 +279,7 @@ class DocumentAnonymizationTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def test_anonymizes_txt_docx_and_pdf_documents(self) -> None:
+    def test_anonymizes_txt_and_docx_documents(self) -> None:
         txt_path = self.base / "test.txt"
         txt_path.write_text("Il sottoscritto Mario Rossi lavora per Alfa Beta S.r.l.", encoding="utf-8")
 
@@ -290,16 +293,43 @@ class DocumentAnonymizationTest(unittest.TestCase):
         pdf.drawString(72, 720, "società Rossi Consulting spa tel +39 333 123 4567")
         pdf.save()
 
-        for path in (txt_path, docx_path, pdf_path):
+        for path in (txt_path, docx_path):
             loaded = load_document(path)
             result = anonymize_loaded_document(loaded, self.engine)
             self.assertGreaterEqual(len(result.findings), 1)
             self.assertTrue(result.data)
 
-        pdf_result = anonymize_loaded_document(load_document(pdf_path), self.engine)
-        out_pdf = self.base / pdf_result.filename
-        out_pdf.write_bytes(pdf_result.data)
-        self.assertEqual(len(PdfReader(out_pdf).pages), 1)
+        loaded_pdf = load_document(pdf_path)
+        self.assertIn("Rossi Consulting", loaded_pdf.text)
+        pdf_result = anonymize_loaded_document(loaded_pdf, self.engine, mode="maximum")
+        self.assertEqual(pdf_result.filename, "test_anonimizzato.pdf")
+        self.assertTrue(pdf_result.data.startswith(b"%PDF"))
+
+    def test_pdf_anonymization_rasterizes_layout_and_removes_extractable_text(self) -> None:
+        pdf_path = self.base / "contratto.pdf"
+        pdf = canvas.Canvas(str(pdf_path), pagesize=(612, 792))
+        pdf.setFont("Helvetica", 14)
+        pdf.drawString(72, 720, "Il sottoscritto Mario Rossi email mario@example.com")
+        pdf.drawString(72, 690, "Documento d'identita n. CA12345AA e targa AB123CD")
+        pdf.save()
+
+        result = anonymize_loaded_document(load_document(pdf_path), self.engine, mode="maximum")
+        out_pdf = self.base / result.filename
+        out_pdf.write_bytes(result.data)
+        reader = PdfReader(out_pdf)
+        extracted_text = "\n".join(page.extract_text() or "" for page in reader.pages)
+
+        self.assertEqual(len(reader.pages), 1)
+        self.assertEqual(float(reader.pages[0].mediabox.width), 612)
+        self.assertEqual(float(reader.pages[0].mediabox.height), 792)
+        self.assertIn("<PERSONA>", result.text)
+        self.assertIn("<EMAIL>", result.text)
+        self.assertIn("<DOCUMENTO_IDENTITA>", result.text)
+        self.assertIn("<TARGA_VEICOLO>", result.text)
+        self.assertNotIn("Mario Rossi", extracted_text)
+        self.assertNotIn("mario@example.com", extracted_text)
+        self.assertNotIn("CA12345AA", extracted_text)
+        self.assertNotIn("AB123CD", extracted_text)
 
     def test_docx_anonymization_preserves_run_formatting(self) -> None:
         docx_path = self.base / "formatted.docx"
@@ -385,6 +415,76 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertNotIn("azienda@pec.it", output_text)
         self.assertNotIn("ED 9901", output_text)
         self.assertNotIn("12345/2024", output_text)
+
+    def test_docx_anonymization_preserves_structure_and_static_package_parts(self) -> None:
+        docx_path = self.base / "layout.docx"
+        doc = Document()
+        section = doc.sections[0]
+        section.orientation = WD_ORIENT.LANDSCAPE
+        section.page_width, section.page_height = section.page_height, section.page_width
+        section.top_margin = Inches(0.7)
+        section.bottom_margin = Inches(0.8)
+        section.left_margin = Inches(0.9)
+        section.right_margin = Inches(0.9)
+
+        section.header.paragraphs[0].text = "Documento intestato a Mario Rossi"
+        section.footer.paragraphs[0].text = "Contatti: mario@example.com"
+
+        title = doc.add_paragraph(style="Title")
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        title_run = title.add_run("Il sottoscritto Mario Rossi")
+        title_run.bold = True
+        title_run.font.size = Pt(18)
+
+        doc.add_paragraph("signora Maria Bianchi email maria@example.com", style="List Bullet")
+        table = doc.add_table(rows=2, cols=2)
+        table.style = "Table Grid"
+        table.rows[0].cells[0].text = "Documento d'identita"
+        table.rows[0].cells[1].text = "CA12345AA"
+        table.rows[1].cells[0].text = "Targa veicolo aziendale"
+        table.rows[1].cells[1].text = "AB123CD"
+        doc.add_picture(BytesIO(base64.b64decode(_ONE_PIXEL_PNG_BASE64)), width=Inches(0.2))
+        doc.save(docx_path)
+
+        before = _zip_entries(docx_path)
+        result = anonymize_loaded_document(load_document(docx_path), self.engine, mode="maximum")
+        out_docx = self.base / result.filename
+        out_docx.write_bytes(result.data)
+        after = _zip_entries(out_docx)
+
+        for entry_name in (
+            "word/styles.xml",
+            "word/settings.xml",
+            "word/theme/theme1.xml",
+            "word/_rels/document.xml.rels",
+            "word/media/image1.png",
+        ):
+            if entry_name in before:
+                self.assertEqual(before[entry_name], after[entry_name], entry_name)
+
+        output_doc = Document(out_docx)
+        output_section = output_doc.sections[0]
+        self.assertEqual(output_section.orientation, WD_ORIENT.LANDSCAPE)
+        self.assertEqual(output_section.top_margin, Inches(0.7))
+        self.assertEqual(output_section.bottom_margin, Inches(0.8))
+        self.assertEqual(output_doc.paragraphs[0].style.name, "Title")
+        self.assertEqual(output_doc.paragraphs[0].alignment, WD_ALIGN_PARAGRAPH.CENTER)
+        self.assertTrue(output_doc.paragraphs[0].runs[0].bold)
+        self.assertEqual(output_doc.paragraphs[1].style.name, "List Bullet")
+        self.assertEqual(output_doc.tables[0].style.name, "Table Grid")
+        self.assertEqual(len(output_doc.inline_shapes), 1)
+
+        output_xml = _docx_xml_text(out_docx)
+        self.assertNotIn("Mario Rossi", output_xml)
+        self.assertNotIn("Maria Bianchi", output_xml)
+        self.assertNotIn("mario@example.com", output_xml)
+        self.assertNotIn("maria@example.com", output_xml)
+        self.assertNotIn("CA12345AA", output_xml)
+        self.assertNotIn("AB123CD", output_xml)
+        self.assertIn("<PERSONA>", output_doc.paragraphs[0].text)
+        self.assertIn("<EMAIL>", output_doc.paragraphs[1].text)
+        self.assertIn("<DOCUMENTO_IDENTITA>", output_doc.tables[0].rows[0].cells[1].text)
+        self.assertIn("<TARGA_VEICOLO>", output_doc.tables[0].rows[1].cells[1].text)
 
     def test_docx_anonymization_sanitizes_hidden_ooxml_and_metadata(self) -> None:
         docx_path = self.base / "hidden.docx"
@@ -512,6 +612,28 @@ class WebAppTest(unittest.TestCase):
         self.assertEqual(context.exception.status_code, 413)
         self.assertIn("File troppo grande", context.exception.detail)
 
+    def test_anonymizes_uploaded_pdf_as_rasterized_redacted_document(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pdf_path = Path(tmpdir) / "contratto.pdf"
+            pdf = canvas.Canvas(str(pdf_path))
+            pdf.drawString(72, 720, "Il sottoscritto Mario Rossi email mario@example.com")
+            pdf.save()
+            upload = UploadFile(BytesIO(pdf_path.read_bytes()), filename="contratto.pdf")
+
+            payload = asyncio.run(anonymize_document(mode="maximum", file=upload))
+            decoded = base64.b64decode(payload["content_base64"])
+            out_pdf = Path(tmpdir) / payload["filename"]
+            out_pdf.write_bytes(decoded)
+            extracted_text = "\n".join(page.extract_text() or "" for page in PdfReader(out_pdf).pages)
+
+            self.assertEqual(payload["filename"], "contratto_anonimizzato.pdf")
+            self.assertEqual(payload["media_type"], "application/pdf")
+            self.assertTrue(decoded.startswith(b"%PDF"))
+            self.assertEqual(payload["report"]["counts"]["PERSON"], 1)
+            self.assertEqual(payload["report"]["counts"]["EMAIL_ADDRESS"], 1)
+            self.assertNotIn("Mario Rossi", extracted_text)
+            self.assertNotIn("mario@example.com", extracted_text)
+
 
 _ONE_PIXEL_PNG_BASE64 = (
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
@@ -572,6 +694,11 @@ def _docx_xml_text(path: Path) -> str:
             for name in archive.namelist()
             if name.endswith(".xml")
         )
+
+
+def _zip_entries(path: Path) -> dict[str, bytes]:
+    with zipfile.ZipFile(path, "r") as archive:
+        return {name: archive.read(name) for name in archive.namelist()}
 
 
 if __name__ == "__main__":

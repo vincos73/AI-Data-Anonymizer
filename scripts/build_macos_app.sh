@@ -57,45 +57,51 @@ python scripts/create_app_icon.py
 iconutil -c icns assets/app_icon.iconset -o assets/app_icon.icns
 
 pyinstaller \
-  --name "AI Data Anonymizer" \
+  --name "OMISSIS" \
   --windowed \
   --clean \
   --icon assets/app_icon.icns \
   --osx-bundle-identifier "com.vincos.aidataanonymizer" \
+  --collect-data privacy_guardian \
   --collect-all docx \
   --collect-all pypdf \
+  --collect-all pypdfium2 \
   --collect-all reportlab \
   src/privacy_guardian/app.py
 
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION" "dist/AI Data Anonymizer.app/Contents/Info.plist"
-if ! /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $APP_VERSION" "dist/AI Data Anonymizer.app/Contents/Info.plist" 2>/dev/null; then
-  /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $APP_VERSION" "dist/AI Data Anonymizer.app/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION" "dist/OMISSIS.app/Contents/Info.plist"
+if ! /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $APP_VERSION" "dist/OMISSIS.app/Contents/Info.plist" 2>/dev/null; then
+  /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $APP_VERSION" "dist/OMISSIS.app/Contents/Info.plist"
 fi
 
-codesign --force --deep --sign - "dist/AI Data Anonymizer.app"
+codesign --force --deep --sign - "dist/OMISSIS.app"
 
 if command -v dmgbuild >/dev/null 2>&1; then
-  dmgbuild -s scripts/dmg_settings.py "AI Data Anonymizer" "dist/AI Data Anonymizer.dmg"
+  dmgbuild -s scripts/dmg_settings.py "OMISSIS" "dist/OMISSIS.dmg"
+  cp "dist/OMISSIS.dmg" "dist/OMISSIS-macOS-Apple-Silicon.dmg"
 fi
 
-cat > "dist/LEGGIMI - AI Data Anonymizer.txt" <<'TXT'
-AI Data Anonymizer
+cat > "dist/LEGGIMI - OMISSIS.txt" <<'TXT'
+OMISSIS
 
 Come installare su Mac:
 
-1. Apri "AI Data Anonymizer.dmg".
-2. Trascina "AI Data Anonymizer" nella cartella Applicazioni.
-3. Apri AI Data Anonymizer da Applicazioni.
+1. Apri "OMISSIS.dmg".
+2. Trascina "OMISSIS" nella cartella Applicazioni.
+3. Apri OMISSIS da Applicazioni.
 
 Come usarla:
 
 1. Clicca "Carica documento" per scegliere un file .txt, .md, .csv, .doc, .docx o .pdf.
-2. Clicca "Anonimizza".
+2. Clicca "Analizza dati" o "Anonimizza".
 3. Clicca "Salva risultato" per creare la versione anonimizzata del documento.
+
+Nota sui PDF:
+I PDF con testo selezionabile vengono esportati come PDF rasterizzato con oscuramenti permanenti. Il testo originale non resta selezionabile nel file finale. I PDF scansionati o composti solo da immagini richiedono prima OCR.
 
 Se macOS dice che l'app non puo essere aperta perche proviene da uno sviluppatore non identificato:
 
-1. Fai click destro su "AI Data Anonymizer".
+1. Fai click destro su "OMISSIS".
 2. Scegli "Apri".
 3. Conferma di nuovo "Apri".
 

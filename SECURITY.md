@@ -1,6 +1,6 @@
 # Sicurezza e Privacy
 
-AI Data Anonymizer è progettato prima di tutto per funzionare in locale sul computer dell'utente tramite app desktop. Questa è la modalità consigliata per la maggior parte delle persone.
+OMISSIS è progettato prima di tutto per funzionare in locale sul computer dell'utente tramite app desktop. Questa è la modalità consigliata per la maggior parte delle persone.
 
 La versione desktop non chiama API esterne di intelligenza artificiale, OCR, analytics o trattamento documentale. La web app è un'opzione avanzata per uso locale da browser o self-hosting; in quel caso elabora il testo sul computer o server in cui viene installata.
 
@@ -8,11 +8,12 @@ La web app applica limiti predefiniti di **100.000 caratteri** per il testo estr
 
 ## Cosa Significa Anonimizzazione
 
-AI Data Anonymizer riduce il rischio prima di condividere documenti con chatbot, cloud, collaboratori o sistemi esterni. Non è un prodotto di conformità legale e non garantisce anonimizzazione perfetta.
+OMISSIS riduce il rischio prima di condividere documenti con chatbot, cloud, collaboratori o sistemi esterni. Non è un prodotto di conformità legale e non garantisce anonimizzazione perfetta.
 
 - In modalità Standard conserva le iniziali per alcune entità e mantiene visibili le date.
 - In modalità Massima protezione sostituisce le entità riconosciute con segnaposto completi e anonimizza anche formati data comuni.
 - L'utente deve sempre rileggere il risultato prima di condividerlo.
+- I PDF con testo selezionabile vengono esportati come PDF rasterizzati con oscuramenti permanenti: il layout visivo resta vicino all'originale, ma il testo finale non è selezionabile.
 - I PDF scansionati o composti solo da immagini vengono rifiutati quando non è possibile estrarre testo selezionabile. Prima va eseguito OCR.
 - I file `.docx` vengono puliti sia nel testo visibile sia in contenuti nascosti comuni come metadati, commenti, caselle di testo, note e alcune revisioni.
 

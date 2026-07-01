@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="164" viewBox="0 0 192 164" role="img" aria-label="OMISSIS">
+  <defs>
+    <radialGradient id="omissisGlow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#00a9d6" stop-opacity="0.95"/>
+      <stop offset="58%" stop-color="#0089b8" stop-opacity="0.62"/>
+      <stop offset="100%" stop-color="#0089b8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+  </defs>
+  <rect width="192" height="164" fill="none"/>
+  <ellipse cx="96" cy="82" rx="78" ry="68" fill="url(#omissisGlow)" filter="url(#softGlow)"/>
+  <g fill="none" stroke="#0089b8" stroke-width="1.5">
+    <rect x="22" y="25" width="76" height="8"/>
+    <rect x="128" y="25" width="42" height="8"/>
+    <rect x="72" y="57" width="66" height="8"/>
+    <rect x="22" y="89" width="58" height="8"/>
+    <rect x="118" y="121" width="52" height="8"/>
+    <rect x="82" y="141" width="56" height="8"/>
+  </g>
+  <g fill="#000000">
+    <rect x="22" y="49" width="74" height="9"/>
+    <rect x="122" y="49" width="48" height="9"/>
+    <rect x="22" y="73" width="44" height="9"/>
+    <rect x="108" y="89" width="62" height="9"/>
+    <rect x="22" y="113" width="82" height="9"/>
+    <rect x="22" y="141" width="32" height="9"/>
+  </g>
+</svg>

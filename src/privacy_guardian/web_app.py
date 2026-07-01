@@ -33,7 +33,7 @@ DOCUMENT_MEDIA_TYPES = {
 logging.getLogger("uvicorn.access").disabled = True
 
 app = FastAPI(
-    title="AI Data Anonymizer Web",
+    title="OMISSIS Web",
     description="Privacy-first web interface for Italian text anonymization.",
     version=__version__,
     docs_url=None,
@@ -241,7 +241,7 @@ def _format_bytes(value: int) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run AI Data Anonymizer Web.")
+    parser = argparse.ArgumentParser(description="Run OMISSIS Web.")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
     args = parser.parse_args()

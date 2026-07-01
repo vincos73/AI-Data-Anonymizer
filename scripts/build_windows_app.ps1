@@ -26,18 +26,20 @@ if (Test-Path "dist") {
 & .\.venv\Scripts\python.exe scripts\create_app_icon.py
 
 & .\.venv\Scripts\pyinstaller.exe `
-    --name "AI Data Anonymizer" `
+    --name "OMISSIS" `
     --windowed `
     --clean `
     --icon assets\app_icon.ico `
+    --collect-data privacy_guardian `
     --collect-all docx `
     --collect-all pypdf `
+    --collect-all pypdfium2 `
     --collect-all reportlab `
     src\privacy_guardian\app.py
 
 Compress-Archive `
-    -Path "dist\AI Data Anonymizer" `
-    -DestinationPath "dist\AI-Data-Anonymizer-Windows.zip" `
+    -Path "dist\OMISSIS" `
+    -DestinationPath "dist\OMISSIS-Windows.zip" `
     -Force
 
 Write-Host "Build completata in: $ProjectDir\dist"

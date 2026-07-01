@@ -252,7 +252,14 @@ fileInput.addEventListener("change", () => {
   activeDocument = true;
   source.value = "";
   result.value = "";
-  fileStatus.textContent = `Documento caricato: ${file.name} (${formatBytes(file.size)}${limit})`;
+  if (file.name.toLowerCase().endsWith(".pdf")) {
+    fileStatus.textContent = (
+      `PDF caricato: ${file.name} (${formatBytes(file.size)}${limit}). ` +
+      "L'export creerà un PDF rasterizzato con oscuramenti permanenti."
+    );
+  } else {
+    fileStatus.textContent = `Documento caricato: ${file.name} (${formatBytes(file.size)}${limit})`;
+  }
   renderFindings([]);
   renderReport(null);
 });

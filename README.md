@@ -1,6 +1,6 @@
-# AI Data Anonymizer
+# OMISSIS
 
-**AI Data Anonymizer** aiuta a preparare una versione più sicura dei documenti prima di incollarli in ChatGPT, Claude, Gemini o altri strumenti di intelligenza artificiale.
+**OMISSIS** aiuta a preparare una versione più sicura dei documenti prima di incollarli in ChatGPT, Claude, Gemini o altri strumenti di intelligenza artificiale.
 
 Il progetto è pensato soprattutto per utenti italiani e per un uso semplice: installi l'app desktop, carichi un documento, anonimizza tutto sul tuo computer. Il software non invia file o testo ad API esterne.
 
@@ -14,8 +14,8 @@ Ultima versione: **v0.3.0**
 
 | Sistema | Download |
 | --- | --- |
-| Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Scarica DMG per macOS](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.3.0/AI-Data-Anonymizer-macOS-Apple-Silicon.dmg) |
-| Windows | [Scarica ZIP per Windows](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.3.0/AI-Data-Anonymizer-Windows.zip) |
+| Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Scarica DMG per macOS](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.3.0/OMISSIS-macOS-Apple-Silicon.dmg) |
+| Windows | [Scarica ZIP per Windows](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.3.0/OMISSIS-Windows.zip) |
 
 Tutti i file sono disponibili nella pagina [Releases](https://github.com/vincos73/AI-Data-Anonymizer/releases).
 
@@ -25,12 +25,12 @@ Tutti i file sono disponibili nella pagina [Releases](https://github.com/vincos7
 
 1. Scarica il file `.dmg`.
 2. Aprilo.
-3. Trascina **AI Data Anonymizer** nella cartella **Applicazioni**.
+3. Trascina **OMISSIS** nella cartella **Applicazioni**.
 4. Apri l'app da **Applicazioni**.
 
 Le build attuali non sono ancora firmate/notarizzate. Se macOS mostra un avviso sullo sviluppatore non identificato:
 
-1. fai click destro su **AI Data Anonymizer**;
+1. fai click destro su **OMISSIS**;
 2. scegli **Apri**;
 3. conferma di nuovo **Apri**.
 
@@ -38,7 +38,7 @@ Le build attuali non sono ancora firmate/notarizzate. Se macOS mostra un avviso 
 
 1. Scarica il file `.zip`.
 2. Estrai lo zip in una cartella.
-3. Apri **AI Data Anonymizer.exe**.
+3. Apri **OMISSIS.exe**.
 
 Su Windows i vecchi file `.doc` non sono supportati direttamente: convertili prima in `.docx`.
 
@@ -86,7 +86,7 @@ Nell'app desktop è la modalità predefinita e consigliata per l'uso con ChatGPT
 
 ## Dati Riconosciuti
 
-AI Data Anonymizer riconosce, con regole conservative:
+OMISSIS riconosce, con regole conservative:
 
 - indirizzi email;
 - indirizzi PEC, riconosciuti separatamente dalle email ordinarie quando il dominio o il contesto li indicano;
@@ -110,11 +110,11 @@ AI Data Anonymizer riconosce, con regole conservative:
 | Formato | Supporto |
 | --- | --- |
 | `.txt`, `.md`, `.csv` | Legge e salva file di testo anonimizzati |
-| `.docx` | Legge e salva documenti Word preservando il più possibile la formattazione |
-| `.pdf` | Estrae il testo e crea un nuovo PDF anonimizzato; il layout originale può non essere preservato |
+| `.docx` | Legge e salva documenti Word mantenendo struttura, stili, tabelle e immagini quando possibile |
+| `.pdf` | Estrae il testo per analisi e salva un PDF rasterizzato con oscuramenti permanenti; il layout visivo viene preservato, il testo finale non resta selezionabile |
 | `.doc` | Supportato solo su macOS, convertito in `.docx` prima dell'anonimizzazione |
 
-I PDF scansionati o composti solo da immagini devono essere convertiti con OCR prima dell'uso. L'app li blocca quando non riesce a estrarre testo selezionabile, così l'utente non scambia un PDF non letto per un documento già sicuro.
+I PDF scansionati o composti solo da immagini devono essere convertiti con OCR prima dell'uso. L'app li blocca quando non riesce a estrarre testo selezionabile, così l'utente non scambia un PDF non letto per un documento già sicuro. Il PDF anonimizzato viene ricostruito come immagini di pagina redatte: questo evita di lasciare il testo originale sotto gli oscuramenti, ma il testo del PDF finale non sarà copiabile o ricercabile.
 
 ## Privacy
 
@@ -126,7 +126,7 @@ Per i file `.docx`, l'app anonimizza il testo visibile e pulisce contenuti nasco
 
 ## Limiti Importanti
 
-AI Data Anonymizer è uno strumento di riduzione del rischio, non una garanzia legale di anonimizzazione perfetta.
+OMISSIS è uno strumento di riduzione del rischio, non una garanzia legale di anonimizzazione perfetta.
 
 - Il motore è basato su regole ed è volutamente conservativo.
 - Alcuni dati personali possono non essere riconosciuti.
@@ -202,7 +202,7 @@ pip install -e ".[desktop,web]"
 python -m unittest discover -s tests -v
 ```
 
-La suite copre falsi positivi italiani, riconoscimento di persone e organizzazioni, enti territoriali, PEC, numeri di protocollo/pratica, identificativi strutturati, modalità Standard e Massima protezione, anonimizzazione documenti, preservazione della formattazione `.docx`, pulizia di contenuti nascosti `.docx` e rifiuto dei PDF scansionati/non leggibili.
+La suite copre falsi positivi italiani, riconoscimento di persone e organizzazioni, enti territoriali, PEC, numeri di protocollo/pratica, identificativi strutturati, modalità Standard e Massima protezione, anonimizzazione documenti, preservazione della struttura e della formattazione `.docx`, pulizia di contenuti nascosti `.docx`, rifiuto dei PDF scansionati/non leggibili e redazione PDF rasterizzata senza testo originale estraibile.
 
 ## Build Desktop
 

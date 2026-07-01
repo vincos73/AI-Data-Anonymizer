@@ -4,17 +4,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="referrer" content="no-referrer" />
-    <title>AI Data Anonymizer</title>
+    <title>OMISSIS</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
     <main class="shell">
-      <header class="topbar">
+      <header class="brand-panel">
         <div class="brand-row">
-          <h1>AI DATA ANONYMIZER</h1>
+          <img class="brand-mark" src="/static/omissis-logo.svg" alt="" aria-hidden="true" />
+          <img class="brand-logo" src="/static/omissis-logotype.svg" alt="OMISSIS" />
           <span class="byline">by vincos</span>
         </div>
-        <span id="engine-status" class="version-pill">avvio...</span>
+        <div class="brand-meta">
+          <span class="local-pill">Elaborazione locale · i dati restano sul dispositivo</span>
+          <span id="engine-status" class="version-pill">avvio...</span>
+        </div>
       </header>
 
       <nav class="command-row" aria-label="Azioni principali">
@@ -68,7 +72,7 @@
             <thead>
               <tr>
                 <th>Tipo</th>
-                <th>Valore</th>
+                <th>Valore trovato</th>
                 <th>Intervallo</th>
                 <th>Confidenza</th>
                 <th>Origine</th>

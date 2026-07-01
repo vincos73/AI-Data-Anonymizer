@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="74" viewBox="0 0 384 74" role="img" aria-label="OMISSIS">
+  <defs>
+    <pattern id="scanlines" patternUnits="userSpaceOnUse" width="1" height="8">
+      <rect width="1" height="4" fill="#0b0f12"/>
+    </pattern>
+  </defs>
+  <rect width="384" height="74" fill="none"/>
+  <text x="0" y="59" fill="url(#scanlines)" font-family="Arial Black, Helvetica, sans-serif" font-size="63" font-weight="900" letter-spacing="1">OMISSIS</text>
+</svg>

@@ -1,6 +1,6 @@
-# AI Data Anonymizer
+# OMISSIS
 
-AI Data Anonymizer is a privacy-first tool for anonymizing Italian documents before sharing them with AI chatbots, cloud services, collaborators, or external systems.
+OMISSIS is a privacy-first tool for anonymizing Italian documents before sharing them with AI chatbots, cloud services, collaborators, or external systems.
 
 The main product is the desktop app: install it, open a document, anonymize it locally on your computer. The software does not send files or text to external APIs.
 
@@ -40,7 +40,7 @@ Detected data includes:
 
 Many people paste contracts, letters, reports, invoices, and case notes into AI tools. Those documents often contain personal data, company names, fiscal identifiers, addresses, emails, or phone numbers.
 
-AI Data Anonymizer helps prepare a safer version of those documents before they leave your computer. In normal use, the recommended path is the desktop app.
+OMISSIS helps prepare a safer version of those documents before they leave your computer. In normal use, the recommended path is the desktop app.
 
 It is not a legal compliance product and it does not guarantee perfect anonymization. Always review the output before sharing sensitive documents.
 
@@ -50,7 +50,7 @@ It is not a legal compliance product and it does not guarantee perfect anonymiza
 | --- | --- |
 | `.txt`, `.md`, `.csv` | Reads and saves anonymized text files |
 | `.docx` | Reads and saves anonymized Word documents, preserving formatting where possible |
-| `.pdf` | Extracts text and creates a new anonymized PDF; original PDF layout may not be preserved. Scanned or image-only PDFs must be converted with OCR first. |
+| `.pdf` | Extracts selectable text for analysis and saves a rasterized redacted PDF; the visual layout is preserved, but final text is not selectable. Scanned or image-only PDFs must be converted with OCR first. |
 | `.doc` | Supported on macOS only; converted to `.docx` before anonymization |
 
 On Windows, convert legacy `.doc` files to `.docx` before using the desktop app.
@@ -61,7 +61,7 @@ The desktop app processes documents locally. It does not send text or files to e
 
 The web app is not required for normal desktop use. If you run it locally on `127.0.0.1`, it stays on your computer as a browser interface. If you publish it on a server, text submitted to the web app is sent to that server. For sensitive documents, run it only on infrastructure you control and use HTTPS.
 
-The app rejects scanned or image-only PDFs when no selectable text can be extracted, so users do not mistake an unread PDF for a safely anonymized one. Run OCR first, then anonymize the OCR-enabled PDF.
+The app rejects scanned or image-only PDFs when no selectable text can be extracted, so users do not mistake an unread PDF for a safely anonymized one. Redacted PDFs are rebuilt as page images with permanent blackouts: this avoids leaving original text under visual overlays, but the final PDF text is not copyable or searchable.
 
 For `.docx` files, the app anonymizes visible document text and also sanitizes common hidden Office content such as metadata, comments, text boxes, footnotes, endnotes, and selected revision text.
 
@@ -84,8 +84,8 @@ The desktop app defaults to maximum-protection mode, which is the recommended ch
 
 The macOS build creates:
 
-- `AI Data Anonymizer.app`
-- `AI Data Anonymizer.dmg`
+- `OMISSIS.app`
+- `OMISSIS.dmg`
 
 Unsigned builds may be blocked by Gatekeeper. If macOS warns that the developer is unidentified, right-click the app and choose **Open**.
 
@@ -93,8 +93,8 @@ Unsigned builds may be blocked by Gatekeeper. If macOS warns that the developer 
 
 The Windows build creates:
 
-- `AI Data Anonymizer.exe`
-- `AI-Data-Anonymizer-Windows.zip`
+- `OMISSIS.exe`
+- `OMISSIS-Windows.zip`
 
 The Windows desktop app supports `.txt`, `.md`, `.csv`, `.docx`, and `.pdf`.
 
@@ -193,7 +193,7 @@ pip install -e ".[desktop,web]"
 python -m unittest discover -s tests -v
 ```
 
-The test suite covers Italian false positives, person and organization recognition, territorial bodies, PEC addresses, protocol/case numbers, structured identifiers, standard and maximum-protection anonymization, document anonymization, `.docx` formatting preservation, hidden `.docx` metadata/content sanitization, and unreadable/scanned PDF rejection.
+The test suite covers Italian false positives, person and organization recognition, territorial bodies, PEC addresses, protocol/case numbers, structured identifiers, standard and maximum-protection anonymization, document anonymization, `.docx` structure and formatting preservation, hidden `.docx` metadata/content sanitization, unreadable/scanned PDF rejection, and rasterized PDF redaction without extractable original text.
 
 ## Project Status
 

@@ -1,6 +1,6 @@
 import os
 
-application = "AI Data Anonymizer.app"
+application = "OMISSIS.app"
 app_path = os.path.join(os.getcwd(), "dist", application)
 
 files = [app_path]

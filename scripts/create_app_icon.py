@@ -10,73 +10,44 @@ ASSETS = ROOT / "assets"
 ICONSET = ASSETS / "app_icon.iconset"
 
 
-def rounded_rectangle_mask(size: int, radius: int) -> Image.Image:
-    mask = Image.new("L", (size, size), 0)
-    draw = ImageDraw.Draw(mask)
-    draw.rounded_rectangle((0, 0, size, size), radius=radius, fill=255)
-    return mask
-
-
-def draw_icon(size: int) -> Image.Image:
-    scale = size / 1024
+def build_icon(size: int) -> Image.Image:
     image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
 
-    shadow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    shadow_draw = ImageDraw.Draw(shadow)
-    inset = int(70 * scale)
-    radius = int(190 * scale)
-    shadow_draw.rounded_rectangle(
-        (inset, inset + int(22 * scale), size - inset, size - inset + int(22 * scale)),
-        radius=radius,
-        fill=(15, 20, 26, 58),
+    glow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    glow_draw = ImageDraw.Draw(glow)
+    glow_draw.ellipse(
+        (int(size * 0.12), int(size * 0.12), int(size * 0.88), int(size * 0.88)),
+        fill=(0, 137, 184, 210),
     )
-    shadow = shadow.filter(ImageFilter.GaussianBlur(int(28 * scale)))
-    image.alpha_composite(shadow)
-
-    body = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    body_draw = ImageDraw.Draw(body)
-    body_draw.rounded_rectangle(
-        (inset, inset, size - inset, size - inset),
-        radius=radius,
-        fill=(244, 246, 247, 255),
-        outline=(224, 228, 231, 255),
-        width=max(1, int(2 * scale)),
-    )
-    image.alpha_composite(body)
+    image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(int(size * 0.1))))
 
     draw = ImageDraw.Draw(image)
-    black = (29, 36, 43, 255)
-    slate = (72, 91, 108, 255)
-    blue = (111, 137, 165, 255)
-    dark_blue = (78, 104, 128, 255)
+    cyan = (0, 137, 184, 255)
+    black = (0, 0, 0, 255)
+    line = max(2, int(size * 0.018))
 
-    left = int(280 * scale)
-    top = int(270 * scale)
-    cell = int(84 * scale)
-    gap = int(42 * scale)
-    rows = [top + row * (cell + gap) for row in range(4)]
-    cols = [left + col * (cell + gap) for col in range(3)]
+    def rect(x: float, y: float, w: float, h: float, fill: tuple[int, int, int, int], outline: bool = False) -> None:
+        box = (
+            int(size * x),
+            int(size * y),
+            int(size * (x + w)),
+            int(size * (y + h)),
+        )
+        if outline:
+            draw.rectangle(box, outline=fill, width=line)
+        else:
+            draw.rectangle(box, fill=fill)
 
-    for row_index, y in enumerate(rows):
-        for col_index, x in enumerate(cols):
-            color = black if col_index < 2 else (slate if row_index % 2 == 0 else black)
-            draw.rectangle((x, y, x + cell, y + cell), fill=color)
-
-    scatter_specs = [
-        (640, 272, 52, blue),
-        (720, 278, 38, dark_blue),
-        (642, 402, 42, blue),
-        (730, 430, 30, dark_blue),
-        (638, 532, 32, blue),
-        (722, 570, 24, dark_blue),
-        (648, 660, 24, blue),
-        (730, 690, 18, dark_blue),
-    ]
-    for x, y, box, color in scatter_specs:
-        x1 = int(x * scale)
-        y1 = int(y * scale)
-        b = int(box * scale)
-        draw.rectangle((x1, y1, x1 + b, y1 + b), fill=color)
+    rect(0.18, 0.22, 0.42, 0.05, cyan, outline=True)
+    rect(0.66, 0.22, 0.16, 0.05, cyan, outline=True)
+    rect(0.18, 0.34, 0.34, 0.06, black)
+    rect(0.56, 0.34, 0.26, 0.06, black)
+    rect(0.18, 0.48, 0.18, 0.06, black)
+    rect(0.42, 0.48, 0.32, 0.06, cyan, outline=True)
+    rect(0.18, 0.62, 0.50, 0.06, black)
+    rect(0.73, 0.62, 0.09, 0.06, cyan, outline=True)
+    rect(0.18, 0.76, 0.13, 0.06, black)
+    rect(0.38, 0.76, 0.36, 0.06, cyan, outline=True)
 
     return image
 
@@ -96,7 +67,7 @@ def save_iconset() -> None:
         "icon_512x512.png": 512,
         "icon_512x512@2x.png": 1024,
     }
-    source = draw_icon(1024)
+    source = build_icon(1024)
     source.save(ASSETS / "app_icon.png")
     source.save(
         ASSETS / "app_icon.ico",

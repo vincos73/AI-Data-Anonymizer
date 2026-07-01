@@ -4,10 +4,11 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QAction, QDragEnterEvent, QDropEvent, QTextCharFormat, QTextCursor
+from PySide6.QtGui import QAction, QColor, QDragEnterEvent, QDropEvent, QPixmap, QTextCharFormat, QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
+    QDialog,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -37,6 +38,26 @@ from privacy_guardian.reporting import entity_label, mode_note, report_text, sou
 from privacy_guardian.styles import APP_STYLE
 
 
+PROJECT_REPO_URL = "https://github.com/vincos73/AI-Data-Anonymizer"
+PROJECT_RELEASES_URL = f"{PROJECT_REPO_URL}/releases"
+
+
+def _asset_path(filename: str) -> Path:
+    candidates: list[Path] = []
+    if getattr(sys, "frozen", False):
+        bundle_temp = getattr(sys, "_MEIPASS", "")
+        if bundle_temp:
+            candidates.append(Path(bundle_temp) / "privacy_guardian" / "assets" / filename)
+        candidates.append(
+            Path(sys.executable).resolve().parents[1] / "Resources" / "privacy_guardian" / "assets" / filename
+        )
+    candidates.append(Path(__file__).with_name("assets") / filename)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -45,9 +66,9 @@ class MainWindow(QMainWindow):
         self.loaded_document: LoadedDocument | None = None
         self.anonymized_document: AnonymizedDocument | None = None
 
-        self.setWindowTitle("AI Data Anonymizer")
+        self.setWindowTitle("OMISSIS")
         self.resize(1160, 760)
-        self.setMinimumSize(QSize(940, 640))
+        self.setMinimumSize(QSize(1120, 660))
         self.setAcceptDrops(True)
 
         self.input_text = QTextEdit()
@@ -65,11 +86,34 @@ class MainWindow(QMainWindow):
         self.table.verticalHeader().setVisible(False)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setAlternatingRowColors(True)
+        self.table.setShowGrid(False)
+        self.table.verticalHeader().setDefaultSectionSize(34)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
         self.version_label = QLabel(f"v{__version__}")
         self.version_label.setObjectName("VersionPill")
+
+        self.logo_mark_label = QLabel()
+        self.logo_mark_label.setObjectName("BrandMark")
+        logo_mark_pixmap = QPixmap(str(_asset_path("omissis-logo.svg")))
+        if not logo_mark_pixmap.isNull():
+            self.logo_mark_label.setPixmap(logo_mark_pixmap.scaledToHeight(38, Qt.SmoothTransformation))
+        self.logo_mark_label.setFixedHeight(42)
+
+        self.logo_label = QLabel("OMISSIS")
+        self.logo_label.setObjectName("BrandLogo")
+        logo_pixmap = QPixmap(str(_asset_path("omissis-logotype.svg")))
+        if not logo_pixmap.isNull():
+            self.logo_label.setText("")
+            self.logo_label.setPixmap(logo_pixmap.scaledToHeight(42, Qt.SmoothTransformation))
+        self.logo_label.setFixedHeight(48)
+
+        byline = QLabel("by vincos")
+        byline.setObjectName("Byline")
+
+        self.local_notice = QLabel("Elaborazione locale · i dati restano sul dispositivo")
+        self.local_notice.setObjectName("LocalNotice")
 
         self.mode_select = QComboBox()
         self.mode_select.addItem("Massima protezione (consigliata)", "maximum")
@@ -109,7 +153,22 @@ class MainWindow(QMainWindow):
         self.clear_button.clicked.connect(self.clear_all)
         self.clear_button.setObjectName("SecondaryButton")
 
+        brand_row = QHBoxLayout()
+        brand_row.setContentsMargins(18, 12, 18, 12)
+        brand_row.setSpacing(10)
+        brand_row.addWidget(self.logo_mark_label, 0, Qt.AlignVCenter)
+        brand_row.addWidget(self.logo_label, 0, Qt.AlignVCenter)
+        brand_row.addWidget(byline, 0, Qt.AlignBottom)
+        brand_row.addStretch(1)
+        brand_row.addWidget(self.local_notice, 0, Qt.AlignVCenter)
+        brand_row.addWidget(self.version_label, 0, Qt.AlignVCenter)
+
+        brand_panel = QFrame()
+        brand_panel.setObjectName("BrandPanel")
+        brand_panel.setLayout(brand_row)
+
         button_row = QHBoxLayout()
+        button_row.setContentsMargins(14, 12, 14, 12)
         button_row.setSpacing(8)
         for button in (self.load_button, self.analyze_button, self.anonymize_button):
             button_row.addWidget(button)
@@ -123,35 +182,23 @@ class MainWindow(QMainWindow):
         for button in (self.copy_button, self.save_button, self.clear_button):
             button_row.addWidget(button)
 
+        command_panel = QFrame()
+        command_panel.setObjectName("CommandPanel")
+        command_panel.setLayout(button_row)
+
         text_splitter = QSplitter(Qt.Horizontal)
         text_splitter.addWidget(self._panel("Testo originale", self.input_text))
         text_splitter.addWidget(self._panel("Testo anonimizzato", self.output_text))
         text_splitter.setSizes([540, 540])
 
-        title = QLabel("AI DATA ANONYMIZER")
-        title.setObjectName("AppTitle")
-        byline = QLabel("by vincos")
-        byline.setObjectName("Byline")
-
-        brand_row = QHBoxLayout()
-        brand_row.setContentsMargins(0, 0, 0, 0)
-        brand_row.setSpacing(10)
-        brand_row.addWidget(title, 0, Qt.AlignBaseline)
-        brand_row.addWidget(byline, 0, Qt.AlignBaseline)
-        brand_row.addStretch(1)
-
-        header = QHBoxLayout()
-        header.addLayout(brand_row, 1)
-        header.addWidget(self.version_label, 0, Qt.AlignTop)
-
         findings_title = QLabel("Dati rilevati")
         findings_title.setObjectName("SectionTitle")
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(18, 16, 18, 14)
+        layout.setContentsMargins(22, 18, 22, 16)
         layout.setSpacing(12)
-        layout.addLayout(header)
-        layout.addLayout(button_row)
+        layout.addWidget(brand_panel)
+        layout.addWidget(command_panel)
         layout.addWidget(self.document_label)
         layout.addWidget(self.report_label)
         layout.addWidget(text_splitter, 4)
@@ -191,6 +238,59 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(quit_action)
 
+        about_action = QAction("Informazioni su OMISSIS", self)
+        about_action.triggered.connect(self.show_about_dialog)
+
+        help_menu = self.menuBar().addMenu("Aiuto")
+        help_menu.addAction(about_action)
+
+    def show_about_dialog(self) -> None:
+        dialog = QDialog(self)
+        dialog.setObjectName("AboutDialog")
+        dialog.setWindowTitle("Informazioni su OMISSIS")
+        dialog.setModal(True)
+        dialog.setMinimumWidth(420)
+
+        logo = QLabel("OMISSIS")
+        logo.setObjectName("BrandLogo")
+        logo_pixmap = QPixmap(str(_asset_path("omissis-logotype.svg")))
+        if not logo_pixmap.isNull():
+            logo.setText("")
+            logo.setPixmap(logo_pixmap.scaledToHeight(34, Qt.SmoothTransformation))
+
+        details = QLabel(
+            f"<b>Versione:</b> {__version__}<br>"
+            f"<b>Build:</b> {__version__}<br>"
+            "<b>Autore:</b> Vincenzo Cosenza aka Vincos<br>"
+            '<b>Sito web:</b> <a style="color:#0089b8;" href="https://vincos.it">vincos.it</a><br>'
+            f'<b>Repository:</b> <a style="color:#0089b8;" href="{PROJECT_REPO_URL}">GitHub</a><br>'
+            f'<b>Nuove versioni:</b> <a style="color:#0089b8;" href="{PROJECT_RELEASES_URL}">pagina Releases</a><br><br>'
+            "Anonimizzatore locale per documenti italiani."
+        )
+        details.setObjectName("AboutDetails")
+        details.setTextFormat(Qt.RichText)
+        details.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        details.setOpenExternalLinks(True)
+        details.setWordWrap(True)
+
+        close_button = QPushButton("Chiudi")
+        close_button.setObjectName("SecondaryButton")
+        close_button.clicked.connect(dialog.accept)
+
+        button_row = QHBoxLayout()
+        button_row.addStretch(1)
+        button_row.addWidget(close_button)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(24, 22, 24, 18)
+        layout.setSpacing(16)
+        layout.addWidget(logo)
+        layout.addWidget(details)
+        layout.addLayout(button_row)
+        dialog.setLayout(layout)
+        dialog.setStyleSheet(APP_STYLE)
+        dialog.exec()
+
     def open_file(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
             self,
@@ -227,8 +327,21 @@ class MainWindow(QMainWindow):
         self.input_text.setPlainText(self.loaded_document.text)
         self.output_text.clear()
         self._update_mode_notice()
-        self.document_label.setText(f"Documento caricato: {self.loaded_document.path.name}")
-        self.statusBar().showMessage("Documento caricato. Massima protezione è pronta per ChatGPT e altri strumenti IA.", 5000)
+        if self.loaded_document.extension == ".pdf":
+            self.document_label.setText(
+                f"PDF caricato: {self.loaded_document.path.name}. "
+                "L'export creerà un PDF rasterizzato con oscuramenti permanenti."
+            )
+            self.statusBar().showMessage(
+                "PDF caricato. L'anonimizzazione salverà una copia redatta non selezionabile.",
+                7000,
+            )
+        else:
+            self.document_label.setText(f"Documento caricato: {self.loaded_document.path.name}")
+            self.statusBar().showMessage(
+                "Documento caricato. Massima protezione è pronta per ChatGPT e altri strumenti IA.",
+                5000,
+            )
         self._sync_action_state()
 
     def analyze_text(self) -> None:
@@ -248,7 +361,14 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Incolla un testo o carica un documento prima di anonimizzare.", 5000)
             return
         if self.loaded_document and self.input_text.toPlainText() == self.loaded_document.text:
-            self.anonymized_document = anonymize_loaded_document(self.loaded_document, self.engine, mode)
+            try:
+                self.anonymized_document = anonymize_loaded_document(self.loaded_document, self.engine, mode)
+            except Exception as exc:
+                self.anonymized_document = None
+                self.output_text.clear()
+                self.statusBar().showMessage(self._friendly_processing_error_message(exc), 10000)
+                self._sync_action_state()
+                return
             self.findings = self.anonymized_document.findings
             self.output_text.setPlainText(self.anonymized_document.text)
             self._fill_table()
@@ -279,21 +399,39 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Anonimizza prima un testo o un documento.", 4000)
             return
         default_name = self.anonymized_document.filename if self.anonymized_document else "testo_anonimizzato.txt"
+        expected_suffix = Path(default_name).suffix.lower() or ".txt"
+        save_filters = {
+            ".docx": "Documento Word (*.docx)",
+            ".pdf": "PDF redatto (*.pdf)",
+            ".txt": "File di testo (*.txt)",
+        }
+        save_filter = save_filters.get(expected_suffix, "Tutti i file (*.*)")
         filename, _ = QFileDialog.getSaveFileName(
             self,
             "Salva versione anonimizzata",
             str(Path.home() / default_name),
-            "Documenti (*.txt *.docx *.pdf);;Tutti i file (*.*)",
+            save_filter,
         )
         if not filename:
             return
 
-        if self.anonymized_document:
-            Path(filename).write_bytes(self.anonymized_document.data)
+        target_path = Path(filename)
+        if target_path.suffix:
+            if target_path.suffix.lower() != expected_suffix:
+                self.statusBar().showMessage(
+                    f"Formato di salvataggio non supportato per questo risultato. Usa {expected_suffix}.",
+                    7000,
+                )
+                return
         else:
-            Path(filename).write_text(self.output_text.toPlainText(), encoding="utf-8")
+            target_path = target_path.with_suffix(expected_suffix)
 
-        self.statusBar().showMessage(f"Salvato: {filename}", 4000)
+        if self.anonymized_document:
+            target_path.write_bytes(self.anonymized_document.data)
+        else:
+            target_path.write_text(self.output_text.toPlainText(), encoding="utf-8")
+
+        self.statusBar().showMessage(f"Salvato: {target_path}", 4000)
 
     def clear_all(self) -> None:
         self.input_text.clear()
@@ -330,7 +468,7 @@ class MainWindow(QMainWindow):
         cursor.setCharFormat(QTextCharFormat())
 
         highlight = QTextCharFormat()
-        highlight.setBackground(Qt.GlobalColor.yellow)
+        highlight.setBackground(QColor("#c8edf7"))
 
         for finding in self.findings:
             cursor = self.input_text.textCursor()
@@ -358,6 +496,12 @@ class MainWindow(QMainWindow):
         if "OCR" in message or "testo estraibile" in message or "scansionate" in message:
             return f"{message} Questo evita di considerare sicuro un PDF che l'app non può leggere."
         return f"Non riesco a caricare il documento: {message}"
+
+    def _friendly_processing_error_message(self, exc: Exception) -> str:
+        message = str(exc)
+        if "PDF" in message:
+            return message
+        return f"Non riesco ad anonimizzare il documento: {message}"
 
     def _first_local_drop_path(self, event: QDragEnterEvent | QDropEvent) -> Path | None:
         mime_data = event.mimeData()

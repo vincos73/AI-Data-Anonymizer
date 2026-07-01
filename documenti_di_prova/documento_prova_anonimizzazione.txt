@@ -1,6 +1,6 @@
 DOCUMENTO DI PROVA - DATI FITTIZI
 
-Questo file contiene esclusivamente dati inventati per testare AI Data Anonymizer.
+Questo file contiene esclusivamente dati inventati per testare OMISSIS.
 Non usare questi dati come informazioni reali.
 
 Oggetto: bozza di incarico professionale e allegati amministrativi

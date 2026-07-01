@@ -14,7 +14,7 @@ python -m unittest discover -s tests -v
 
 ## Rule quality
 
-AI Data Anonymizer favors precision over coverage. A new recognizer should include:
+OMISSIS favors precision over coverage. A new recognizer should include:
 
 - at least one positive test;
 - at least one false-positive test for common Italian text;
