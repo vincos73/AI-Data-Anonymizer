@@ -25,6 +25,9 @@ Dati amministrativi e di fatturazione:
 - Codice destinatario SDI: ABC1234
 - Codice univoco ufficio: A1B2C3
 - Targa veicolo aziendale: AB123CD
+- Protocollo n. 12345/2024
+- Numero pratica: ED 9901
+- Fascicolo RG 4567/2023
 
 Note operative:
 Il referente della pratica e Maria Bianchi, domiciliata in Piazza Garibaldi 8, Napoli, telefono 06/12345678.

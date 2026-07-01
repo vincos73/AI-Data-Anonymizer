@@ -20,6 +20,7 @@ The web app exists only as an advanced option for developers, local demos, or se
 Detected data includes:
 
 - email addresses
+- PEC certified email addresses, separated from ordinary email when the domain or nearby context indicates PEC
 - Italian phone numbers, including common formats with spaces, dots, dashes, or slashes
 - IBANs, including spaced Italian IBANs
 - codice fiscale
@@ -28,6 +29,7 @@ Detected data includes:
 - Italian health card numbers when explicit context is present
 - identity documents, passports, and driving licences when explicit context is present
 - vehicle plates when explicit context is present
+- protocol, case, file, or application numbers when explicit context is present
 - Italian addresses with strong address signals
 - people names only with strong context, including birth/residence and payment-recipient contexts
 - company names with legal forms such as `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperatives and similar
@@ -182,7 +184,7 @@ Build Windows package from PowerShell:
 .\scripts\build_windows_app.ps1
 ```
 
-The GitHub Actions workflow `build-windows` can also create the Windows zip manually or attach it to a release when a tag such as `v0.2.0` is published.
+The GitHub Actions workflow `build-windows` can also create the Windows zip manually or attach it to a release when a tag such as `v0.3.0` is published.
 
 ## Tests
 
@@ -191,7 +193,7 @@ pip install -e ".[desktop,web]"
 python -m unittest discover -s tests -v
 ```
 
-The test suite covers Italian false positives, person and organization recognition, territorial bodies, structured identifiers, standard and maximum-protection anonymization, document anonymization, `.docx` formatting preservation, hidden `.docx` metadata/content sanitization, and unreadable/scanned PDF rejection.
+The test suite covers Italian false positives, person and organization recognition, territorial bodies, PEC addresses, protocol/case numbers, structured identifiers, standard and maximum-protection anonymization, document anonymization, `.docx` formatting preservation, hidden `.docx` metadata/content sanitization, and unreadable/scanned PDF rejection.
 
 ## Project Status
 

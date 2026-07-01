@@ -72,6 +72,8 @@ if ! /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $APP_VERSION" "dist/AI Dat
   /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $APP_VERSION" "dist/AI Data Anonymizer.app/Contents/Info.plist"
 fi
 
+codesign --force --deep --sign - "dist/AI Data Anonymizer.app"
+
 if command -v dmgbuild >/dev/null 2>&1; then
   dmgbuild -s scripts/dmg_settings.py "AI Data Anonymizer" "dist/AI Data Anonymizer.dmg"
 fi

@@ -9,12 +9,19 @@ LETTER = r"A-Za-zÀ-ÖØ-öø-ÿ"
 CAPITAL_WORD = rf"[A-ZÀ-ÖØ-Þ][{LETTER}'’.-]+"
 ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ0-9][{LETTER}0-9&'’.-]*|[A-Z0-9&]{{2,}})"
 PREFIX_ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ][{LETTER}&'’-]*|[A-Z0-9&]{{2,}})"
+EMAIL_VALUE = r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
 
 
 class ItalianPrivacyRecognizer:
     """High-precision recognizers for common Italian privacy data."""
 
-    EMAIL = re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b", re.IGNORECASE)
+    EMAIL = re.compile(rf"\b{EMAIL_VALUE}\b", re.IGNORECASE)
+    PEC_CONTEXT = re.compile(
+        rf"\b(?i:pec|posta\s+elettronica\s+certificata|domicilio\s+digitale)"
+        rf"\s*(?i:n\.?|num\.?|nr\.?|indirizzo|email|e-mail)?\s*[:#-]?\s*"
+        rf"(?P<email>{EMAIL_VALUE})\b",
+        re.IGNORECASE,
+    )
     CODICE_FISCALE = re.compile(
         r"\b[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]\b",
         re.IGNORECASE,
@@ -50,6 +57,13 @@ class ItalianPrivacyRecognizer:
         r"veicolo\s+targato|auto\s+targata|autovettura\s+targata)"
         r"\s*(?i:n\.?|num\.?|nr\.?|numero)?\s*[:#-]?\s*"
         r"(?P<plate>[A-Z]{2}\s*\d{3}\s*[A-Z]{2}|[A-Z]{1,2}\s*\d{5,6}|[A-Z]{2}\s*\d{5})\b",
+        re.IGNORECASE,
+    )
+    PROTOCOL_CASE_NUMBER = re.compile(
+        r"\b(?i:numero\s+(?:di\s+)?protocollo|protocollo(?:\s+informatico)?|prot\.?|"
+        r"numero\s+(?:di\s+)?pratica|pratica|fascicolo|istanza|domanda|richiesta)"
+        r"(?:\s+(?i:n\.?|num\.?|nr\.?|numero|cod\.?|codice|id))?\s*[:#-]?\s*"
+        r"(?P<case>(?:[A-Z]{1,5}\s+)?[A-Z0-9]{2,}(?:\s*[./-]\s*[A-Z0-9]{1,10}){0,4})\b",
         re.IGNORECASE,
     )
     DATE = re.compile(
@@ -116,6 +130,7 @@ class ItalianPrivacyRecognizer:
     def analyze(self, text: str, mode: AnonymizationMode = "standard") -> list[Finding]:
         findings: list[Finding] = []
         findings.extend(self._regex_findings(text, "EMAIL_ADDRESS", self.EMAIL, 0.98))
+        findings.extend(self._pec_email_findings(text))
         findings.extend(self._regex_findings(text, "PHONE_NUMBER", self.PHONE_NUMBER, 0.94))
         findings.extend(self._codice_fiscale_findings(text))
         findings.extend(self._partita_iva_findings(text))
@@ -124,6 +139,7 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._health_card_findings(text))
         findings.extend(self._identity_document_findings(text))
         findings.extend(self._vehicle_plate_findings(text))
+        findings.extend(self._protocol_case_findings(text))
         findings.extend(self._regex_findings(text, "ADDRESS", self.ADDRESS, 0.86))
         findings.extend(self._organization_findings(text))
         findings.extend(self._territorial_body_findings(text))
@@ -186,6 +202,18 @@ class ItalianPrivacyRecognizer:
             if self._valid_iban(self._compact_iban(match.group(0)))
         ]
 
+    def _pec_email_findings(self, text: str) -> list[Finding]:
+        findings = [
+            Finding("PEC_ADDRESS", match.start("email"), match.end("email"), 0.98)
+            for match in self.PEC_CONTEXT.finditer(text)
+        ]
+        findings.extend(
+            Finding("PEC_ADDRESS", match.start(), match.end(), 0.97)
+            for match in self.EMAIL.finditer(text)
+            if self._looks_like_pec_domain(match.group(0))
+        )
+        return findings
+
     def _sdi_code_findings(self, text: str) -> list[Finding]:
         return [
             Finding("SDI_CODE", match.start("sdi"), match.end("sdi"), 0.9)
@@ -212,6 +240,13 @@ class ItalianPrivacyRecognizer:
             Finding("VEHICLE_PLATE", match.start("plate"), match.end("plate"), 0.91)
             for match in self.VEHICLE_PLATE.finditer(text)
             if self._valid_contextual_code(match.group("plate"))
+        ]
+
+    def _protocol_case_findings(self, text: str) -> list[Finding]:
+        return [
+            Finding("PROTOCOL_CASE_NUMBER", match.start("case"), match.end("case"), 0.88)
+            for match in self.PROTOCOL_CASE_NUMBER.finditer(text)
+            if self._valid_protocol_case_code(match.group("case"))
         ]
 
     def _organization_findings(self, text: str) -> list[Finding]:
@@ -244,12 +279,14 @@ class ItalianPrivacyRecognizer:
             "CODICE_FISCALE": 7,
             "PARTITA_IVA": 7,
             "IBAN": 7,
+            "PEC_ADDRESS": 8,
             "EMAIL_ADDRESS": 7,
             "PHONE_NUMBER": 7,
             "SDI_CODE": 7,
             "HEALTH_CARD": 7,
             "IDENTITY_DOCUMENT": 7,
             "VEHICLE_PLATE": 7,
+            "PROTOCOL_CASE_NUMBER": 7,
             "ORGANIZATION": 6,
             "TERRITORIAL_BODY": 6,
             "PERSON": 5,
@@ -368,6 +405,38 @@ class ItalianPrivacyRecognizer:
     def _valid_health_card(self, value: str) -> bool:
         compact = re.sub(r"[\s.-]", "", value)
         return len(compact) == 20 and compact.isdigit()
+
+    def _looks_like_pec_domain(self, value: str) -> bool:
+        domain = value.rsplit("@", 1)[-1].lower()
+        labels = domain.split(".")
+        known_domains = {
+            "arubapec.it",
+            "legalmail.it",
+            "messaggipec.it",
+            "pecimprese.it",
+            "postacertificata.gov.it",
+            "registerpec.it",
+            "sicurezzapostale.it",
+        }
+        return (
+            domain in known_domains
+            or domain.endswith(".legalmail.it")
+            or domain.endswith(".postacertificata.gov.it")
+            or "pec" in labels
+        )
+
+    def _valid_protocol_case_code(self, value: str) -> bool:
+        normalized = re.sub(r"\s+", "", value.strip().upper())
+        compact = re.sub(r"[./-]", "", normalized)
+        if not 4 <= len(compact) <= 24:
+            return False
+        if not any(char.isdigit() for char in compact):
+            return False
+        if re.fullmatch(r"\d{1,2}[./-]\d{1,2}[./-]\d{2,4}", normalized):
+            return False
+        if re.fullmatch(r"(?:19|20)\d{2}", compact):
+            return False
+        return True
 
     def _replacement(self, value: str, entity_type: str, mode: AnonymizationMode) -> str:
         if mode == "maximum":

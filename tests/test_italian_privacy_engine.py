@@ -129,6 +129,21 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn("<EMAIL>", anonymized)
         self.assertIn("<TELEFONO>", anonymized)
 
+    def test_detects_pec_as_dedicated_category(self) -> None:
+        text = (
+            "Email ordinaria mario.rossi@example.com, PEC azienda@pec.it "
+            "e domicilio digitale studio.rossi@example.com."
+        )
+        findings = self.findings_for(text)
+        anonymized = self.engine.anonymize(text)
+
+        self.assertIn(("EMAIL_ADDRESS", "mario.rossi@example.com"), findings)
+        self.assertIn(("PEC_ADDRESS", "azienda@pec.it"), findings)
+        self.assertIn(("PEC_ADDRESS", "studio.rossi@example.com"), findings)
+        self.assertNotIn(("EMAIL_ADDRESS", "azienda@pec.it"), findings)
+        self.assertEqual(anonymized.count("<EMAIL>"), 1)
+        self.assertEqual(anonymized.count("<PEC>"), 2)
+
     def test_detects_common_italian_number_formats(self) -> None:
         text = "IBAN IT60 X054 2811 1010 0000 0123 456 tel 06/12345678 cell +39 333/1234567"
         findings = self.findings_for(text)
@@ -157,6 +172,27 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn("<TESSERA_SANITARIA>", anonymized)
         self.assertNotIn("ABC1234", anonymized)
         self.assertNotIn("8038 0000", anonymized)
+
+    def test_detects_protocol_and_case_numbers_with_context(self) -> None:
+        text = (
+            "Protocollo n. 12345/2024, prot. SUAP-7788-A, "
+            "pratica ED 9901 e fascicolo RG 4567/2023."
+        )
+        findings = self.findings_for(text)
+        anonymized = self.engine.anonymize(text)
+
+        self.assertIn(("PROTOCOL_CASE_NUMBER", "12345/2024"), findings)
+        self.assertIn(("PROTOCOL_CASE_NUMBER", "SUAP-7788-A"), findings)
+        self.assertIn(("PROTOCOL_CASE_NUMBER", "ED 9901"), findings)
+        self.assertIn(("PROTOCOL_CASE_NUMBER", "RG 4567/2023"), findings)
+        self.assertEqual(anonymized.count("<PROTOCOLLO_PRATICA>"), 4)
+
+    def test_protocol_and_case_numbers_require_context_and_skip_dates(self) -> None:
+        text = "La sigla SUAP-7788-A non basta. Protocollo del 10/01/2024 senza numero pratica."
+        findings = self.findings_for(text)
+
+        self.assertNotIn(("PROTOCOL_CASE_NUMBER", "SUAP-7788-A"), findings)
+        self.assertNotIn(("PROTOCOL_CASE_NUMBER", "10/01/2024"), findings)
 
     def test_invoice_and_health_codes_require_clear_context(self) -> None:
         text = "La sigla ABC1234 e il numero 80380000000000000000 non bastano da soli."
@@ -219,11 +255,15 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertEqual(entity_label("VEHICLE_PLATE", 2), "targhe veicolo")
         self.assertEqual(entity_label("HEALTH_CARD"), "tessera sanitaria")
         self.assertEqual(entity_label("SDI_CODE", 2), "codici SDI")
+        self.assertEqual(entity_label("PEC_ADDRESS"), "PEC")
+        self.assertEqual(entity_label("PROTOCOL_CASE_NUMBER", 2), "numeri protocollo/pratica")
         self.assertEqual(entity_placeholder("PERSON"), "<PERSONA>")
         self.assertEqual(entity_placeholder("IDENTITY_DOCUMENT"), "<DOCUMENTO_IDENTITA>")
         self.assertEqual(entity_placeholder("PHONE_NUMBER"), "<TELEFONO>")
         self.assertEqual(entity_placeholder("HEALTH_CARD"), "<TESSERA_SANITARIA>")
         self.assertEqual(entity_placeholder("SDI_CODE"), "<CODICE_SDI>")
+        self.assertEqual(entity_placeholder("PEC_ADDRESS"), "<PEC>")
+        self.assertEqual(entity_placeholder("PROTOCOL_CASE_NUMBER"), "<PROTOCOLLO_PRATICA>")
         self.assertEqual(source_label("italian_rules"), "Regole italiane locali")
 
 
@@ -309,6 +349,9 @@ class DocumentAnonymizationTest(unittest.TestCase):
             ("Codice univoco ufficio", "A1B2C3"),
             ("Targa veicolo aziendale", "AB123CD"),
             ("Tessera sanitaria", "8038 0000 0000 0000 0000"),
+            ("PEC", "azienda@pec.it"),
+            ("Numero pratica", "ED 9901"),
+            ("Protocollo", "12345/2024"),
         ]
         for label, value in rows:
             cells = table.add_row().cells
@@ -330,6 +373,8 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertEqual(output_text.count("<CODICE_SDI>"), 2)
         self.assertIn("<TARGA_VEICOLO>", output_text)
         self.assertIn("<TESSERA_SANITARIA>", output_text)
+        self.assertIn("<PEC>", output_text)
+        self.assertEqual(output_text.count("<PROTOCOLLO_PRATICA>"), 2)
         self.assertNotIn("CA12345AA", output_text)
         self.assertNotIn("YA1234567", output_text)
         self.assertNotIn("U1234567A", output_text)
@@ -337,6 +382,9 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertNotIn("A1B2C3", output_text)
         self.assertNotIn("AB123CD", output_text)
         self.assertNotIn("8038 0000", output_text)
+        self.assertNotIn("azienda@pec.it", output_text)
+        self.assertNotIn("ED 9901", output_text)
+        self.assertNotIn("12345/2024", output_text)
 
     def test_docx_anonymization_sanitizes_hidden_ooxml_and_metadata(self) -> None:
         docx_path = self.base / "hidden.docx"

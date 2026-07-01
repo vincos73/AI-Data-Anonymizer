@@ -10,12 +10,12 @@ La web app esiste solo come opzione avanzata per sviluppatori, demo locali o ins
 
 ## Scarica App Desktop
 
-Ultima versione: **v0.2.0**
+Ultima versione: **v0.3.0**
 
 | Sistema | Download |
 | --- | --- |
-| Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Scarica DMG per macOS](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.2.0/AI-Data-Anonymizer-macOS-Apple-Silicon.dmg) |
-| Windows | [Scarica ZIP per Windows](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.2.0/AI-Data-Anonymizer-Windows.zip) |
+| Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Scarica DMG per macOS](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.3.0/AI-Data-Anonymizer-macOS-Apple-Silicon.dmg) |
+| Windows | [Scarica ZIP per Windows](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.3.0/AI-Data-Anonymizer-Windows.zip) |
 
 Tutti i file sono disponibili nella pagina [Releases](https://github.com/vincos73/AI-Data-Anonymizer/releases).
 
@@ -89,6 +89,7 @@ Nell'app desktop è la modalità predefinita e consigliata per l'uso con ChatGPT
 AI Data Anonymizer riconosce, con regole conservative:
 
 - indirizzi email;
+- indirizzi PEC, riconosciuti separatamente dalle email ordinarie quando il dominio o il contesto li indicano;
 - numeri di telefono italiani, inclusi formati con spazi, punti, trattini o slash;
 - IBAN italiani, anche scritti con spazi;
 - codice fiscale;
@@ -97,6 +98,7 @@ AI Data Anonymizer riconosce, con regole conservative:
 - numeri di tessera sanitaria quando indicati con contesto esplicito;
 - documenti d'identità, passaporti e patenti quando indicati con contesto esplicito;
 - targhe veicolo quando indicate con contesto esplicito;
+- numeri di protocollo, pratica, fascicolo o istanza quando indicati con contesto esplicito;
 - indirizzi italiani con segnali forti come via, viale, piazza, corso;
 - nomi di persone con contesto forte, per esempio nascita, residenza o intestatario di pagamento;
 - aziende con forme giuridiche come `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperative e simili;
@@ -200,7 +202,7 @@ pip install -e ".[desktop,web]"
 python -m unittest discover -s tests -v
 ```
 
-La suite copre falsi positivi italiani, riconoscimento di persone e organizzazioni, enti territoriali, identificativi strutturati, modalità Standard e Massima protezione, anonimizzazione documenti, preservazione della formattazione `.docx`, pulizia di contenuti nascosti `.docx` e rifiuto dei PDF scansionati/non leggibili.
+La suite copre falsi positivi italiani, riconoscimento di persone e organizzazioni, enti territoriali, PEC, numeri di protocollo/pratica, identificativi strutturati, modalità Standard e Massima protezione, anonimizzazione documenti, preservazione della formattazione `.docx`, pulizia di contenuti nascosti `.docx` e rifiuto dei PDF scansionati/non leggibili.
 
 ## Build Desktop
 
