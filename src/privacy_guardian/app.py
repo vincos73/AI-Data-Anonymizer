@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSignalBlocker, QSize, Qt
 from PySide6.QtGui import QAction, QColor, QDragEnterEvent, QDropEvent, QPixmap, QTextCharFormat, QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
@@ -84,7 +84,9 @@ class MainWindow(QMainWindow):
         self.loaded_document: LoadedDocument | None = None
         self.anonymized_document: AnonymizedDocument | None = None
         self.document_text_dirty = False
+        self.output_text_dirty = False
         self._loading_document_text = False
+        self._updating_output_text = False
         self.reversible_mapping: tuple[ReversibleMapEntry, ...] = ()
 
         self.setWindowTitle("OMISSIS")
@@ -100,7 +102,7 @@ class MainWindow(QMainWindow):
         self.output_text = QTextEdit()
         self.output_text.setAcceptDrops(False)
         self.output_text.setPlaceholderText("Il testo anonimizzato apparirà qui.")
-        self.output_text.textChanged.connect(self._sync_action_state)
+        self.output_text.textChanged.connect(self._handle_output_text_changed)
 
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels(["Tipo", "Valore trovato", "Intervallo", "Confidenza", "Origine"])
@@ -498,12 +500,19 @@ class MainWindow(QMainWindow):
         self.anonymized_document = None
         self.reversible_mapping = ()
         self.document_text_dirty = False
+        self.output_text_dirty = False
         self._loading_document_text = True
         try:
-            self.input_text.setPlainText(self.loaded_document.text)
+            signal_blocker = QSignalBlocker(self.input_text)
+            try:
+                self.input_text.setPlainText(self.loaded_document.text)
+            finally:
+                del signal_blocker
         finally:
             self._loading_document_text = False
         self.output_text.clear()
+        self.document_text_dirty = False
+        self.output_text_dirty = False
         self._update_mode_notice()
         if self.loaded_document.extension == ".pdf":
             if self.loaded_document.ocr_pages:
@@ -567,7 +576,7 @@ class MainWindow(QMainWindow):
                 return
             self.findings = self.anonymized_document.findings
             self.reversible_mapping = self.anonymized_document.reversible_mapping
-            self.output_text.setPlainText(self.anonymized_document.text)
+            self._set_output_text(self.anonymized_document.text)
             self._fill_table()
             self._highlight_findings()
             self._update_report()
@@ -593,9 +602,9 @@ class MainWindow(QMainWindow):
         if mode == "reversible":
             reversible_result = self.engine.anonymize_reversible(text, self.findings)
             self.reversible_mapping = reversible_result.mapping
-            self.output_text.setPlainText(reversible_result.text)
+            self._set_output_text(reversible_result.text)
         else:
-            self.output_text.setPlainText(self.engine.anonymize(text, self.findings, mode))
+            self._set_output_text(self.engine.anonymize(text, self.findings, mode))
         self._update_report()
         self._record_activity("anonymization", output_data=self.output_text.toPlainText().encode("utf-8"))
         if self.reversible_mapping:
@@ -613,7 +622,8 @@ class MainWindow(QMainWindow):
         if not self.output_text.toPlainText().strip() and not self.anonymized_document:
             self.statusBar().showMessage("Anonimizza prima un testo o un documento.", 4000)
             return
-        default_name = self.anonymized_document.filename if self.anonymized_document else "testo_anonimizzato.txt"
+        use_document_binary = self.anonymized_document is not None and not self.output_text_dirty
+        default_name = self.anonymized_document.filename if use_document_binary else "testo_anonimizzato.txt"
         expected_suffix = Path(default_name).suffix.lower() or ".txt"
         save_filters = {
             ".csv": "CSV (*.csv)",
@@ -643,7 +653,7 @@ class MainWindow(QMainWindow):
             target_path = target_path.with_suffix(expected_suffix)
 
         output_pane_text = self.output_text.toPlainText()
-        if self.anonymized_document and (expected_suffix not in {".txt", ".csv"} or not output_pane_text.strip()):
+        if use_document_binary and (expected_suffix not in {".txt", ".csv"} or not output_pane_text.strip()):
             target_path.write_bytes(self.anonymized_document.data)
         else:
             target_path.write_text(output_pane_text, encoding="utf-8")
@@ -714,6 +724,7 @@ class MainWindow(QMainWindow):
         self.loaded_document = None
         self.anonymized_document = None
         self.document_text_dirty = False
+        self.output_text_dirty = False
         self.reversible_mapping = ()
         self.document_label.setText("Nessun documento caricato. Puoi incollare testo o trascinare un file nella finestra.")
         self._update_mode_notice()
@@ -806,9 +817,27 @@ class MainWindow(QMainWindow):
             self.save_map_action.setEnabled(bool(self.reversible_mapping))
 
     def _handle_input_text_changed(self) -> None:
-        if self.loaded_document and not self._loading_document_text:
+        if (
+            self.loaded_document
+            and not self._loading_document_text
+            and self.input_text.toPlainText() != self.loaded_document.text
+        ):
             self.document_text_dirty = True
             self.anonymized_document = None
+        self._sync_action_state()
+
+    def _handle_output_text_changed(self) -> None:
+        if not self._updating_output_text:
+            self.output_text_dirty = True
+        self._sync_action_state()
+
+    def _set_output_text(self, text: str) -> None:
+        self._updating_output_text = True
+        try:
+            self.output_text.setPlainText(text)
+        finally:
+            self._updating_output_text = False
+        self.output_text_dirty = False
         self._sync_action_state()
 
     def _record_activity(
