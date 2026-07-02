@@ -83,6 +83,8 @@ class MainWindow(QMainWindow):
         self.findings: list[Finding] = []
         self.loaded_document: LoadedDocument | None = None
         self.anonymized_document: AnonymizedDocument | None = None
+        self.document_text_dirty = False
+        self._loading_document_text = False
         self.reversible_mapping: tuple[ReversibleMapEntry, ...] = ()
 
         self.setWindowTitle("OMISSIS")
@@ -93,7 +95,7 @@ class MainWindow(QMainWindow):
         self.input_text = QTextEdit()
         self.input_text.setAcceptDrops(False)
         self.input_text.setPlaceholderText("Incolla qui il testo da controllare oppure carica un documento.")
-        self.input_text.textChanged.connect(self._sync_action_state)
+        self.input_text.textChanged.connect(self._handle_input_text_changed)
 
         self.output_text = QTextEdit()
         self.output_text.setAcceptDrops(False)
@@ -495,7 +497,12 @@ class MainWindow(QMainWindow):
 
         self.anonymized_document = None
         self.reversible_mapping = ()
-        self.input_text.setPlainText(self.loaded_document.text)
+        self.document_text_dirty = False
+        self._loading_document_text = True
+        try:
+            self.input_text.setPlainText(self.loaded_document.text)
+        finally:
+            self._loading_document_text = False
         self.output_text.clear()
         self._update_mode_notice()
         if self.loaded_document.extension == ".pdf":
@@ -549,7 +556,7 @@ class MainWindow(QMainWindow):
         if not self.input_text.toPlainText().strip():
             self.statusBar().showMessage("Incolla un testo o carica un documento prima di anonimizzare.", 5000)
             return
-        if self.loaded_document and self.input_text.toPlainText() == self.loaded_document.text:
+        if self.loaded_document and not self.document_text_dirty:
             try:
                 self.anonymized_document = anonymize_loaded_document(self.loaded_document, self.engine, mode)
             except Exception as exc:
@@ -580,6 +587,7 @@ class MainWindow(QMainWindow):
 
         self.loaded_document = None
         self.anonymized_document = None
+        self.document_text_dirty = False
         self._run_analysis()
         text = self.input_text.toPlainText()
         if mode == "reversible":
@@ -705,6 +713,7 @@ class MainWindow(QMainWindow):
         self.findings = []
         self.loaded_document = None
         self.anonymized_document = None
+        self.document_text_dirty = False
         self.reversible_mapping = ()
         self.document_label.setText("Nessun documento caricato. Puoi incollare testo o trascinare un file nella finestra.")
         self._update_mode_notice()
@@ -796,6 +805,12 @@ class MainWindow(QMainWindow):
         if hasattr(self, "save_map_action"):
             self.save_map_action.setEnabled(bool(self.reversible_mapping))
 
+    def _handle_input_text_changed(self) -> None:
+        if self.loaded_document and not self._loading_document_text:
+            self.document_text_dirty = True
+            self.anonymized_document = None
+        self._sync_action_state()
+
     def _record_activity(
         self,
         action: ActivityAction,
@@ -803,7 +818,7 @@ class MainWindow(QMainWindow):
         output_path: str | Path | None = None,
         output_data: bytes | None = None,
     ) -> None:
-        source_is_document = self.loaded_document is not None and self.input_text.toPlainText() == self.loaded_document.text
+        source_is_document = self.loaded_document is not None and not self.document_text_dirty
         try:
             entry = build_activity_entry(
                 action=action,
