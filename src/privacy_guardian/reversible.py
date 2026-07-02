@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import re
 from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -21,6 +22,8 @@ from privacy_guardian.reporting import ENTITY_PLACEHOLDERS
 MAP_SCHEMA_VERSION = 1
 MAP_EXTENSION = ".omissis-map"
 KDF_ITERATIONS = 390_000
+PLACEHOLDER_PATTERN = re.compile(r"<([A-Z_]+)_(\d+)>")
+_BASE_TO_ENTITY = {base: entity for entity, base in ENTITY_PLACEHOLDERS.items()}
 
 
 @dataclass(frozen=True)
@@ -55,7 +58,16 @@ class ReversibleAnonymizer:
     def mapping(self) -> tuple[ReversibleMapEntry, ...]:
         return tuple(self._entries)
 
+    def reserve_placeholders(self, text: str) -> None:
+        """Skip placeholder indexes already present verbatim in the text, so restore stays unambiguous."""
+        for match in PLACEHOLDER_PATTERN.finditer(text):
+            entity_type = _BASE_TO_ENTITY.get(match.group(1), match.group(1))
+            index = int(match.group(2))
+            if index > self._counts[entity_type]:
+                self._counts[entity_type] = index
+
     def anonymize(self, text: str, findings: Iterable[Finding]) -> str:
+        self.reserve_placeholders(text)
         chunks: list[str] = []
         cursor = 0
 

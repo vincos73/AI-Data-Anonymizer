@@ -157,6 +157,8 @@ def _output_extension(extension: str) -> str:
         return ".pdf"
     if extension in {".doc", ".docx"}:
         return ".docx"
+    if extension == ".csv":
+        return ".csv"
     return ".txt"
 
 
@@ -548,6 +550,9 @@ def _anonymize_text_nodes(
     if not text:
         return
 
+    if reversible_session:
+        reversible_session.reserve_placeholders(text)
+
     findings = engine.analyze(text, mode)
     if not findings:
         return
@@ -665,9 +670,14 @@ def _ocr_image(image) -> OcrPageText:
     if command is None:
         raise ValueError(_ocr_unavailable_message(""))
 
-    with tempfile.NamedTemporaryFile(suffix=".png") as image_file:
-        image.save(image_file.name)
-        return _run_tesseract_tsv(command, image_file.name)
+    # mkstemp + reopen by descriptor: NamedTemporaryFile cannot be reopened by name on Windows.
+    descriptor, image_path = tempfile.mkstemp(suffix=".png")
+    try:
+        with os.fdopen(descriptor, "wb") as image_file:
+            image.save(image_file, format="PNG")
+        return _run_tesseract_tsv(command, image_path)
+    finally:
+        os.unlink(image_path)
 
 
 def _run_tesseract_tsv(command: str, image_path: str) -> OcrPageText:

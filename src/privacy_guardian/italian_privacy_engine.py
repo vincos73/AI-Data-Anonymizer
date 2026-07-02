@@ -7,9 +7,25 @@ from privacy_guardian.reporting import entity_placeholder
 
 LETTER = r"A-Za-zÀ-ÖØ-öø-ÿ"
 CAPITAL_WORD = rf"[A-ZÀ-ÖØ-Þ][{LETTER}'’.-]+"
-ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ0-9][{LETTER}0-9&'’.-]*|[A-Z0-9&]{{2,}})"
-PREFIX_ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ][{LETTER}&'’-]*|[A-Z0-9&]{{2,}})"
+STREET_KEYWORD = r"(?:Via|Viale|Piazza|Piazzale|Corso|Largo|Vicolo|Strada|Contrada|Località|Localita|Frazione)"
+CAPITAL_NAME_WORD = rf"(?!{STREET_KEYWORD}\b){CAPITAL_WORD}"
+LOWER_ADDRESS_WORD = r"[a-zà-öø-ÿ]{2,}"
+ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ0-9][{LETTER}0-9&'’.-]*|[A-Z0-9&]{{2,}}|&)"
+PREFIX_ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ][{LETTER}&'’-]*|[A-Z0-9&]{{2,}}|&)"
 EMAIL_VALUE = r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
+
+# Official IBAN lengths by country code (ISO 13616 registry).
+IBAN_LENGTHS = {
+    "AD": 24, "AE": 23, "AL": 28, "AT": 20, "AZ": 28, "BA": 20, "BE": 16, "BG": 22,
+    "BH": 22, "BR": 29, "CH": 21, "CR": 22, "CY": 28, "CZ": 24, "DE": 22, "DK": 18,
+    "DO": 28, "EE": 20, "EG": 29, "ES": 24, "FI": 18, "FO": 18, "FR": 27, "GB": 22,
+    "GE": 22, "GI": 23, "GL": 18, "GR": 27, "GT": 28, "HR": 21, "HU": 28, "IE": 22,
+    "IL": 23, "IS": 26, "IT": 27, "JO": 30, "KW": 30, "KZ": 20, "LB": 28, "LI": 21,
+    "LT": 20, "LU": 20, "LV": 21, "MC": 27, "MD": 24, "ME": 22, "MK": 19, "MT": 31,
+    "MU": 30, "NL": 18, "NO": 15, "PK": 24, "PL": 28, "PS": 29, "PT": 25, "QA": 29,
+    "RO": 24, "RS": 22, "SA": 24, "SE": 24, "SI": 19, "SK": 24, "SM": 27, "TN": 24,
+    "TR": 26, "UA": 29, "VA": 22, "VG": 24, "XK": 20,
+}
 
 
 class ItalianPrivacyRecognizer:
@@ -27,9 +43,12 @@ class ItalianPrivacyRecognizer:
         re.IGNORECASE,
     )
     PARTITA_IVA = re.compile(r"\b(?:IT[\s-]?)?([0-9]{11})\b", re.IGNORECASE)
-    IBAN = re.compile(r"\bIT[\s-]*[0-9]{2}[\s-]*[A-Z](?:[\s-]*[A-Z0-9]){22}\b", re.IGNORECASE)
+    IBAN = re.compile(r"\b[A-Z]{2}[\s-]*[0-9]{2}(?:[\s-]*[A-Z0-9]){11,30}\b", re.IGNORECASE)
     PHONE_NUMBER = re.compile(
         r"(?<!\w)(?:\+39[\s./-]?)?(?:3[0-9]{2}|0[0-9]{1,4})[\s./-]?[0-9]{3,4}[\s./-]?[0-9]{3,4}(?!\w)"
+    )
+    INTERNATIONAL_PHONE = re.compile(
+        r"(?<![\w+])\+(?!39\b)[1-9][0-9]{0,2}(?:[\s./-]?\(?[0-9]{1,4}\)?){2,5}(?!\w)"
     )
     SDI_CODE = re.compile(
         r"\b(?i:codice\s+(?:destinatario(?:\s+sdi)?|sdi|univoco(?:\s+ufficio)?)|"
@@ -80,6 +99,17 @@ class ItalianPrivacyRecognizer:
         rf"(?:\s*,?\s+\d{{1,4}}[A-Za-z]?)?"
         rf"(?:\s*,?\s*(?:\d{{5}}\s+)?{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{0,2}})?",
     )
+    ADDRESS_LOWERCASE = re.compile(
+        rf"\b(?:via|viale|piazza|piazzale|corso|vicolo|largo|strada|contrada|frazione|località|localita)\s+"
+        rf"(?P<name>{LOWER_ADDRESS_WORD}(?:\s+{LOWER_ADDRESS_WORD}){{0,3}})"
+        rf"\s*,?\s+n?\.?\s*\d{{1,4}}(?:\s*/\s*[A-Za-z]|[A-Za-z])?\b"
+    )
+    ADDRESS_NAME_STOPWORDS = {
+        "email", "e-mail", "mail", "pec", "fax", "sms", "telefono", "telematica", "posta",
+        "preliminare", "definitiva", "ordinaria", "breve", "libera", "eccezionale", "prioritaria",
+        "entro", "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "al", "allo", "alla",
+        "ai", "agli", "alle", "per", "con", "presso", "ogni", "senza", "che", "numero", "corriere",
+    }
     COMPANY_SUFFIX = re.compile(
         rf"\b(?:{ORG_WORD}(?:\s+|$)){{1,8}}"
         r"(?i:s\.?\s*r\.?\s*l\.?|s\.?\s*p\.?\s*a\.?|s\.?\s*n\.?\s*c\.?|s\.?\s*a\.?\s*s\.?|"
@@ -94,14 +124,14 @@ class ItalianPrivacyRecognizer:
     )
     PERSON = re.compile(
         rf"\b(?:(?:il|la)\s+)?"
-        r"(?i:sig\.?ra?|signora|signor|dott\.?ssa|dott\.?|avv\.?|ing\.?|geom\.?|rag\.?|"
+        r"(?i:sig\.?ra|sig\.?|signora|signor|dott\.?ssa|dott\.?|avv\.?|ing\.?|geom\.?|rag\.?|"
         r"prof\.?ssa|prof\.?|sottoscritto|sottoscritta|cliente|referente|rappresentante|"
         r"titolare|nato|nata|intestatario|intestataria|intestato\s+a|intestata\s+a|"
         r"beneficiario|beneficiaria)\s+"
-        rf"(?P<name>{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{1,3}})",
+        rf"(?P<name>{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}})",
     )
     PERSON_TRAILING_CONTEXT = re.compile(
-        rf"\b(?P<name>{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{1,3}})\b"
+        rf"\b(?P<name>{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}})\b"
         r"(?=\s*,?\s+(?i:nato|nata|residente|domiciliato|domiciliata|codice\s+fiscale|"
         r"c\.?\s*f\.?|email|e-mail|pec|tel\.?|telefono|cell\.?|cellulare)\b)"
     )
@@ -132,6 +162,7 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._regex_findings(text, "EMAIL_ADDRESS", self.EMAIL, 0.98))
         findings.extend(self._pec_email_findings(text))
         findings.extend(self._regex_findings(text, "PHONE_NUMBER", self.PHONE_NUMBER, 0.94))
+        findings.extend(self._international_phone_findings(text))
         findings.extend(self._codice_fiscale_findings(text))
         findings.extend(self._partita_iva_findings(text))
         findings.extend(self._iban_findings(text))
@@ -141,12 +172,13 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._vehicle_plate_findings(text))
         findings.extend(self._protocol_case_findings(text))
         findings.extend(self._regex_findings(text, "ADDRESS", self.ADDRESS, 0.86))
+        findings.extend(self._lowercase_address_findings(text))
         findings.extend(self._organization_findings(text))
         findings.extend(self._territorial_body_findings(text))
         findings.extend(self._person_findings(text))
         if mode in {"maximum", "reversible"}:
             findings.extend(self._regex_findings(text, "DATE", self.DATE, 0.82))
-        return self._dedupe(findings)
+        return self.dedupe(findings)
 
     def anonymize(
         self,
@@ -159,6 +191,8 @@ class ItalianPrivacyRecognizer:
         cursor = 0
 
         for finding in sorted(findings, key=lambda item: item.start):
+            if finding.start < cursor:
+                continue
             chunks.append(text[cursor : finding.start])
             chunks.append(self._replacement(text[finding.start : finding.end], finding.entity_type, mode))
             cursor = finding.end
@@ -196,11 +230,51 @@ class ItalianPrivacyRecognizer:
         ]
 
     def _iban_findings(self, text: str) -> list[Finding]:
-        return [
-            Finding("IBAN", match.start(), match.end(), 0.97)
-            for match in self.IBAN.finditer(text)
-            if self._valid_iban(self._compact_iban(match.group(0)))
-        ]
+        # Manual scan: the greedy candidate can overrun the real IBAN (or the next one),
+        # so the span is cut to the official country length before resuming the search.
+        findings: list[Finding] = []
+        position = 0
+
+        while True:
+            match = self.IBAN.search(text, position)
+            if match is None:
+                break
+            compact = self._compact_iban(match.group(0))
+            expected_length = IBAN_LENGTHS.get(compact[:2])
+            if expected_length and len(compact) >= expected_length and self._valid_iban(compact[:expected_length]):
+                end = self._offset_after_alnum(text, match.start(), expected_length)
+                findings.append(Finding("IBAN", match.start(), end, 0.97))
+                position = end
+            else:
+                position = match.start() + 1
+
+        return findings
+
+    def _offset_after_alnum(self, text: str, start: int, count: int) -> int:
+        seen = 0
+        index = start
+        while index < len(text) and seen < count:
+            if not text[index].isspace() and text[index] != "-":
+                seen += 1
+            index += 1
+        return index
+
+    def _international_phone_findings(self, text: str) -> list[Finding]:
+        findings: list[Finding] = []
+        for match in self.INTERNATIONAL_PHONE.finditer(text):
+            digits = sum(1 for char in match.group(0) if char.isdigit())
+            if 8 <= digits <= 15:
+                findings.append(Finding("PHONE_NUMBER", match.start(), match.end(), 0.92))
+        return findings
+
+    def _lowercase_address_findings(self, text: str) -> list[Finding]:
+        findings: list[Finding] = []
+        for match in self.ADDRESS_LOWERCASE.finditer(text):
+            words = match.group("name").split()
+            if any(word in self.ADDRESS_NAME_STOPWORDS for word in words):
+                continue
+            findings.append(Finding("ADDRESS", match.start(), match.end(), 0.78))
+        return findings
 
     def _pec_email_findings(self, text: str) -> list[Finding]:
         findings = [
@@ -274,7 +348,7 @@ class ItalianPrivacyRecognizer:
             return False
         return True
 
-    def _dedupe(self, findings: list[Finding]) -> list[Finding]:
+    def dedupe(self, findings: list[Finding]) -> list[Finding]:
         priority = {
             "CODICE_FISCALE": 7,
             "PARTITA_IVA": 7,

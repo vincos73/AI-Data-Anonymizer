@@ -21,6 +21,9 @@ web = [
   "python-multipart>=0.0.9",
   "uvicorn[standard]>=0.30",
 ]
+ner = [
+  "spacy>=3.7",
+]
 build = [
   "PySide6>=6.7",
   "pyinstaller>=6.8",

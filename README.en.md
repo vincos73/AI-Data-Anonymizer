@@ -22,8 +22,8 @@ Detected data includes:
 
 - email addresses
 - PEC certified email addresses, separated from ordinary email when the domain or nearby context indicates PEC
-- Italian phone numbers, including common formats with spaces, dots, dashes, or slashes
-- IBANs, including spaced Italian IBANs
+- Italian phone numbers, including common formats with spaces, dots, dashes, or slashes, plus international numbers with a `+` prefix
+- Italian and international IBANs, validated by checksum and per-country length, including spaced formats
 - codice fiscale
 - partita IVA
 - SDI, recipient, and office unique codes when explicit context is present
@@ -31,8 +31,8 @@ Detected data includes:
 - identity documents, passports, and driving licences when explicit context is present
 - vehicle plates when explicit context is present
 - protocol, case, file, or application numbers when explicit context is present
-- Italian addresses with strong address signals
-- people names only with strong context, including birth/residence and payment-recipient contexts
+- Italian addresses with strong address signals, including lowercase ones when a house number is present
+- people names only with strong context, including birth/residence and payment-recipient contexts; an optional local spaCy NER (`pip install "ai-data-anonymizer[ner]"` plus an Italian model, fully offline) also catches names without context
 - company names with legal forms such as `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperatives and similar
 - territorial bodies such as `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`
 - common date formats in maximum-protection and reversible modes

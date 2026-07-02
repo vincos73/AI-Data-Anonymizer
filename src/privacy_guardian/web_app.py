@@ -64,8 +64,14 @@ def serialize_finding(finding: Finding, text: str) -> dict[str, object]:
 
 @app.middleware("http")
 async def privacy_headers(request: Request, call_next):
-    content_length = request.headers.get("content-length")
-    if request.url.path.startswith("/api/") and content_length:
+    if request.url.path.startswith("/api/") and request.method == "POST":
+        content_length = request.headers.get("content-length")
+        if content_length is None:
+            # Chunked bodies would bypass the size check below.
+            return JSONResponse(
+                status_code=411,
+                content={"detail": "Richiesta senza Content-Length non supportata."},
+            )
         try:
             request_bytes = int(content_length)
         except ValueError:
@@ -81,6 +87,11 @@ async def privacy_headers(request: Request, call_next):
     response.headers["Pragma"] = "no-cache"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; "
+        "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+    )
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     return response
 

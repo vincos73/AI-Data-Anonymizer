@@ -55,6 +55,16 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertNotIn(("DATE_TIME", "10/01/1980"), findings)
         self.assertEqual(self.findings_for("Mario andrà domani a Milano."), [])
 
+    def test_detects_person_with_abbreviated_sig_title(self) -> None:
+        findings = self.findings_for("Il Sig. Mario Rossi ha firmato il contratto.")
+        self.assertIn(("PERSON", "Mario Rossi"), findings)
+
+        findings = self.findings_for("Gentile sig Mario Rossi, la contattiamo per il rinnovo.")
+        self.assertIn(("PERSON", "Mario Rossi"), findings)
+
+        findings = self.findings_for("La Sig.ra Maria Bianchi ha firmato.")
+        self.assertIn(("PERSON", "Maria Bianchi"), findings)
+
     def test_detects_person_when_strong_context_follows_name(self) -> None:
         findings = self.findings_for("Mario Rossi, nato a Roma il 10/01/1980.")
         self.assertIn(("PERSON", "Mario Rossi"), findings)
@@ -108,6 +118,16 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         decrypted_mapping = decrypt_mapping(encrypted, "password locale")
         self.assertEqual(restore_text(result.text, decrypted_mapping), text)
 
+    def test_reversible_placeholders_skip_ones_already_present_in_text(self) -> None:
+        text = "Nota: usa <PERSONA_1> come esempio. Il sottoscritto Mario Rossi conferma."
+        findings = self.engine.analyze(text, mode="reversible")
+        result = self.engine.anonymize_reversible(text, findings)
+
+        self.assertIn("<PERSONA_1> come esempio", result.text)
+        self.assertIn("<PERSONA_2>", result.text)
+        self.assertNotIn("Mario Rossi", result.text)
+        self.assertEqual(restore_text(result.text, result.mapping), text)
+
     def test_dates_are_findings_only_in_maximum_protection(self) -> None:
         text = "Il sottoscritto Mario Rossi nato il 5 maggio 2020."
 
@@ -131,6 +151,15 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         findings = self.findings_for("ditta individuale Mario Rossi P.IVA 12345678903")
         self.assertIn(("ORGANIZATION", "ditta individuale Mario Rossi"), findings)
         self.assertIn(("PARTITA_IVA", "12345678903"), findings)
+
+    def test_detects_organizations_with_ampersand(self) -> None:
+        findings = self.findings_for("Contratto con Rossi & Figli S.r.l. per la fornitura.")
+        self.assertIn(("ORGANIZATION", "Rossi & Figli S.r.l."), findings)
+
+        anonymized = self.engine.anonymize("La Rossi & Figli S.r.l. ha sede a Milano.", mode="maximum")
+        self.assertNotIn("Rossi", anonymized)
+        self.assertNotIn("Figli", anonymized)
+        self.assertIn("<ORGANIZZAZIONE>", anonymized)
 
     def test_keeps_initials_for_people_organizations_and_places(self) -> None:
         text = "Il sottoscritto Mario Rossi lavora per Alfa Beta S.r.l. nella Provincia di Potenza."
@@ -159,6 +188,81 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn("<CODICE_FISCALE>", anonymized)
         self.assertIn("<EMAIL>", anonymized)
         self.assertIn("<TELEFONO>", anonymized)
+
+    def test_detects_foreign_ibans_with_checksum(self) -> None:
+        text = "Bonifico su IBAN DE89 3704 0044 0532 0130 00 e FR1420041010050500013M02606 entro oggi."
+        findings = self.findings_for(text)
+
+        self.assertIn(("IBAN", "DE89 3704 0044 0532 0130 00"), findings)
+        self.assertIn(("IBAN", "FR1420041010050500013M02606"), findings)
+
+        anonymized = self.engine.anonymize(text)
+        self.assertEqual(anonymized.count("<IBAN>"), 2)
+        self.assertIn("entro oggi", anonymized)
+
+    def test_rejects_iban_candidates_with_wrong_checksum(self) -> None:
+        findings = self.findings_for("Conto DE89 3704 0044 0532 0130 01 non valido.")
+        self.assertNotIn("IBAN", [entity_type for entity_type, _ in findings])
+
+    def test_detects_international_phone_numbers(self) -> None:
+        text = "Contatti: +44 20 7946 0958, +1 415 555 0132 e +39 333 123 4567."
+        findings = self.findings_for(text)
+
+        self.assertIn(("PHONE_NUMBER", "+44 20 7946 0958"), findings)
+        self.assertIn(("PHONE_NUMBER", "+1 415 555 0132"), findings)
+        self.assertIn(("PHONE_NUMBER", "+39 333 123 4567"), findings)
+        self.assertEqual(self.engine.anonymize(text).count("<TELEFONO>"), 3)
+
+    def test_detects_lowercase_addresses_with_house_number(self) -> None:
+        findings = self.findings_for("abito in via giuseppe garibaldi 12, roma")
+        self.assertIn(("ADDRESS", "via giuseppe garibaldi 12"), findings)
+
+        findings = self.findings_for("residenza in piazza dei martiri, 4")
+        self.assertIn(("ADDRESS", "piazza dei martiri, 4"), findings)
+
+    def test_lowercase_address_idioms_are_not_matched(self) -> None:
+        self.assertEqual(self.findings_for("procediamo in via preliminare entro il 12 del mese"), [])
+        self.assertEqual(self.findings_for("rispondere via email entro il 15"), [])
+
+    def test_person_name_does_not_swallow_street_address(self) -> None:
+        text = "Il dott. Mario Rossi Via Appia 12 chiede accesso."
+        findings = self.findings_for(text)
+
+        self.assertIn(("PERSON", "Mario Rossi"), findings)
+        address_values = [value for entity_type, value in findings if entity_type == "ADDRESS"]
+        self.assertTrue(any(value.startswith("Via Appia 12") for value in address_values))
+
+    def test_optional_local_ner_adds_uncontexted_person_names(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        text = "Mario Rossi ha inviato la relazione a Giulia Verdi."
+
+        def fake_nlp(value: str):
+            ents = []
+            for name in ("Mario Rossi", "Giulia Verdi"):
+                start = value.find(name)
+                if start >= 0:
+                    ents.append(
+                        SimpleNamespace(label_="PER", text=name, start_char=start, end_char=start + len(name))
+                    )
+            return SimpleNamespace(ents=ents)
+
+        engine = PrivacyEngine()
+        engine._ner = NerPersonRecognizer(fake_nlp)
+
+        findings = [
+            (finding.entity_type, text[finding.start : finding.end], finding.source)
+            for finding in engine.analyze(text, "maximum")
+        ]
+        self.assertIn(("PERSON", "Mario Rossi", "ner_local"), findings)
+        self.assertIn(("PERSON", "Giulia Verdi", "ner_local"), findings)
+
+        anonymized = engine.anonymize(text, mode="maximum")
+        self.assertNotIn("Mario Rossi", anonymized)
+        self.assertNotIn("Giulia Verdi", anonymized)
+        self.assertEqual(source_label("ner_local"), "NER locale (spaCy)")
 
     def test_detects_pec_as_dedicated_category(self) -> None:
         text = (
@@ -402,6 +506,17 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertNotIn("Mario Rossi", output_text)
         self.assertNotIn("10/01/1980", output_text)
 
+    def test_csv_documents_keep_csv_extension(self) -> None:
+        csv_path = self.base / "clienti.csv"
+        csv_path.write_text("nome,email\ncliente Mario Rossi,mario@example.com\n", encoding="utf-8")
+
+        result = anonymize_loaded_document(load_document(csv_path), self.engine, mode="maximum")
+
+        self.assertEqual(result.filename, "clienti_anonimizzato.csv")
+        decoded = result.data.decode("utf-8")
+        self.assertIn("<EMAIL>", decoded)
+        self.assertNotIn("mario@example.com", decoded)
+
     def test_txt_reversible_mode_returns_mapping_for_local_restore(self) -> None:
         txt_path = self.base / "reversibile.txt"
         original_text = "Il sottoscritto Mario Rossi email mario@example.com nato il 10/01/1980."
@@ -626,6 +741,26 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertNotIn("Mario Rossi", extracted_text)
         self.assertNotIn("mario@example.com", extracted_text)
 
+    def test_ocr_temp_image_is_reopenable_by_path_and_cleaned_up(self) -> None:
+        from PIL import Image
+
+        from privacy_guardian import document_service
+
+        captured: dict[str, object] = {}
+
+        def fake_run_tesseract(command: str, image_path: str) -> OcrPageText:
+            captured["path"] = image_path
+            captured["data"] = Path(image_path).read_bytes()
+            return OcrPageText(text="", words=[])
+
+        image = Image.new("RGB", (4, 4), "white")
+        with patch("privacy_guardian.document_service._tesseract_command", return_value="tesseract"):
+            with patch("privacy_guardian.document_service._run_tesseract_tsv", side_effect=fake_run_tesseract):
+                document_service._ocr_image(image)
+
+        self.assertTrue(bytes(captured["data"]).startswith(b"\x89PNG"))
+        self.assertFalse(Path(str(captured["path"])).exists())
+
     def test_rejects_pdf_without_extractable_text(self) -> None:
         pdf_path = self.base / "blank.pdf"
         writer = PdfWriter()
@@ -733,6 +868,26 @@ class WebAppTest(unittest.TestCase):
 
         self.assertEqual(context.exception.status_code, 413)
         self.assertIn("File troppo grande", context.exception.detail)
+
+    def test_middleware_sets_security_headers_and_requires_content_length(self) -> None:
+        from types import SimpleNamespace
+
+        from starlette.responses import Response
+
+        from privacy_guardian.web_app import privacy_headers
+
+        async def call_next(request):
+            return Response("ok")
+
+        page_request = SimpleNamespace(url=SimpleNamespace(path="/"), method="GET", headers={})
+        response = asyncio.run(privacy_headers(page_request, call_next))
+        self.assertIn("default-src 'self'", response.headers["Content-Security-Policy"])
+        self.assertEqual(response.headers["X-Frame-Options"], "DENY")
+        self.assertEqual(response.headers["Cache-Control"], "no-store, max-age=0")
+
+        chunked_request = SimpleNamespace(url=SimpleNamespace(path="/api/anonymize"), method="POST", headers={})
+        response = asyncio.run(privacy_headers(chunked_request, call_next))
+        self.assertEqual(response.status_code, 411)
 
     def test_anonymizes_uploaded_pdf_as_rasterized_redacted_document(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

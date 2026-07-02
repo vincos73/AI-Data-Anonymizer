@@ -527,16 +527,21 @@ class MainWindow(QMainWindow):
         self._sync_action_state()
 
     def analyze_text(self) -> None:
+        if not self._run_analysis():
+            return
+        self._record_activity("analysis")
+        self.statusBar().showMessage(f"Elementi rilevati: {len(self.findings)}.", 4000)
+
+    def _run_analysis(self) -> bool:
         text = self.input_text.toPlainText()
         if not text.strip():
             self.statusBar().showMessage("Incolla un testo o carica un documento prima di analizzare.", 5000)
-            return
+            return False
         self.findings = self.engine.analyze(text, self._selected_mode())
         self._fill_table()
         self._highlight_findings()
         self._update_report()
-        self._record_activity("analysis")
-        self.statusBar().showMessage(f"Elementi rilevati: {len(self.findings)}.", 4000)
+        return True
 
     def anonymize_text(self) -> None:
         mode = self._selected_mode()
@@ -575,7 +580,7 @@ class MainWindow(QMainWindow):
 
         self.loaded_document = None
         self.anonymized_document = None
-        self.analyze_text()
+        self._run_analysis()
         text = self.input_text.toPlainText()
         if mode == "reversible":
             reversible_result = self.engine.anonymize_reversible(text, self.findings)
@@ -603,6 +608,7 @@ class MainWindow(QMainWindow):
         default_name = self.anonymized_document.filename if self.anonymized_document else "testo_anonimizzato.txt"
         expected_suffix = Path(default_name).suffix.lower() or ".txt"
         save_filters = {
+            ".csv": "CSV (*.csv)",
             ".docx": "Documento Word (*.docx)",
             ".pdf": "PDF redatto (*.pdf)",
             ".txt": "File di testo (*.txt)",
@@ -628,10 +634,11 @@ class MainWindow(QMainWindow):
         else:
             target_path = target_path.with_suffix(expected_suffix)
 
-        if self.anonymized_document:
+        output_pane_text = self.output_text.toPlainText()
+        if self.anonymized_document and (expected_suffix not in {".txt", ".csv"} or not output_pane_text.strip()):
             target_path.write_bytes(self.anonymized_document.data)
         else:
-            target_path.write_text(self.output_text.toPlainText(), encoding="utf-8")
+            target_path.write_text(output_pane_text, encoding="utf-8")
 
         self._record_activity("save", output_path=target_path)
         self.statusBar().showMessage(f"Salvato: {target_path}", 4000)

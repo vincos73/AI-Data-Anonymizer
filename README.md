@@ -110,8 +110,8 @@ OMISSIS riconosce, con regole conservative:
 
 - indirizzi email;
 - indirizzi PEC, riconosciuti separatamente dalle email ordinarie quando il dominio o il contesto li indicano;
-- numeri di telefono italiani, inclusi formati con spazi, punti, trattini o slash;
-- IBAN italiani, anche scritti con spazi;
+- numeri di telefono italiani, inclusi formati con spazi, punti, trattini o slash, e numeri internazionali con prefisso `+`;
+- IBAN italiani e internazionali, con verifica del checksum e della lunghezza per paese, anche scritti con spazi;
 - codice fiscale;
 - partita IVA;
 - codici SDI, codici destinatario e codici univoci ufficio quando indicati con contesto esplicito;
@@ -119,11 +119,22 @@ OMISSIS riconosce, con regole conservative:
 - documenti d'identità, passaporti e patenti quando indicati con contesto esplicito;
 - targhe veicolo quando indicate con contesto esplicito;
 - numeri di protocollo, pratica, fascicolo o istanza quando indicati con contesto esplicito;
-- indirizzi italiani con segnali forti come via, viale, piazza, corso;
+- indirizzi italiani con segnali forti come via, viale, piazza, corso, anche scritti in minuscolo quando è presente il numero civico;
 - nomi di persone con contesto forte, per esempio nascita, residenza o intestatario di pagamento;
 - aziende con forme giuridiche come `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperative e simili;
 - enti territoriali come `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`;
 - date comuni in modalità Massima protezione e Reversibile.
+
+### Nomi senza contesto: NER locale opzionale
+
+Di base i nomi di persona vengono riconosciuti solo con contesto forte, per mantenere alta la precisione. Se vuoi riconoscere anche i nomi senza contesto (per esempio `Mario Rossi ha inviato la relazione`), puoi installare il riconoscimento NER locale basato su spaCy:
+
+```bash
+pip install "ai-data-anonymizer[ner]"
+python -m spacy download it_core_news_lg
+```
+
+Il modello gira interamente sul tuo computer: nessun dato viene inviato a servizi esterni. Quando è attivo, lo stato del motore mostra `NER locale attivo` e i nomi trovati dal modello compaiono nella tabella con origine `NER locale (spaCy)`. Per disattivarlo senza disinstallare, imposta la variabile d'ambiente `OMISSIS_NER=0`.
 
 ## Formati Supportati
 
