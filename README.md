@@ -28,7 +28,7 @@ Tutti i file sono disponibili nella pagina [Releases](https://github.com/vincos7
 3. Trascina **OMISSIS** nella cartella **Applicazioni**.
 4. Apri l'app da **Applicazioni**.
 
-Le build attuali non sono ancora firmate/notarizzate. Se macOS mostra un avviso sullo sviluppatore non identificato:
+Le build pubblicate possono essere firmate e notarizzate quando il workflow GitHub è configurato con i secrets Apple Developer. Se scarichi una build non notarizzata e macOS mostra un avviso sullo sviluppatore non identificato:
 
 1. fai click destro su **OMISSIS**;
 2. scegli **Apri**;
@@ -238,6 +238,22 @@ Build macOS:
 ./scripts/build_macos_app.sh
 ```
 
+### Firma e notarizzazione macOS
+
+Per distribuire OMISSIS senza il blocco Gatekeeper, serve un account Apple Developer Program e un certificato **Developer ID Application**.
+
+Il workflow GitHub supporta questi secrets:
+
+- `APPLE_DEVELOPER_ID_CERTIFICATE_BASE64`: certificato `.p12` Developer ID Application codificato in base64;
+- `APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD`: password del file `.p12`;
+- `APPLE_DEVELOPER_ID_APPLICATION`: nome identità codesign, per esempio `Developer ID Application: Nome Cognome (TEAMID)`;
+- `APPLE_ID`: email dell'account Apple Developer;
+- `APPLE_TEAM_ID`: Team ID Apple;
+- `APPLE_APP_SPECIFIC_PASSWORD`: password specifica per app generata dall'account Apple;
+- `BUILD_KEYCHAIN_PASSWORD`: password temporanea per il keychain della build.
+
+Quando questi secrets sono presenti, la build macOS firma l'app, firma il DMG, lo invia ad Apple con `notarytool`, applica lo stapling e carica su GitHub il DMG notarizzato.
+
 Build Windows da PowerShell:
 
 ```powershell
@@ -253,7 +269,7 @@ Questa è una release open source iniziale. Contributi utili:
 - migliorare OCR locale per PDF scansionati e immagini;
 - raffinare la modalità reversibile e la ricostruzione dei testi generati dall'IA;
 - aggiungere nuovi riconoscitori con test accurati;
-- migliorare packaging, firma delle app e automazione delle release.
+- migliorare packaging Windows, firma delle app e automazione delle release.
 
 ## Licenza
 

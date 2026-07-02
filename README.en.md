@@ -98,7 +98,7 @@ The macOS build creates:
 - `OMISSIS.app`
 - `OMISSIS.dmg`
 
-Unsigned builds may be blocked by Gatekeeper. If macOS warns that the developer is unidentified, right-click the app and choose **Open**.
+Unsigned or non-notarized builds may be blocked by Gatekeeper. The GitHub release workflow can sign and notarize the macOS DMG when Apple Developer secrets are configured.
 
 ### Windows
 
@@ -188,6 +188,22 @@ Build macOS package:
 ```bash
 ./scripts/build_macos_app.sh
 ```
+
+### macOS Signing and Notarization
+
+To distribute OMISSIS without Gatekeeper warnings, an Apple Developer Program account and a **Developer ID Application** certificate are required.
+
+The GitHub workflow supports these secrets:
+
+- `APPLE_DEVELOPER_ID_CERTIFICATE_BASE64`: base64-encoded Developer ID Application `.p12` certificate;
+- `APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD`: `.p12` password;
+- `APPLE_DEVELOPER_ID_APPLICATION`: codesign identity, for example `Developer ID Application: Name Surname (TEAMID)`;
+- `APPLE_ID`: Apple Developer account email;
+- `APPLE_TEAM_ID`: Apple Team ID;
+- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password generated from the Apple account;
+- `BUILD_KEYCHAIN_PASSWORD`: temporary build keychain password.
+
+When these secrets are available, the macOS build signs the app, signs the DMG, submits it to Apple with `notarytool`, staples the notarization ticket, and uploads the notarized DMG to GitHub Releases.
 
 Build Windows package from PowerShell:
 

@@ -51,6 +51,15 @@ from privacy_guardian import __version__
 print(__version__)
 PY
 )"
+SIGN_IDENTITY="${APPLE_DEVELOPER_ID_APPLICATION:-}"
+APPLE_ID_VALUE="${APPLE_ID:-}"
+APPLE_TEAM_ID_VALUE="${APPLE_TEAM_ID:-}"
+APPLE_APP_PASSWORD_VALUE="${APPLE_APP_SPECIFIC_PASSWORD:-}"
+NOTARIZE_DMG=false
+
+if [ -n "$SIGN_IDENTITY" ] && [ -n "$APPLE_ID_VALUE" ] && [ -n "$APPLE_TEAM_ID_VALUE" ] && [ -n "$APPLE_APP_PASSWORD_VALUE" ]; then
+  NOTARIZE_DMG=true
+fi
 
 rm -rf build dist
 python scripts/create_app_icon.py
@@ -75,10 +84,36 @@ if ! /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $APP_VERSION" "dist/OMISSI
   /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $APP_VERSION" "dist/OMISSIS.app/Contents/Info.plist"
 fi
 
-codesign --force --deep --sign - "dist/OMISSIS.app"
+if [ -n "$SIGN_IDENTITY" ]; then
+  echo "Firma Developer ID dell'app macOS..."
+  codesign --force --deep --options runtime --timestamp --sign "$SIGN_IDENTITY" "dist/OMISSIS.app"
+  codesign --verify --deep --strict --verbose=2 "dist/OMISSIS.app"
+else
+  echo "APPLE_DEVELOPER_ID_APPLICATION non impostato: creo una firma ad-hoc non notarizzabile."
+  codesign --force --deep --sign - "dist/OMISSIS.app"
+fi
 
 if command -v dmgbuild >/dev/null 2>&1; then
   dmgbuild -s scripts/dmg_settings.py "OMISSIS" "dist/OMISSIS.dmg"
+
+  if [ -n "$SIGN_IDENTITY" ]; then
+    echo "Firma del DMG macOS..."
+    codesign --force --timestamp --sign "$SIGN_IDENTITY" "dist/OMISSIS.dmg"
+  fi
+
+  if [ "$NOTARIZE_DMG" = true ]; then
+    echo "Invio del DMG ad Apple per la notarizzazione..."
+    xcrun notarytool submit "dist/OMISSIS.dmg" \
+      --apple-id "$APPLE_ID_VALUE" \
+      --password "$APPLE_APP_PASSWORD_VALUE" \
+      --team-id "$APPLE_TEAM_ID_VALUE" \
+      --wait
+    xcrun stapler staple "dist/OMISSIS.dmg"
+    spctl -a -t open --context context:primary-signature -v "dist/OMISSIS.dmg"
+  else
+    echo "Notarizzazione saltata: servono APPLE_ID, APPLE_TEAM_ID, APPLE_APP_SPECIFIC_PASSWORD e APPLE_DEVELOPER_ID_APPLICATION."
+  fi
+
   cp "dist/OMISSIS.dmg" "dist/OMISSIS-macOS-Apple-Silicon.dmg"
 fi
 
@@ -103,7 +138,7 @@ I PDF con testo selezionabile vengono esportati come PDF rasterizzato con oscura
 Nota sulla modalita reversibile:
 Se usi "Reversibile con mappa locale", salva anche la mappa da Strumenti > Salva mappa reversibile. La mappa e cifrata con la password scelta da te e serve per ricostruire localmente le risposte generate dall'IA.
 
-Se macOS dice che l'app non puo essere aperta perche proviene da uno sviluppatore non identificato:
+Se macOS dice che l'app non puo essere aperta perche proviene da uno sviluppatore non identificato, stai usando una build non notarizzata:
 
 1. Fai click destro su "OMISSIS".
 2. Scegli "Apri".
