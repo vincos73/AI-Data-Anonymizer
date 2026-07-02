@@ -50,6 +50,9 @@ jobs:
           - Modalita Massima protezione per sostituzioni piu conservative.
           - Migliore gestione dei DOCX con conservazione della formattazione.
           - Supporto PDF con redazione rasterizzata per evitare testo sensibile recuperabile.
+          - Registro attivita locale con soli metadati esportabili.
+          - OCR locale opzionale per PDF scansionati tramite Tesseract, senza servizi OCR esterni.
+          - Modalita reversibile con segnaposti numerati e mappa locale cifrata.
 
           ### Download
           - macOS Apple Silicon: scarica `OMISSIS-macOS-Apple-Silicon.dmg`.

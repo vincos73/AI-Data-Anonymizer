@@ -9,17 +9,28 @@ QWidget {
     font-size: 13px;
 }
 
-QDialog#AboutDialog {
+QDialog#InfoDialog {
     background: #f7f8f7;
     color: #10161a;
 }
 
-QDialog#AboutDialog QLabel {
+QDialog#InfoDialog QLabel {
     background: transparent;
     color: #10161a;
 }
 
 QLabel#AboutDetails {
+    color: #10161a;
+    line-height: 1.45;
+}
+
+QLabel#DialogTitle {
+    color: #10161a;
+    font-size: 18px;
+    font-weight: 760;
+}
+
+QLabel#DialogDetails {
     color: #10161a;
     line-height: 1.45;
 }

@@ -13,6 +13,7 @@ const workflowFileButton = document.querySelector(".workflow-button[for='file-in
 let modeNotes = {
   standard: "Standard conserva iniziali e date: per testo da condividere con chatbot valuta Massima protezione.",
   maximum: "Massima protezione usa segnaposto completi e redige anche date comuni riconosciute.",
+  reversible: "Reversibile usa segnaposto numerati e permette di salvare una mappa locale cifrata nella desktop app.",
 };
 let maxFileBytes = 0;
 let activeDocument = false;

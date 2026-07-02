@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from typing import Literal, cast
 
 
-AnonymizationMode = Literal["standard", "maximum"]
-ANONYMIZATION_MODES: tuple[AnonymizationMode, ...] = ("standard", "maximum")
+AnonymizationMode = Literal["standard", "maximum", "reversible"]
+ANONYMIZATION_MODES: tuple[AnonymizationMode, ...] = ("standard", "maximum", "reversible")
 
 
 def validate_anonymization_mode(mode: str) -> AnonymizationMode:

@@ -67,6 +67,7 @@ pyinstaller \
   --collect-all pypdf \
   --collect-all pypdfium2 \
   --collect-all reportlab \
+  --collect-all cryptography \
   src/privacy_guardian/app.py
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION" "dist/OMISSIS.app/Contents/Info.plist"
@@ -98,6 +99,9 @@ Come usarla:
 
 Nota sui PDF:
 I PDF con testo selezionabile vengono esportati come PDF rasterizzato con oscuramenti permanenti. Il testo originale non resta selezionabile nel file finale. I PDF scansionati o composti solo da immagini richiedono prima OCR.
+
+Nota sulla modalita reversibile:
+Se usi "Reversibile con mappa locale", salva anche la mappa da Strumenti > Salva mappa reversibile. La mappa e cifrata con la password scelta da te e serve per ricostruire localmente le risposte generate dall'IA.
 
 Se macOS dice che l'app non puo essere aperta perche proviene da uno sviluppatore non identificato:
 

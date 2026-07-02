@@ -50,8 +50,10 @@ Su Windows i vecchi file `.doc` non sono supportati direttamente: convertili pri
 4. Scegli la modalità di protezione.
 5. Clicca **Anonimizza**.
 6. Leggi il report finale con modalità usata, numero di dati riconosciuti e avvisi di controllo.
-7. Controlla il risultato prima di condividerlo.
-8. Salva o copia il testo anonimizzato.
+7. Se ti serve tracciare l'operazione, apri **Strumenti > Registro attività**.
+8. Se usi la modalità Reversibile, salva anche la mappa locale cifrata da **Strumenti > Salva mappa reversibile**.
+9. Controlla il risultato prima di condividerlo.
+10. Salva o copia il testo anonimizzato.
 
 ## Modalità di Protezione
 
@@ -84,6 +86,24 @@ Usa questa modalità quando devi condividere testo con chatbot o servizi esterni
 
 Nell'app desktop è la modalità predefinita e consigliata per l'uso con ChatGPT e altri strumenti di IA.
 
+### Reversibile
+
+La modalità **Reversibile** usa segnaposti numerati e genera una mappa locale cifrata con password.
+
+Esempio:
+
+```text
+Mario Rossi -> <PERSONA_1>
+mario@example.com -> <EMAIL_1>
+10/01/1980 -> <DATA_1>
+```
+
+Il testo con segnaposti può essere incollato in ChatGPT o altri strumenti. Quando ricevi una risposta che contiene gli stessi segnaposti, puoi incollarla nell'app e usare **Strumenti > Ricostruisci testo con mappa** per reinserire localmente i valori reali.
+
+La mappa `.omissis-map` contiene i valori originali cifrati: resta sul tuo dispositivo, va protetta come materiale sensibile e non va caricata in chatbot o servizi cloud.
+
+Questa modalità è disponibile per testo, `.txt`, `.md`, `.csv` e `.docx`. Per i PDF usa **Massima protezione**, perché l'output PDF sicuro è un documento redatto con oscuramenti permanenti.
+
 ## Dati Riconosciuti
 
 OMISSIS riconosce, con regole conservative:
@@ -103,7 +123,7 @@ OMISSIS riconosce, con regole conservative:
 - nomi di persone con contesto forte, per esempio nascita, residenza o intestatario di pagamento;
 - aziende con forme giuridiche come `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperative e simili;
 - enti territoriali come `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`;
-- date comuni in modalità Massima protezione.
+- date comuni in modalità Massima protezione e Reversibile.
 
 ## Formati Supportati
 
@@ -111,14 +131,20 @@ OMISSIS riconosce, con regole conservative:
 | --- | --- |
 | `.txt`, `.md`, `.csv` | Legge e salva file di testo anonimizzati |
 | `.docx` | Legge e salva documenti Word mantenendo struttura, stili, tabelle e immagini quando possibile |
-| `.pdf` | Estrae il testo per analisi e salva un PDF rasterizzato con oscuramenti permanenti; il layout visivo viene preservato, il testo finale non resta selezionabile |
+| `.pdf` | Estrae il testo per analisi e salva un PDF rasterizzato con oscuramenti permanenti; se trova pagine scansionate può usare OCR locale Tesseract quando disponibile |
 | `.doc` | Supportato solo su macOS, convertito in `.docx` prima dell'anonimizzazione |
 
-I PDF scansionati o composti solo da immagini devono essere convertiti con OCR prima dell'uso. L'app li blocca quando non riesce a estrarre testo selezionabile, così l'utente non scambia un PDF non letto per un documento già sicuro. Il PDF anonimizzato viene ricostruito come immagini di pagina redatte: questo evita di lasciare il testo originale sotto gli oscuramenti, ma il testo del PDF finale non sarà copiabile o ricercabile.
+I PDF scansionati o composti solo da immagini richiedono OCR. OMISSIS può usare **Tesseract OCR locale** quando è installato sul computer; non chiama servizi OCR esterni. Se Tesseract non è disponibile o non trova testo affidabile, l'app blocca il PDF, così l'utente non scambia un file non letto per un documento già sicuro. Il PDF anonimizzato viene ricostruito come immagini di pagina redatte: questo evita di lasciare il testo originale sotto gli oscuramenti, ma il testo del PDF finale non sarà copiabile o ricercabile.
 
 ## Privacy
 
 La versione desktop lavora localmente sul computer. Non invia testo o file a OpenAI, Google, Anthropic, servizi OCR, analytics o altre API esterne.
+
+Per i dettagli operativi leggi la pagina [Sicurezza e privacy](SICUREZZA.md).
+
+L'app desktop mantiene un registro attività locale consultabile dal menu **Strumenti > Registro attività**. Il registro salva solo metadati: data e ora, operazione, modalità, conteggi per categoria, estensione, dimensione e hash SHA-256 dei file quando disponibili. Non salva testo originale, testo anonimizzato, valori trovati o percorso completo dei file.
+
+La modalità Reversibile crea una mappa locale cifrata con password. Questa mappa è l'unico posto in cui OMISSIS conserva la corrispondenza tra segnaposto e valori reali, e viene salvata solo quando lo chiedi esplicitamente.
 
 La web app non è necessaria per l'uso normale. Se la avvii in locale su `127.0.0.1`, resta sul tuo computer come un'interfaccia browser. Se invece la pubblichi su un server, il testo inviato alla web app arriva a quel server: per documenti sensibili usala solo su infrastruttura sotto il tuo controllo e con HTTPS.
 
@@ -202,7 +228,7 @@ pip install -e ".[desktop,web]"
 python -m unittest discover -s tests -v
 ```
 
-La suite copre falsi positivi italiani, riconoscimento di persone e organizzazioni, enti territoriali, PEC, numeri di protocollo/pratica, identificativi strutturati, modalità Standard e Massima protezione, anonimizzazione documenti, preservazione della struttura e della formattazione `.docx`, pulizia di contenuti nascosti `.docx`, rifiuto dei PDF scansionati/non leggibili e redazione PDF rasterizzata senza testo originale estraibile.
+La suite copre falsi positivi italiani, riconoscimento di persone e organizzazioni, enti territoriali, PEC, numeri di protocollo/pratica, identificativi strutturati, modalità Standard e Massima protezione, anonimizzazione documenti, preservazione della struttura e della formattazione `.docx`, pulizia di contenuti nascosti `.docx`, OCR locale opzionale per PDF scansionati, rifiuto dei PDF non leggibili e redazione PDF rasterizzata senza testo originale estraibile.
 
 ## Build Desktop
 
@@ -224,6 +250,8 @@ Questa è una release open source iniziale. Contributi utili:
 
 - ridurre falsi positivi e falsi negativi italiani;
 - migliorare la preservazione della formattazione;
+- migliorare OCR locale per PDF scansionati e immagini;
+- raffinare la modalità reversibile e la ricostruzione dei testi generati dall'IA;
 - aggiungere nuovi riconoscitori con test accurati;
 - migliorare packaging, firma delle app e automazione delle release.
 

@@ -44,10 +44,12 @@ ENTITY_PLACEHOLDERS = {
 MODE_LABELS = {
     "standard": "Standard",
     "maximum": "Massima protezione",
+    "reversible": "Reversibile",
 }
 MODE_NOTES = {
     "standard": "Standard conserva iniziali e date: per testo da condividere con chatbot valuta Massima protezione.",
     "maximum": "Massima protezione usa segnaposto completi e redige anche date comuni riconosciute.",
+    "reversible": "Reversibile usa segnaposto numerati e permette di salvare una mappa locale cifrata.",
 }
 SOURCE_LABELS = {
     "italian_rules": "Regole italiane locali",
@@ -105,6 +107,8 @@ def review_checklist(findings: list[Finding], mode: AnonymizationMode) -> list[s
     items = []
     if mode == "maximum":
         items.append("Massima protezione è consigliata prima di condividere testi con chatbot o servizi esterni.")
+    elif mode == "reversible":
+        items.append("Reversibile è pensata per ChatGPT: salva la mappa cifrata e non condividerla con servizi esterni.")
     else:
         items.append("Standard lascia visibili iniziali e date: passa a Massima protezione per testi da condividere con chatbot.")
 

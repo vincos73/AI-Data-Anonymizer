@@ -11,6 +11,7 @@ The web app exists only as an advanced option for developers, local demos, or se
 - Detects and anonymizes common Italian personal and business data.
 - Works with pasted text and uploaded documents.
 - Offers a standard mode and a maximum-protection mode.
+- Offers a reversible mode with numbered placeholders and a locally encrypted map in the desktop app.
 - In standard mode, preserves initials for people, organizations, addresses, and territorial bodies.
 - In standard mode, does not anonymize dates.
 - In maximum-protection mode, replaces detected personal data with full placeholders and also redacts common date formats.
@@ -34,7 +35,7 @@ Detected data includes:
 - people names only with strong context, including birth/residence and payment-recipient contexts
 - company names with legal forms such as `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperatives and similar
 - territorial bodies such as `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`
-- common date formats in maximum-protection mode
+- common date formats in maximum-protection and reversible modes
 
 ## Why It Exists
 
@@ -50,7 +51,7 @@ It is not a legal compliance product and it does not guarantee perfect anonymiza
 | --- | --- |
 | `.txt`, `.md`, `.csv` | Reads and saves anonymized text files |
 | `.docx` | Reads and saves anonymized Word documents, preserving formatting where possible |
-| `.pdf` | Extracts selectable text for analysis and saves a rasterized redacted PDF; the visual layout is preserved, but final text is not selectable. Scanned or image-only PDFs must be converted with OCR first. |
+| `.pdf` | Extracts selectable text for analysis and saves a rasterized redacted PDF; when scanned pages are found, it can use local Tesseract OCR if available. |
 | `.doc` | Supported on macOS only; converted to `.docx` before anonymization |
 
 On Windows, convert legacy `.doc` files to `.docx` before using the desktop app.
@@ -59,9 +60,15 @@ On Windows, convert legacy `.doc` files to `.docx` before using the desktop app.
 
 The desktop app processes documents locally. It does not send text or files to external APIs.
 
+See the Italian [security and privacy page](SICUREZZA.md) for the full operational model.
+
+The desktop app keeps a local activity log available from **Strumenti > Registro attività**. It stores metadata only: timestamp, operation, mode, category counts, file extension, file size, and SHA-256 hashes when files are available. It does not store original text, anonymized text, detected values, previews, or full file paths.
+
+The reversible mode creates a password-encrypted local `.omissis-map` file. It contains the sensitive correspondence between numbered placeholders and original values, so it should be kept private and never uploaded to external AI or cloud services.
+
 The web app is not required for normal desktop use. If you run it locally on `127.0.0.1`, it stays on your computer as a browser interface. If you publish it on a server, text submitted to the web app is sent to that server. For sensitive documents, run it only on infrastructure you control and use HTTPS.
 
-The app rejects scanned or image-only PDFs when no selectable text can be extracted, so users do not mistake an unread PDF for a safely anonymized one. Redacted PDFs are rebuilt as page images with permanent blackouts: this avoids leaving original text under visual overlays, but the final PDF text is not copyable or searchable.
+Scanned or image-only PDFs require OCR. OMISSIS can use **local Tesseract OCR** when it is installed on the computer; it does not call external OCR services. If Tesseract is unavailable or does not find reliable text, the app rejects the PDF so users do not mistake an unread file for a safely anonymized one. Redacted PDFs are rebuilt as page images with permanent blackouts: this avoids leaving original text under visual overlays, but the final PDF text is not copyable or searchable.
 
 For `.docx` files, the app anonymizes visible document text and also sanitizes common hidden Office content such as metadata, comments, text boxes, footnotes, endnotes, and selected revision text.
 
@@ -76,9 +83,13 @@ Typical workflow:
 3. Analyze the content.
 4. Anonymize it.
 5. Review the final report with the selected mode, detected data count, and safety warnings.
-6. Save the anonymized result.
+6. If you need an audit trail, open **Strumenti > Registro attività**.
+7. If you use reversible mode, save the local encrypted map from **Strumenti > Salva mappa reversibile**.
+8. Save the anonymized result.
 
 The desktop app defaults to maximum-protection mode, which is the recommended choice before sharing content with ChatGPT or other AI tools.
+
+Reversible mode is available for pasted text, `.txt`, `.md`, `.csv`, and `.docx`. PDF output remains permanently redacted and is not reversible.
 
 ### macOS
 
@@ -193,7 +204,7 @@ pip install -e ".[desktop,web]"
 python -m unittest discover -s tests -v
 ```
 
-The test suite covers Italian false positives, person and organization recognition, territorial bodies, PEC addresses, protocol/case numbers, structured identifiers, standard and maximum-protection anonymization, document anonymization, `.docx` structure and formatting preservation, hidden `.docx` metadata/content sanitization, unreadable/scanned PDF rejection, and rasterized PDF redaction without extractable original text.
+The test suite covers Italian false positives, person and organization recognition, territorial bodies, PEC addresses, protocol/case numbers, structured identifiers, standard, maximum-protection and reversible anonymization, encrypted reversible maps, document anonymization, `.docx` structure and formatting preservation, hidden `.docx` metadata/content sanitization, optional local OCR for scanned PDFs, unreadable PDF rejection, and rasterized PDF redaction without extractable original text.
 
 ## Project Status
 
@@ -201,6 +212,8 @@ This is an early open-source release. The engine is rule-based and intentionally
 
 - reducing Italian false positives;
 - improving document formatting preservation;
+- improving local OCR for scanned PDFs and images;
+- refining reversible mode and AI-response reconstruction;
 - adding carefully tested recognizers;
 - improving packaging and release automation.
 

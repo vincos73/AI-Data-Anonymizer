@@ -144,7 +144,7 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._organization_findings(text))
         findings.extend(self._territorial_body_findings(text))
         findings.extend(self._person_findings(text))
-        if mode == "maximum":
+        if mode in {"maximum", "reversible"}:
             findings.extend(self._regex_findings(text, "DATE", self.DATE, 0.82))
         return self._dedupe(findings)
 
@@ -439,7 +439,7 @@ class ItalianPrivacyRecognizer:
         return True
 
     def _replacement(self, value: str, entity_type: str, mode: AnonymizationMode) -> str:
-        if mode == "maximum":
+        if mode in {"maximum", "reversible"}:
             return entity_placeholder(entity_type)
         if entity_type in {"PERSON", "ORGANIZATION", "TERRITORIAL_BODY", "ADDRESS"}:
             return self._initials(value)

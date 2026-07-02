@@ -35,6 +35,7 @@ if (Test-Path "dist") {
     --collect-all pypdf `
     --collect-all pypdfium2 `
     --collect-all reportlab `
+    --collect-all cryptography `
     src\privacy_guardian\app.py
 
 Compress-Archive `

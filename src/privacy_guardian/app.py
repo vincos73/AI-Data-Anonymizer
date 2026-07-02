@@ -13,7 +13,9 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QHeaderView,
+    QInputDialog,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QPushButton,
     QSplitter,
@@ -25,6 +27,13 @@ from PySide6.QtWidgets import (
 )
 
 from privacy_guardian import __version__
+from privacy_guardian.activity_log import (
+    ActivityAction,
+    build_activity_entry,
+    export_activity_log_csv,
+    load_activity_entries,
+    record_activity,
+)
 from privacy_guardian.document_service import (
     LEGACY_DOC_SUPPORTED,
     AnonymizedDocument,
@@ -34,12 +43,21 @@ from privacy_guardian.document_service import (
 )
 from privacy_guardian.models import AnonymizationMode, Finding, validate_anonymization_mode
 from privacy_guardian.privacy_engine import PrivacyEngine
+from privacy_guardian.reversible import (
+    MAP_EXTENSION,
+    ReversibleMapEntry,
+    ReversibleMapError,
+    read_encrypted_mapping,
+    restore_text,
+    write_encrypted_mapping,
+)
 from privacy_guardian.reporting import entity_label, mode_note, report_text, source_label
 from privacy_guardian.styles import APP_STYLE
 
 
 PROJECT_REPO_URL = "https://github.com/vincos73/AI-Data-Anonymizer"
 PROJECT_RELEASES_URL = f"{PROJECT_REPO_URL}/releases"
+PROJECT_SECURITY_URL = f"{PROJECT_REPO_URL}/blob/main/SICUREZZA.md"
 
 
 def _asset_path(filename: str) -> Path:
@@ -65,6 +83,7 @@ class MainWindow(QMainWindow):
         self.findings: list[Finding] = []
         self.loaded_document: LoadedDocument | None = None
         self.anonymized_document: AnonymizedDocument | None = None
+        self.reversible_mapping: tuple[ReversibleMapEntry, ...] = ()
 
         self.setWindowTitle("OMISSIS")
         self.resize(1160, 760)
@@ -117,6 +136,7 @@ class MainWindow(QMainWindow):
 
         self.mode_select = QComboBox()
         self.mode_select.addItem("Massima protezione (consigliata)", "maximum")
+        self.mode_select.addItem("Reversibile con mappa locale", "reversible")
         self.mode_select.addItem("Standard (più leggibile)", "standard")
         self.mode_select.setObjectName("ModeSelect")
         self.mode_select.currentIndexChanged.connect(self._update_mode_notice)
@@ -238,15 +258,165 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(quit_action)
 
+        activity_action = QAction("Registro attività", self)
+        activity_action.triggered.connect(self.show_activity_log_dialog)
+
+        self.save_map_action = QAction("Salva mappa reversibile...", self)
+        self.save_map_action.triggered.connect(self.save_reversible_map)
+
+        self.restore_map_action = QAction("Ricostruisci testo con mappa...", self)
+        self.restore_map_action.triggered.connect(self.restore_with_reversible_map)
+
+        tools_menu = self.menuBar().addMenu("Strumenti")
+        tools_menu.addAction(activity_action)
+        tools_menu.addSeparator()
+        tools_menu.addAction(self.save_map_action)
+        tools_menu.addAction(self.restore_map_action)
+
+        security_action = QAction("Sicurezza e privacy", self)
+        security_action.triggered.connect(self.show_security_dialog)
+
         about_action = QAction("Informazioni su OMISSIS", self)
         about_action.triggered.connect(self.show_about_dialog)
 
         help_menu = self.menuBar().addMenu("Aiuto")
+        help_menu.addAction(security_action)
+        help_menu.addSeparator()
         help_menu.addAction(about_action)
+
+    def show_security_dialog(self) -> None:
+        dialog = QDialog(self)
+        dialog.setObjectName("InfoDialog")
+        dialog.setWindowTitle("Sicurezza e privacy")
+        dialog.setModal(True)
+        dialog.setMinimumWidth(560)
+
+        title = QLabel("Sicurezza e privacy")
+        title.setObjectName("DialogTitle")
+
+        details = QLabel(
+            "OMISSIS lavora in locale: l'app desktop non invia documenti, testo o dati rilevati "
+            "a OpenAI, Google, Anthropic, servizi OCR, analytics o altre API esterne.<br><br>"
+            "<b>Registro attività:</b> salva solo metadati locali come data, modalità, conteggi, "
+            "estensione, dimensione e hash dei file. Non salva testo originale, testo anonimizzato "
+            "o valori trovati.<br><br>"
+            "<b>PDF:</b> i PDF con testo selezionabile vengono esportati come pagine rasterizzate "
+            "con oscuramenti permanenti. I PDF scansionati possono essere letti con Tesseract OCR locale "
+            "quando è installato; non vengono usati servizi OCR esterni.<br><br>"
+            f'<a style="color:#0089b8;" href="{PROJECT_SECURITY_URL}">Apri la pagina sicurezza su GitHub</a>'
+        )
+        details.setObjectName("DialogDetails")
+        details.setTextFormat(Qt.RichText)
+        details.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        details.setOpenExternalLinks(True)
+        details.setWordWrap(True)
+
+        close_button = QPushButton("Chiudi")
+        close_button.setObjectName("SecondaryButton")
+        close_button.clicked.connect(dialog.accept)
+
+        button_row = QHBoxLayout()
+        button_row.addStretch(1)
+        button_row.addWidget(close_button)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(24, 22, 24, 18)
+        layout.setSpacing(14)
+        layout.addWidget(title)
+        layout.addWidget(details)
+        layout.addLayout(button_row)
+        dialog.setLayout(layout)
+        dialog.setStyleSheet(APP_STYLE)
+        dialog.exec()
+
+    def show_activity_log_dialog(self) -> None:
+        dialog = QDialog(self)
+        dialog.setObjectName("InfoDialog")
+        dialog.setWindowTitle("Registro attività")
+        dialog.setModal(True)
+        dialog.resize(920, 520)
+
+        title = QLabel("Registro attività locale")
+        title.setObjectName("DialogTitle")
+
+        description = QLabel(
+            "Il registro resta sul dispositivo e contiene solo metadati: nessun testo originale, "
+            "nessun testo anonimizzato, nessun valore rilevato."
+        )
+        description.setObjectName("DialogDetails")
+        description.setWordWrap(True)
+
+        entries = list(reversed(load_activity_entries(limit=300)))
+        table = QTableWidget(len(entries), 7)
+        table.setHorizontalHeaderLabels(["Data", "Operazione", "Origine", "Modalità", "Dati", "Tipi", "Hash file"])
+        table.verticalHeader().setVisible(False)
+        table.setSelectionBehavior(QTableWidget.SelectRows)
+        table.setAlternatingRowColors(True)
+        table.setShowGrid(False)
+        table.horizontalHeader().setStretchLastSection(True)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+
+        for row, entry in enumerate(entries):
+            values = [
+                self._activity_timestamp(entry),
+                str(entry.get("action_label") or entry.get("action") or ""),
+                self._activity_source_text(entry),
+                str(entry.get("mode_label") or entry.get("mode") or ""),
+                str(entry.get("total_findings") or 0),
+                self._activity_counts_text(entry.get("finding_counts")),
+                self._short_hash(entry.get("source_sha256")),
+            ]
+            for col, value in enumerate(values):
+                item = QTableWidgetItem(value)
+                item.setFlags(item.flags() ^ Qt.ItemIsEditable)
+                table.setItem(row, col, item)
+
+        empty_notice = QLabel("Nessuna attività registrata.") if not entries else QLabel("")
+        empty_notice.setObjectName("DialogDetails")
+
+        export_button = QPushButton("Esporta CSV")
+        export_button.setObjectName("SecondaryButton")
+
+        def export_log() -> None:
+            filename, _ = QFileDialog.getSaveFileName(
+                dialog,
+                "Esporta registro attività",
+                str(Path.home() / "omissis-registro-attivita.csv"),
+                "CSV (*.csv)",
+            )
+            if not filename:
+                return
+            export_activity_log_csv(filename)
+            self.statusBar().showMessage(f"Registro esportato: {filename}", 5000)
+
+        export_button.clicked.connect(export_log)
+        export_button.setEnabled(bool(entries))
+
+        close_button = QPushButton("Chiudi")
+        close_button.setObjectName("SecondaryButton")
+        close_button.clicked.connect(dialog.accept)
+
+        button_row = QHBoxLayout()
+        button_row.addWidget(export_button)
+        button_row.addStretch(1)
+        button_row.addWidget(close_button)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(20, 18, 20, 16)
+        layout.setSpacing(10)
+        layout.addWidget(title)
+        layout.addWidget(description)
+        if not entries:
+            layout.addWidget(empty_notice)
+        layout.addWidget(table, 1)
+        layout.addLayout(button_row)
+        dialog.setLayout(layout)
+        dialog.setStyleSheet(APP_STYLE)
+        dialog.exec()
 
     def show_about_dialog(self) -> None:
         dialog = QDialog(self)
-        dialog.setObjectName("AboutDialog")
+        dialog.setObjectName("InfoDialog")
         dialog.setWindowTitle("Informazioni su OMISSIS")
         dialog.setModal(True)
         dialog.setMinimumWidth(420)
@@ -324,18 +494,30 @@ class MainWindow(QMainWindow):
             return
 
         self.anonymized_document = None
+        self.reversible_mapping = ()
         self.input_text.setPlainText(self.loaded_document.text)
         self.output_text.clear()
         self._update_mode_notice()
         if self.loaded_document.extension == ".pdf":
-            self.document_label.setText(
-                f"PDF caricato: {self.loaded_document.path.name}. "
-                "L'export creerà un PDF rasterizzato con oscuramenti permanenti."
-            )
-            self.statusBar().showMessage(
-                "PDF caricato. L'anonimizzazione salverà una copia redatta non selezionabile.",
-                7000,
-            )
+            if self.loaded_document.ocr_pages:
+                pages = ", ".join(str(page) for page in self.loaded_document.ocr_pages)
+                self.document_label.setText(
+                    f"PDF letto con OCR locale: {self.loaded_document.path.name} (pagine {pages}). "
+                    "L'export creerà un PDF rasterizzato con oscuramenti permanenti."
+                )
+                self.statusBar().showMessage(
+                    "PDF scansionato letto con OCR locale. Controlla sempre il risultato OCR prima di condividere.",
+                    8000,
+                )
+            else:
+                self.document_label.setText(
+                    f"PDF caricato: {self.loaded_document.path.name}. "
+                    "L'export creerà un PDF rasterizzato con oscuramenti permanenti."
+                )
+                self.statusBar().showMessage(
+                    "PDF caricato. L'anonimizzazione salverà una copia redatta non selezionabile.",
+                    7000,
+                )
         else:
             self.document_label.setText(f"Documento caricato: {self.loaded_document.path.name}")
             self.statusBar().showMessage(
@@ -353,10 +535,12 @@ class MainWindow(QMainWindow):
         self._fill_table()
         self._highlight_findings()
         self._update_report()
+        self._record_activity("analysis")
         self.statusBar().showMessage(f"Elementi rilevati: {len(self.findings)}.", 4000)
 
     def anonymize_text(self) -> None:
         mode = self._selected_mode()
+        self.reversible_mapping = ()
         if not self.input_text.toPlainText().strip():
             self.statusBar().showMessage("Incolla un testo o carica un documento prima di anonimizzare.", 5000)
             return
@@ -370,22 +554,40 @@ class MainWindow(QMainWindow):
                 self._sync_action_state()
                 return
             self.findings = self.anonymized_document.findings
+            self.reversible_mapping = self.anonymized_document.reversible_mapping
             self.output_text.setPlainText(self.anonymized_document.text)
             self._fill_table()
             self._highlight_findings()
             self._update_report()
-            self.statusBar().showMessage(
-                f"Documento pronto: {self.anonymized_document.filename}. Elementi rilevati: {len(self.findings)}.",
-                5000,
-            )
+            self._record_activity("anonymization", output_data=self.anonymized_document.data)
+            if self.reversible_mapping:
+                self.statusBar().showMessage(
+                    f"Documento pronto: {self.anonymized_document.filename}. Salva anche la mappa reversibile.",
+                    7000,
+                )
+            else:
+                self.statusBar().showMessage(
+                    f"Documento pronto: {self.anonymized_document.filename}. Elementi rilevati: {len(self.findings)}.",
+                    5000,
+                )
+            self._sync_action_state()
             return
 
         self.loaded_document = None
         self.anonymized_document = None
         self.analyze_text()
         text = self.input_text.toPlainText()
-        self.output_text.setPlainText(self.engine.anonymize(text, self.findings, mode))
+        if mode == "reversible":
+            reversible_result = self.engine.anonymize_reversible(text, self.findings)
+            self.reversible_mapping = reversible_result.mapping
+            self.output_text.setPlainText(reversible_result.text)
+        else:
+            self.output_text.setPlainText(self.engine.anonymize(text, self.findings, mode))
         self._update_report()
+        self._record_activity("anonymization", output_data=self.output_text.toPlainText().encode("utf-8"))
+        if self.reversible_mapping:
+            self.statusBar().showMessage("Testo reversibile pronto. Salva la mappa locale prima di usare ChatGPT.", 7000)
+        self._sync_action_state()
 
     def copy_output(self) -> None:
         if not self.output_text.toPlainText().strip():
@@ -431,7 +633,63 @@ class MainWindow(QMainWindow):
         else:
             target_path.write_text(self.output_text.toPlainText(), encoding="utf-8")
 
+        self._record_activity("save", output_path=target_path)
         self.statusBar().showMessage(f"Salvato: {target_path}", 4000)
+
+    def save_reversible_map(self) -> None:
+        if not self.reversible_mapping:
+            self.statusBar().showMessage("Non c'è ancora una mappa reversibile da salvare.", 5000)
+            return
+
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Salva mappa reversibile",
+            str(Path.home() / self._default_map_filename()),
+            "Mappa OMISSIS (*.omissis-map)",
+        )
+        if not filename:
+            return
+        target_path = Path(filename)
+        if target_path.suffix.lower() != MAP_EXTENSION:
+            target_path = target_path.with_suffix(MAP_EXTENSION)
+
+        passphrase = self._ask_passphrase("Password mappa", "Scegli una password per cifrare la mappa:", confirm=True)
+        if passphrase is None:
+            return
+        try:
+            write_encrypted_mapping(target_path, self.reversible_mapping, passphrase)
+        except ReversibleMapError as exc:
+            self.statusBar().showMessage(str(exc), 7000)
+            return
+
+        self.statusBar().showMessage(f"Mappa reversibile salvata: {target_path}", 6000)
+
+    def restore_with_reversible_map(self) -> None:
+        source_text = self.output_text.toPlainText().strip() or self.input_text.toPlainText().strip()
+        if not source_text:
+            self.statusBar().showMessage("Incolla nel risultato il testo da ricostruire, poi scegli la mappa.", 6000)
+            return
+
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Apri mappa reversibile",
+            str(Path.home()),
+            "Mappa OMISSIS (*.omissis-map);;Tutti i file (*.*)",
+        )
+        if not filename:
+            return
+
+        passphrase = self._ask_passphrase("Password mappa", "Inserisci la password della mappa:")
+        if passphrase is None:
+            return
+        try:
+            mapping = read_encrypted_mapping(filename, passphrase)
+        except ReversibleMapError as exc:
+            self.statusBar().showMessage(str(exc), 8000)
+            return
+
+        self.output_text.setPlainText(restore_text(source_text, mapping))
+        self.statusBar().showMessage("Testo ricostruito localmente dalla mappa.", 5000)
 
     def clear_all(self) -> None:
         self.input_text.clear()
@@ -440,6 +698,7 @@ class MainWindow(QMainWindow):
         self.findings = []
         self.loaded_document = None
         self.anonymized_document = None
+        self.reversible_mapping = ()
         self.document_label.setText("Nessun documento caricato. Puoi incollare testo o trascinare un file nella finestra.")
         self._update_mode_notice()
         self._sync_action_state()
@@ -527,6 +786,90 @@ class MainWindow(QMainWindow):
         self.copy_button.setEnabled(output_has_text)
         self.save_button.setEnabled(output_has_text or self.anonymized_document is not None)
         self.clear_button.setEnabled(has_anything)
+        if hasattr(self, "save_map_action"):
+            self.save_map_action.setEnabled(bool(self.reversible_mapping))
+
+    def _record_activity(
+        self,
+        action: ActivityAction,
+        *,
+        output_path: str | Path | None = None,
+        output_data: bytes | None = None,
+    ) -> None:
+        source_is_document = self.loaded_document is not None and self.input_text.toPlainText() == self.loaded_document.text
+        try:
+            entry = build_activity_entry(
+                action=action,
+                source_kind="document" if source_is_document else "pasted_text",
+                mode=self._selected_mode(),
+                findings=self.findings,
+                source_path=self.loaded_document.path if source_is_document and self.loaded_document else None,
+                output_path=output_path,
+                output_data=output_data,
+                app_version=__version__,
+            )
+            record_activity(entry)
+        except Exception:
+            self.statusBar().showMessage("Registro attività non aggiornato.", 4000)
+
+    def _activity_timestamp(self, entry: dict[str, object]) -> str:
+        timestamp = str(entry.get("timestamp") or "")
+        return timestamp.replace("T", " ").replace("+00:00", " UTC")
+
+    def _activity_source_text(self, entry: dict[str, object]) -> str:
+        source = str(entry.get("source_label") or entry.get("source_kind") or "")
+        extension = entry.get("source_extension")
+        size = entry.get("source_size_bytes")
+        parts = [source]
+        if extension:
+            parts.append(str(extension))
+        if isinstance(size, int):
+            parts.append(self._format_bytes(size))
+        return " · ".join(parts)
+
+    def _activity_counts_text(self, counts: object) -> str:
+        if not isinstance(counts, dict) or not counts:
+            return "nessun tipo"
+        parts = []
+        for entity_type, count in sorted(counts.items(), key=lambda item: entity_label(str(item[0]), 2)):
+            if isinstance(count, int):
+                parts.append(f"{count} {entity_label(str(entity_type), count)}")
+        return ", ".join(parts) if parts else "nessun tipo"
+
+    def _short_hash(self, value: object) -> str:
+        if not isinstance(value, str) or not value:
+            return ""
+        return f"{value[:12]}..."
+
+    def _format_bytes(self, value: int) -> str:
+        if value >= 1024 * 1024:
+            return f"{value / (1024 * 1024):.1f} MB"
+        if value >= 1024:
+            return f"{value / 1024:.1f} KB"
+        return f"{value} byte"
+
+    def _default_map_filename(self) -> str:
+        if self.loaded_document:
+            return f"{self.loaded_document.path.stem}{MAP_EXTENSION}"
+        return f"omissis-mappa{MAP_EXTENSION}"
+
+    def _ask_passphrase(self, title: str, label: str, *, confirm: bool = False) -> str | None:
+        first, ok = QInputDialog.getText(self, title, label, QLineEdit.Password)
+        if not ok:
+            return None
+        if not first.strip():
+            self.statusBar().showMessage("La password non può essere vuota.", 5000)
+            return None
+        if not confirm:
+            return first
+
+        second, ok = QInputDialog.getText(self, title, "Ripeti la password:", QLineEdit.Password)
+        if not ok:
+            return None
+        if first != second:
+            self.statusBar().showMessage("Le password non coincidono.", 6000)
+            return None
+        return first
 
 
 def main() -> int:

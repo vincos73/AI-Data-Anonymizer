@@ -19,9 +19,16 @@ from pypdf import PdfReader, PdfWriter
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
-from privacy_guardian.document_service import anonymize_loaded_document, load_document
+from privacy_guardian.activity_log import (
+    build_activity_entry,
+    export_activity_log_csv,
+    load_activity_entries,
+    record_activity,
+)
+from privacy_guardian.document_service import OcrPageText, OcrWord, anonymize_loaded_document, load_document
 from privacy_guardian.privacy_engine import PrivacyEngine
 from privacy_guardian.reporting import entity_label, entity_placeholder, report_payload, report_text, source_label
+from privacy_guardian.reversible import decrypt_mapping, encrypt_mapping, restore_text
 from privacy_guardian.web_app import (
     MAX_TEXT_LENGTH,
     TextPayload,
@@ -79,6 +86,27 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn("<INDIRIZZO>", anonymized)
         self.assertNotIn("M. R.", anonymized)
         self.assertNotIn("10/01/1980", anonymized)
+
+    def test_reversible_mode_uses_numbered_placeholders_and_restores_text(self) -> None:
+        text = (
+            "Il sottoscritto Mario Rossi email mario@example.com nato il 10/01/1980. "
+            "Bonifico intestato a Mario Rossi."
+        )
+        findings = self.engine.analyze(text, mode="reversible")
+        result = self.engine.anonymize_reversible(text, findings)
+
+        self.assertEqual(result.text.count("<PERSONA_1>"), 2)
+        self.assertIn("<EMAIL_1>", result.text)
+        self.assertIn("<DATA_1>", result.text)
+        self.assertNotIn("Mario Rossi", result.text)
+        self.assertNotIn("mario@example.com", result.text)
+        self.assertEqual(restore_text(result.text, result.mapping), text)
+
+        encrypted = encrypt_mapping(result.mapping, "password locale")
+        self.assertNotIn(b"Mario Rossi", encrypted)
+        self.assertNotIn(b"mario@example.com", encrypted)
+        decrypted_mapping = decrypt_mapping(encrypted, "password locale")
+        self.assertEqual(restore_text(result.text, decrypted_mapping), text)
 
     def test_dates_are_findings_only_in_maximum_protection(self) -> None:
         text = "Il sottoscritto Mario Rossi nato il 5 maggio 2020."
@@ -251,6 +279,13 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         payload = report_payload([], "standard")
         self.assertIn("Standard lascia visibili iniziali e date", payload["checklist"][0])
 
+    def test_reversible_report_explains_local_map(self) -> None:
+        payload = report_payload([], "reversible")
+
+        self.assertEqual(payload["mode_label"], "Reversibile")
+        self.assertIn("mappa locale cifrata", payload["mode_note"])
+        self.assertIn("salva la mappa cifrata", payload["checklist"][0])
+
     def test_entity_labels_are_human_readable(self) -> None:
         self.assertEqual(entity_label("PERSON"), "persona")
         self.assertEqual(entity_label("PHONE_NUMBER", 2), "telefoni")
@@ -366,6 +401,40 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertIn("<DATA>", output_text)
         self.assertNotIn("Mario Rossi", output_text)
         self.assertNotIn("10/01/1980", output_text)
+
+    def test_txt_reversible_mode_returns_mapping_for_local_restore(self) -> None:
+        txt_path = self.base / "reversibile.txt"
+        original_text = "Il sottoscritto Mario Rossi email mario@example.com nato il 10/01/1980."
+        txt_path.write_text(original_text, encoding="utf-8")
+
+        result = anonymize_loaded_document(load_document(txt_path), self.engine, mode="reversible")
+        anonymized_text = result.data.decode("utf-8")
+
+        self.assertIn("<PERSONA_1>", anonymized_text)
+        self.assertIn("<EMAIL_1>", anonymized_text)
+        self.assertIn("<DATA_1>", anonymized_text)
+        self.assertEqual(restore_text(anonymized_text, result.reversible_mapping), original_text)
+        encrypted = encrypt_mapping(result.reversible_mapping, "password locale")
+        self.assertNotIn(b"Mario Rossi", encrypted)
+        self.assertEqual(restore_text(anonymized_text, decrypt_mapping(encrypted, "password locale")), original_text)
+
+    def test_docx_reversible_mode_uses_consistent_mapping(self) -> None:
+        docx_path = self.base / "reversibile.docx"
+        doc = Document()
+        doc.add_paragraph("Il sottoscritto Mario Rossi email mario@example.com")
+        doc.add_paragraph("Bonifico intestato a Mario Rossi.")
+        doc.save(docx_path)
+
+        result = anonymize_loaded_document(load_document(docx_path), self.engine, mode="reversible")
+        out_docx = self.base / result.filename
+        out_docx.write_bytes(result.data)
+        output_text = "\n".join(paragraph.text for paragraph in Document(out_docx).paragraphs)
+
+        self.assertEqual(output_text.count("<PERSONA_1>"), 2)
+        self.assertIn("<EMAIL_1>", output_text)
+        self.assertNotIn("Mario Rossi", output_text)
+        self.assertNotIn("mario@example.com", output_text)
+        self.assertEqual(restore_text(output_text, result.reversible_mapping), "\n".join(Document(docx_path).paragraphs[i].text for i in range(2)))
 
     def test_docx_anonymizes_table_values_using_row_context(self) -> None:
         docx_path = self.base / "table-context.docx"
@@ -521,8 +590,41 @@ class DocumentAnonymizationTest(unittest.TestCase):
         pdf.drawImage(image, 72, 720, width=120, height=40)
         pdf.save()
 
-        with self.assertRaisesRegex(ValueError, "pagine: 1"):
-            load_document(pdf_path)
+        with patch("privacy_guardian.document_service._tesseract_available", return_value=False):
+            with self.assertRaisesRegex(ValueError, "pagine: 1"):
+                load_document(pdf_path)
+
+    def test_ocr_reads_image_only_pdf_when_tesseract_is_available(self) -> None:
+        pdf_path = self.base / "ocr-scanned.pdf"
+        image = ImageReader(BytesIO(base64.b64decode(_ONE_PIXEL_PNG_BASE64)))
+        pdf = canvas.Canvas(str(pdf_path))
+        pdf.drawImage(image, 72, 720, width=120, height=40)
+        pdf.save()
+        ocr_text = OcrPageText(
+            text="Il sottoscritto Mario Rossi email mario@example.com",
+            words=[
+                OcrWord("Mario", 16, 21, 20, 20, 80, 42),
+                OcrWord("Rossi", 22, 27, 82, 20, 140, 42),
+                OcrWord("mario@example.com", 34, 51, 150, 20, 300, 42),
+            ],
+        )
+
+        with patch("privacy_guardian.document_service._tesseract_available", return_value=True):
+            with patch("privacy_guardian.document_service._ocr_pdfium_page", return_value=ocr_text):
+                loaded = load_document(pdf_path)
+            with patch("privacy_guardian.document_service._ocr_image", return_value=ocr_text):
+                result = anonymize_loaded_document(loaded, self.engine, mode="maximum")
+
+        out_pdf = self.base / result.filename
+        out_pdf.write_bytes(result.data)
+        extracted_text = "\n".join(page.extract_text() or "" for page in PdfReader(out_pdf).pages)
+
+        self.assertEqual(loaded.ocr_pages, (1,))
+        self.assertIn("Mario Rossi", loaded.text)
+        self.assertIn("<PERSONA>", result.text)
+        self.assertIn("<EMAIL>", result.text)
+        self.assertNotIn("Mario Rossi", extracted_text)
+        self.assertNotIn("mario@example.com", extracted_text)
 
     def test_rejects_pdf_without_extractable_text(self) -> None:
         pdf_path = self.base / "blank.pdf"
@@ -533,6 +635,15 @@ class DocumentAnonymizationTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "non contiene testo estraibile"):
             load_document(pdf_path)
+
+    def test_pdf_reversible_mode_is_rejected_with_clear_message(self) -> None:
+        pdf_path = self.base / "contratto.pdf"
+        pdf = canvas.Canvas(str(pdf_path))
+        pdf.drawString(72, 720, "Il sottoscritto Mario Rossi email mario@example.com")
+        pdf.save()
+
+        with self.assertRaisesRegex(ValueError, "modalità reversibile non è disponibile per i PDF"):
+            anonymize_loaded_document(load_document(pdf_path), self.engine, mode="reversible")
 
     @unittest.skipUnless(Path("/usr/bin/textutil").exists(), "textutil is required for .doc support")
     def test_accepts_legacy_doc_and_outputs_docx(self) -> None:
@@ -602,6 +713,17 @@ class WebAppTest(unittest.TestCase):
         self.assertEqual(findings_by_type["VEHICLE_PLATE"]["label"], "targa veicolo")
         self.assertEqual(findings_by_type["VEHICLE_PLATE"]["source_label"], "Regole italiane locali")
 
+    def test_web_reversible_mode_returns_numbered_placeholders(self) -> None:
+        payload = asyncio.run(
+            anonymize_text_endpoint(
+                TextPayload(text="Il sottoscritto Mario Rossi email mario@example.com", mode="reversible")
+            )
+        )
+
+        self.assertIn("<PERSONA_1>", payload["text"])
+        self.assertIn("<EMAIL_1>", payload["text"])
+        self.assertEqual(payload["report"]["mode_label"], "Reversibile")
+
     def test_rejects_oversized_uploaded_document(self) -> None:
         upload = UploadFile(BytesIO(b"123456789"), filename="troppo.txt")
 
@@ -633,6 +755,65 @@ class WebAppTest(unittest.TestCase):
             self.assertEqual(payload["report"]["counts"]["EMAIL_ADDRESS"], 1)
             self.assertNotIn("Mario Rossi", extracted_text)
             self.assertNotIn("mario@example.com", extracted_text)
+
+
+class ActivityLogTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.engine = PrivacyEngine()
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmp.name)
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    def test_activity_log_keeps_metadata_without_detected_values(self) -> None:
+        source = self.base / "contratto.txt"
+        source.write_text("Il sottoscritto Mario Rossi email mario@example.com", encoding="utf-8")
+        findings = self.engine.analyze(source.read_text(encoding="utf-8"), mode="maximum")
+        log_path = self.base / "activity.jsonl"
+
+        entry = build_activity_entry(
+            action="anonymization",
+            source_kind="document",
+            mode="maximum",
+            findings=findings,
+            source_path=source,
+            output_data=b"<PERSONA> <EMAIL>",
+            app_version="test",
+        )
+        record_activity(entry, log_path)
+        entries = load_activity_entries(log_path)
+        raw_log = log_path.read_text(encoding="utf-8")
+
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["action_label"], "Anonimizzazione")
+        self.assertEqual(entries[0]["source_extension"], ".txt")
+        self.assertEqual(entries[0]["finding_counts"]["PERSON"], 1)
+        self.assertEqual(entries[0]["finding_counts"]["EMAIL_ADDRESS"], 1)
+        self.assertIsNotNone(entries[0]["source_sha256"])
+        self.assertIsNotNone(entries[0]["output_sha256"])
+        self.assertNotIn("Mario Rossi", raw_log)
+        self.assertNotIn("mario@example.com", raw_log)
+        self.assertNotIn("<PERSONA>", raw_log)
+
+    def test_activity_log_exports_csv(self) -> None:
+        log_path = self.base / "activity.jsonl"
+        csv_path = self.base / "activity.csv"
+        entry = build_activity_entry(
+            action="analysis",
+            source_kind="pasted_text",
+            mode="standard",
+            findings=[],
+            app_version="test",
+        )
+        record_activity(entry, log_path)
+
+        export_activity_log_csv(csv_path, log_path)
+        csv_text = csv_path.read_text(encoding="utf-8")
+
+        self.assertIn("timestamp,action_label,source_label", csv_text)
+        self.assertIn("Analisi", csv_text)
+        self.assertIn("Testo incollato", csv_text)
 
 
 _ONE_PIXEL_PNG_BASE64 = (

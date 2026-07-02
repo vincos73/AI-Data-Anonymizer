@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
+import csv
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -11,6 +14,7 @@ import zipfile
 
 from privacy_guardian.models import AnonymizationMode, Finding
 from privacy_guardian.privacy_engine import PrivacyEngine
+from privacy_guardian.reversible import ReversibleAnonymizer, ReversibleMapEntry
 
 
 BASE_SUPPORTED_EXTENSIONS = {".txt", ".md", ".csv", ".docx", ".pdf"}
@@ -18,6 +22,9 @@ LEGACY_DOC_SUPPORTED = sys.platform == "darwin" and Path("/usr/bin/textutil").ex
 SUPPORTED_EXTENSIONS = BASE_SUPPORTED_EXTENSIONS | ({".doc"} if LEGACY_DOC_SUPPORTED else set())
 PDF_REDACTION_SCALE = 2.0
 PDF_REDACTION_PADDING = 1.75
+OCR_RENDER_SCALE = 2.0
+OCR_REDACTION_PADDING = 3
+DEFAULT_TESSERACT_LANG = "ita+eng"
 OOXML_NAMESPACES = {
     "cp": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
     "dc": "http://purl.org/dc/elements/1.1/",
@@ -41,6 +48,7 @@ class LoadedDocument:
     path: Path
     text: str
     extension: str
+    ocr_pages: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -49,6 +57,7 @@ class AnonymizedDocument:
     data: bytes
     text: str
     findings: list[Finding]
+    reversible_mapping: tuple[ReversibleMapEntry, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -59,9 +68,33 @@ class PdfRedactionRect:
     top: float
 
 
+@dataclass(frozen=True)
+class PdfTextResult:
+    text: str
+    ocr_pages: tuple[int, ...] = ()
+
+
+@dataclass(frozen=True)
+class OcrWord:
+    text: str
+    start: int
+    end: int
+    left: int
+    top: int
+    right: int
+    bottom: int
+
+
+@dataclass(frozen=True)
+class OcrPageText:
+    text: str
+    words: list[OcrWord]
+
+
 def load_document(path: str | Path) -> LoadedDocument:
     document_path = Path(path)
     extension = document_path.suffix.lower()
+    ocr_pages: tuple[int, ...] = ()
 
     if extension not in SUPPORTED_EXTENSIONS:
         supported = ", ".join(sorted(SUPPORTED_EXTENSIONS))
@@ -74,9 +107,11 @@ def load_document(path: str | Path) -> LoadedDocument:
     elif extension == ".docx":
         text = _read_docx(document_path)
     else:
-        text = _read_pdf(document_path)
+        pdf_text = _read_pdf(document_path)
+        text = pdf_text.text
+        ocr_pages = pdf_text.ocr_pages
 
-    return LoadedDocument(path=document_path, text=text, extension=extension)
+    return LoadedDocument(path=document_path, text=text, extension=extension, ocr_pages=ocr_pages)
 
 
 def anonymize_loaded_document(
@@ -84,20 +119,37 @@ def anonymize_loaded_document(
     engine: PrivacyEngine,
     mode: AnonymizationMode = "standard",
 ) -> AnonymizedDocument:
+    if mode == "reversible" and document.extension == ".pdf":
+        raise ValueError(
+            "La modalità reversibile non è disponibile per i PDF: usa Massima protezione per creare un PDF redatto "
+            "oppure incolla il testo estratto per lavorare con segnaposti ricostruibili."
+        )
+
     findings = engine.analyze(document.text, mode)
-    anonymized_text = engine.anonymize(document.text, findings, mode)
+    reversible_session = ReversibleAnonymizer() if mode == "reversible" else None
+    anonymized_text = (
+        reversible_session.anonymize(document.text, findings)
+        if reversible_session
+        else engine.anonymize(document.text, findings, mode)
+    )
     output_name = f"{document.path.stem}_anonimizzato{_output_extension(document.extension)}"
 
     if document.extension in {".txt", ".md", ".csv"}:
         data = anonymized_text.encode("utf-8")
     elif document.extension == ".doc":
-        data = _anonymize_legacy_doc(document.path, engine, mode)
+        data = _anonymize_legacy_doc(document.path, engine, mode, reversible_session=reversible_session)
     elif document.extension == ".docx":
-        data = _anonymize_docx(document.path, engine, mode)
+        data = _anonymize_docx(document.path, engine, mode, reversible_session=reversible_session)
     else:
         data = _anonymize_pdf(document.path, engine, mode)
 
-    return AnonymizedDocument(filename=output_name, data=data, text=anonymized_text, findings=findings)
+    return AnonymizedDocument(
+        filename=output_name,
+        data=data,
+        text=anonymized_text,
+        findings=findings,
+        reversible_mapping=reversible_session.mapping if reversible_session else (),
+    )
 
 
 def _output_extension(extension: str) -> str:
@@ -118,8 +170,14 @@ def _read_docx(path: Path) -> str:
     return "\n".join(parts)
 
 
-def _anonymize_docx(path: Path, engine: PrivacyEngine, mode: AnonymizationMode) -> bytes:
-    return _sanitize_docx_package(path.read_bytes(), engine, mode)
+def _anonymize_docx(
+    path: Path,
+    engine: PrivacyEngine,
+    mode: AnonymizationMode,
+    *,
+    reversible_session: ReversibleAnonymizer | None = None,
+) -> bytes:
+    return _sanitize_docx_package(path.read_bytes(), engine, mode, reversible_session=reversible_session)
 
 
 def _read_legacy_doc(path: Path) -> str:
@@ -127,11 +185,17 @@ def _read_legacy_doc(path: Path) -> str:
     return result.stdout.decode("utf-8", errors="replace").strip()
 
 
-def _anonymize_legacy_doc(path: Path, engine: PrivacyEngine, mode: AnonymizationMode) -> bytes:
+def _anonymize_legacy_doc(
+    path: Path,
+    engine: PrivacyEngine,
+    mode: AnonymizationMode,
+    *,
+    reversible_session: ReversibleAnonymizer | None = None,
+) -> bytes:
     with tempfile.TemporaryDirectory() as tmpdir:
         converted_path = Path(tmpdir) / f"{path.stem}.docx"
         _run_textutil("-convert", "docx", "-output", str(converted_path), str(path))
-        return _anonymize_docx(converted_path, engine, mode)
+        return _anonymize_docx(converted_path, engine, mode, reversible_session=reversible_session)
 
 
 def _anonymize_pdf(path: Path, engine: PrivacyEngine, mode: AnonymizationMode) -> bytes:
@@ -148,9 +212,6 @@ def _anonymize_pdf(path: Path, engine: PrivacyEngine, mode: AnonymizationMode) -
             page = source_pdf[page_index]
             width, height = page.get_size()
             text_page = page.get_textpage()
-            page_text = text_page.get_text_range()
-            findings = engine.analyze(page_text, mode)
-            redaction_rects = _pdf_redaction_rects(text_page, page_text, findings, page_index)
             bitmap = page.render(scale=PDF_REDACTION_SCALE)
             try:
                 image = bitmap.to_pil().convert("RGB")
@@ -158,7 +219,19 @@ def _anonymize_pdf(path: Path, engine: PrivacyEngine, mode: AnonymizationMode) -
                 close = getattr(bitmap, "close", None)
                 if close:
                     close()
-            _draw_pdf_redactions(image, (width, height), redaction_rects)
+
+            page_text = text_page.get_text_range()
+            if page_text.strip():
+                findings = engine.analyze(page_text, mode)
+                redaction_rects = _pdf_redaction_rects(text_page, page_text, findings, page_index)
+                _draw_pdf_redactions(image, (width, height), redaction_rects)
+            elif _tesseract_available():
+                ocr_text = _ocr_image(image)
+                findings = engine.analyze(ocr_text.text, mode)
+                _draw_ocr_redactions(image, ocr_text.words, findings)
+            else:
+                raise ValueError(_ocr_unavailable_message(str(page_index + 1)))
+
             redacted_pdf.setPageSize((width, height))
             redacted_pdf.drawImage(ImageReader(image), 0, 0, width=width, height=height)
             redacted_pdf.showPage()
@@ -299,7 +372,13 @@ def _iter_table_paragraphs(table):
                 yield from _iter_table_paragraphs(nested_table)
 
 
-def _sanitize_docx_package(data: bytes, engine: PrivacyEngine, mode: AnonymizationMode) -> bytes:
+def _sanitize_docx_package(
+    data: bytes,
+    engine: PrivacyEngine,
+    mode: AnonymizationMode,
+    *,
+    reversible_session: ReversibleAnonymizer | None = None,
+) -> bytes:
     source_buffer = BytesIO(data)
     output = BytesIO()
 
@@ -307,17 +386,36 @@ def _sanitize_docx_package(data: bytes, engine: PrivacyEngine, mode: Anonymizati
         for item in source.infolist():
             payload = source.read(item.filename)
             if not item.is_dir():
-                payload = _sanitize_docx_part(item.filename, payload, engine, mode)
+                payload = _sanitize_docx_part(
+                    item.filename,
+                    payload,
+                    engine,
+                    mode,
+                    reversible_session=reversible_session,
+                )
             target.writestr(item, payload)
 
     return output.getvalue()
 
 
-def _sanitize_docx_part(name: str, data: bytes, engine: PrivacyEngine, mode: AnonymizationMode) -> bytes:
+def _sanitize_docx_part(
+    name: str,
+    data: bytes,
+    engine: PrivacyEngine,
+    mode: AnonymizationMode,
+    *,
+    reversible_session: ReversibleAnonymizer | None = None,
+) -> bytes:
     if _is_docx_metadata_part(name):
         return _scrub_metadata_xml(data)
     if _is_docx_text_part(name):
-        return _anonymize_ooxml_text(data, engine, mode, use_table_context=_is_docx_primary_story_part(name))
+        return _anonymize_ooxml_text(
+            data,
+            engine,
+            mode,
+            use_table_context=_is_docx_primary_story_part(name),
+            reversible_session=reversible_session,
+        )
     return data
 
 
@@ -371,6 +469,7 @@ def _anonymize_ooxml_text(
     mode: AnonymizationMode,
     *,
     use_table_context: bool,
+    reversible_session: ReversibleAnonymizer | None,
 ) -> bytes:
     try:
         root = ET.fromstring(data)
@@ -383,12 +482,12 @@ def _anonymize_ooxml_text(
     if use_table_context:
         for table_row in _iter_elements_by_local_name(root, "tr"):
             nodes = list(_iter_text_nodes(table_row))
-            _anonymize_text_nodes(nodes, engine, mode)
+            _anonymize_text_nodes(nodes, engine, mode, reversible_session=reversible_session)
             processed_nodes.update(id(node) for node in nodes)
 
     for container in _iter_text_containers(root):
         nodes = [node for node in _iter_text_nodes(container) if id(node) not in processed_nodes]
-        _anonymize_text_nodes(nodes, engine, mode)
+        _anonymize_text_nodes(nodes, engine, mode, reversible_session=reversible_session)
         processed_nodes.update(id(node) for node in nodes)
 
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
@@ -435,7 +534,13 @@ def _iter_elements_by_local_name(root: ET.Element, local_name: str):
             yield element
 
 
-def _anonymize_text_nodes(nodes: list[ET.Element], engine: PrivacyEngine, mode: AnonymizationMode) -> None:
+def _anonymize_text_nodes(
+    nodes: list[ET.Element],
+    engine: PrivacyEngine,
+    mode: AnonymizationMode,
+    *,
+    reversible_session: ReversibleAnonymizer | None = None,
+) -> None:
     if not nodes:
         return
 
@@ -447,18 +552,18 @@ def _anonymize_text_nodes(nodes: list[ET.Element], engine: PrivacyEngine, mode: 
     if not findings:
         return
 
-    replacements = [
-        (
-            finding.start,
-            finding.end,
-            engine.anonymize(
-                text[finding.start : finding.end],
+    replacements = []
+    for finding in findings:
+        value = text[finding.start : finding.end]
+        if reversible_session:
+            replacement = reversible_session.placeholder_for(finding.entity_type, value)
+        else:
+            replacement = engine.anonymize(
+                value,
                 [Finding(finding.entity_type, 0, finding.end - finding.start, finding.score)],
                 mode,
-            ),
-        )
-        for finding in findings
-    ]
+            )
+        replacements.append((finding.start, finding.end, replacement))
     replacements.sort(key=lambda replacement: replacement[0])
     cursor = 0
 
@@ -489,31 +594,186 @@ def _local_name(name: str) -> str:
     return name
 
 
-def _read_pdf(path: Path) -> str:
+def _read_pdf(path: Path) -> PdfTextResult:
     from pypdf import PdfReader
 
     reader = PdfReader(path)
     pages: list[str] = []
-    image_only_pages: list[int] = []
+    ocr_pages: list[int] = []
+    unreadable_pages: list[int] = []
+    pdfium_doc = None
 
-    for page_number, page in enumerate(reader.pages, start=1):
-        text = (page.extract_text() or "").strip()
-        if text:
-            pages.append(text)
-        elif _pdf_page_has_images(page):
-            image_only_pages.append(page_number)
+    try:
+        for page_number, page in enumerate(reader.pages, start=1):
+            text = (page.extract_text() or "").strip()
+            if text:
+                pages.append(text)
+                continue
 
-    if image_only_pages:
-        pages_label = ", ".join(str(page_number) for page_number in image_only_pages)
-        raise ValueError(
-            "Il PDF contiene pagine immagine o scansionate senza testo selezionabile "
-            f"(pagine: {pages_label}). Esegui prima l'OCR e poi riprova."
-        )
+            if not _pdf_page_has_images(page):
+                continue
+
+            if not _tesseract_available():
+                unreadable_pages.append(page_number)
+                continue
+
+            if pdfium_doc is None:
+                import pypdfium2 as pdfium
+
+                pdfium_doc = pdfium.PdfDocument(str(path))
+            ocr_text = _ocr_pdfium_page(pdfium_doc[page_number - 1])
+            if ocr_text.text.strip():
+                pages.append(ocr_text.text)
+                ocr_pages.append(page_number)
+            else:
+                unreadable_pages.append(page_number)
+    finally:
+        close = getattr(pdfium_doc, "close", None)
+        if close:
+            close()
+
+    if unreadable_pages:
+        pages_label = ", ".join(str(page_number) for page_number in unreadable_pages)
+        if _tesseract_available():
+            raise ValueError(
+                "OCR locale completato, ma non ho trovato testo affidabile nelle pagine "
+                f"{pages_label}. Controlla la qualità della scansione e riprova."
+            )
+        raise ValueError(_ocr_unavailable_message(pages_label))
 
     if not pages:
-        raise ValueError("Il PDF non contiene testo estraibile. Se è una scansione, esegui prima l'OCR e poi riprova.")
+        raise ValueError(
+            "Il PDF non contiene testo estraibile. Se è una scansione, abilita OCR locale con Tesseract e riprova."
+        )
 
-    return "\n\n".join(pages)
+    return PdfTextResult(text="\n\n".join(pages), ocr_pages=tuple(ocr_pages))
+
+
+def _ocr_pdfium_page(page) -> OcrPageText:
+    bitmap = page.render(scale=OCR_RENDER_SCALE)
+    try:
+        image = bitmap.to_pil().convert("RGB")
+    finally:
+        close = getattr(bitmap, "close", None)
+        if close:
+            close()
+    return _ocr_image(image)
+
+
+def _ocr_image(image) -> OcrPageText:
+    command = _tesseract_command()
+    if command is None:
+        raise ValueError(_ocr_unavailable_message(""))
+
+    with tempfile.NamedTemporaryFile(suffix=".png") as image_file:
+        image.save(image_file.name)
+        return _run_tesseract_tsv(command, image_file.name)
+
+
+def _run_tesseract_tsv(command: str, image_path: str) -> OcrPageText:
+    languages = [os.environ.get("OMISSIS_TESSERACT_LANG", DEFAULT_TESSERACT_LANG)]
+    if languages[0] != "eng":
+        languages.append("eng")
+
+    last_error = ""
+    for language in languages:
+        result = subprocess.run(
+            [command, image_path, "stdout", "-l", language, "tsv"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            return _parse_tesseract_tsv(result.stdout)
+        last_error = result.stderr.strip()
+
+    detail = f": {last_error}" if last_error else "."
+    raise ValueError(f"OCR locale non riuscito{detail}")
+
+
+def _parse_tesseract_tsv(tsv_text: str) -> OcrPageText:
+    words: list[OcrWord] = []
+    pieces: list[str] = []
+    cursor = 0
+
+    reader = csv.DictReader(StringIO(tsv_text), delimiter="\t")
+    for row in reader:
+        text = (row.get("text") or "").strip()
+        if not text:
+            continue
+        try:
+            left = int(float(row.get("left") or 0))
+            top = int(float(row.get("top") or 0))
+            width = int(float(row.get("width") or 0))
+            height = int(float(row.get("height") or 0))
+        except ValueError:
+            continue
+        if width <= 0 or height <= 0:
+            continue
+
+        if pieces:
+            pieces.append(" ")
+            cursor += 1
+        start = cursor
+        pieces.append(text)
+        cursor += len(text)
+        words.append(
+            OcrWord(
+                text=text,
+                start=start,
+                end=cursor,
+                left=left,
+                top=top,
+                right=left + width,
+                bottom=top + height,
+            )
+        )
+
+    return OcrPageText(text="".join(pieces), words=words)
+
+
+def _draw_ocr_redactions(image, words: list[OcrWord], findings: list[Finding]) -> None:
+    from PIL import ImageDraw
+
+    draw = ImageDraw.Draw(image)
+    image_width, image_height = image.size
+
+    for finding in findings:
+        for word in words:
+            if word.end <= finding.start or word.start >= finding.end:
+                continue
+            left = max(0, word.left - OCR_REDACTION_PADDING)
+            top = max(0, word.top - OCR_REDACTION_PADDING)
+            right = min(image_width, word.right + OCR_REDACTION_PADDING)
+            bottom = min(image_height, word.bottom + OCR_REDACTION_PADDING)
+            if right > left and bottom > top:
+                draw.rectangle((left, top, right, bottom), fill=(0, 0, 0))
+
+
+def _tesseract_available() -> bool:
+    return _tesseract_command() is not None
+
+
+def _tesseract_command() -> str | None:
+    candidates = [
+        os.environ.get("OMISSIS_TESSERACT_PATH"),
+        shutil.which("tesseract"),
+        "/opt/homebrew/bin/tesseract",
+        "/usr/local/bin/tesseract",
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+    ]
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            return str(candidate)
+    return None
+
+
+def _ocr_unavailable_message(pages_label: str) -> str:
+    page_detail = f" (pagine: {pages_label})" if pages_label else ""
+    return (
+        "Il PDF contiene pagine immagine o scansionate senza testo selezionabile"
+        f"{page_detail}. Per leggerle senza servizi esterni installa Tesseract OCR locale e riprova."
+    )
 
 
 def _pdf_page_has_images(page) -> bool:
