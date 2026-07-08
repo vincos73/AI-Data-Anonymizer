@@ -186,6 +186,10 @@ class MainWindow(QMainWindow):
         self.add_selection_button = QPushButton("Aggiungi selezione")
         self.add_selection_button.clicked.connect(self.add_manual_finding)
         self.add_selection_button.setObjectName("SecondaryButton")
+        self.add_selection_button.setToolTip(
+            "Seleziona una parola o frase nel pannello «Testo originale» non rilevata "
+            "automaticamente, poi clicca qui per aggiungerla manualmente."
+        )
 
         brand_row = QHBoxLayout()
         brand_row.setContentsMargins(18, 12, 18, 12)
@@ -220,6 +224,33 @@ class MainWindow(QMainWindow):
         command_panel.setObjectName("CommandPanel")
         command_panel.setLayout(button_row)
 
+        self.step_pill_labels: list[QLabel] = []
+        step_texts = [
+            "1 · Carica documento",
+            "2 · Analizza dati",
+            "3 · Rivedi selezione (facoltativo)",
+            "4 · Anonimizza e scarica",
+        ]
+        stepper_row = QHBoxLayout()
+        stepper_row.setContentsMargins(16, 10, 16, 10)
+        stepper_row.setSpacing(0)
+        for index, step_text in enumerate(step_texts):
+            pill = QLabel(step_text)
+            pill.setObjectName("StepPillPending")
+            pill.setAlignment(Qt.AlignCenter)
+            self.step_pill_labels.append(pill)
+            stepper_row.addWidget(pill)
+            if index < len(step_texts) - 1:
+                connector = QFrame()
+                connector.setObjectName("StepConnector")
+                connector.setFrameShape(QFrame.HLine)
+                connector.setFixedHeight(2)
+                stepper_row.addWidget(connector, 1)
+
+        self.workflow_stepper = QFrame()
+        self.workflow_stepper.setObjectName("WorkflowStepper")
+        self.workflow_stepper.setLayout(stepper_row)
+
         text_splitter = QSplitter(Qt.Horizontal)
         text_splitter.addWidget(self._panel("Testo originale", self.input_text))
         text_splitter.addWidget(self._panel("Testo anonimizzato", self.output_text))
@@ -239,6 +270,7 @@ class MainWindow(QMainWindow):
         layout.setSpacing(12)
         layout.addWidget(brand_panel)
         layout.addWidget(command_panel)
+        layout.addWidget(self.workflow_stepper)
         layout.addWidget(self.document_label)
         layout.addWidget(self.report_label)
         layout.addWidget(text_splitter, 4)
@@ -979,6 +1011,34 @@ class MainWindow(QMainWindow):
         self.add_selection_button.setEnabled(input_has_text and self._manual_filter_supported())
         if hasattr(self, "save_map_action"):
             self.save_map_action.setEnabled(bool(self.reversible_mapping))
+        self._update_workflow_steps()
+
+    def _workflow_step_states(self) -> list[str]:
+        step1_done = self.loaded_document is not None or bool(self.input_text.toPlainText().strip())
+        step2_done = bool(self.findings) and not self.findings_stale and self._findings_mode == self._selected_mode()
+        has_manual_finding = any(finding.source == "manual" for finding in self.findings)
+        step4_done = bool(self.output_text.toPlainText().strip()) or self.anonymized_document is not None
+
+        def state(done: bool, reachable: bool) -> str:
+            if done:
+                return "done"
+            return "current" if reachable else "pending"
+
+        return [
+            state(step1_done, True),
+            state(step2_done, step1_done),
+            state(has_manual_finding or step4_done, step2_done),
+            state(step4_done, step2_done),
+        ]
+
+    def _update_workflow_steps(self) -> None:
+        object_names = {"pending": "StepPillPending", "current": "StepPillCurrent", "done": "StepPillDone"}
+        for label, step_state in zip(self.step_pill_labels, self._workflow_step_states()):
+            object_name = object_names[step_state]
+            if label.objectName() != object_name:
+                label.setObjectName(object_name)
+                label.style().unpolish(label)
+                label.style().polish(label)
 
     def _handle_input_text_changed(self) -> None:
         if not self._loading_document_text:
