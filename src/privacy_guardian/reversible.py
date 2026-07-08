@@ -95,8 +95,12 @@ class ReversibleAnonymizer:
         return placeholder
 
 
-def reversible_anonymize(text: str, findings: Iterable[Finding]) -> ReversibleAnonymizationResult:
-    anonymizer = ReversibleAnonymizer()
+def reversible_anonymize(
+    text: str,
+    findings: Iterable[Finding],
+    entries: Iterable[ReversibleMapEntry] | None = None,
+) -> ReversibleAnonymizationResult:
+    anonymizer = ReversibleAnonymizer(entries)
     anonymized_text = anonymizer.anonymize(text, findings)
     return ReversibleAnonymizationResult(text=anonymized_text, mapping=anonymizer.mapping)
 

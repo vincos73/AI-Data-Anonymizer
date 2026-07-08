@@ -28,7 +28,7 @@ from privacy_guardian.activity_log import (
 from privacy_guardian.document_service import OcrPageText, OcrWord, anonymize_loaded_document, load_document
 from privacy_guardian.privacy_engine import PrivacyEngine
 from privacy_guardian.reporting import entity_label, entity_placeholder, report_payload, report_text, source_label
-from privacy_guardian.reversible import decrypt_mapping, encrypt_mapping, restore_text
+from privacy_guardian.reversible import ReversibleMapEntry, decrypt_mapping, encrypt_mapping, restore_text
 from privacy_guardian.web_app import (
     MAX_TEXT_LENGTH,
     TextPayload,
@@ -126,6 +126,22 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn("<PERSONA_1> come esempio", result.text)
         self.assertIn("<PERSONA_2>", result.text)
         self.assertNotIn("Mario Rossi", result.text)
+        self.assertEqual(restore_text(result.text, result.mapping), text)
+
+    def test_reuses_preloaded_reversible_map_across_documents(self) -> None:
+        text = "Il sottoscritto Mario Rossi email mario@example.com conferma."
+        preloaded = (ReversibleMapEntry(placeholder="<PERSONA_1>", entity_type="PERSON", value="Mario Rossi"),)
+
+        findings = self.engine.analyze(text, mode="reversible")
+        result = self.engine.anonymize_reversible(text, findings, entries=preloaded)
+
+        self.assertIn("<PERSONA_1>", result.text)
+        self.assertNotIn("<PERSONA_2>", result.text)
+        self.assertIn("<EMAIL_1>", result.text)
+        self.assertIn(preloaded[0], result.mapping)
+        self.assertTrue(
+            any(entry.entity_type == "EMAIL_ADDRESS" and entry.value == "mario@example.com" for entry in result.mapping)
+        )
         self.assertEqual(restore_text(result.text, result.mapping), text)
 
     def test_dates_are_findings_only_in_maximum_protection(self) -> None:
@@ -573,6 +589,22 @@ class DocumentAnonymizationTest(unittest.TestCase):
         encrypted = encrypt_mapping(result.reversible_mapping, "password locale")
         self.assertNotIn(b"Mario Rossi", encrypted)
         self.assertEqual(restore_text(anonymized_text, decrypt_mapping(encrypted, "password locale")), original_text)
+
+    def test_txt_reversible_mode_reuses_preloaded_map_entries(self) -> None:
+        txt_path = self.base / "reversibile_precaricata.txt"
+        original_text = "Il sottoscritto Mario Rossi email mario@example.com conferma."
+        txt_path.write_text(original_text, encoding="utf-8")
+        preloaded = (ReversibleMapEntry(placeholder="<PERSONA_1>", entity_type="PERSON", value="Mario Rossi"),)
+
+        result = anonymize_loaded_document(
+            load_document(txt_path), self.engine, mode="reversible", reversible_entries=preloaded
+        )
+        anonymized_text = result.data.decode("utf-8")
+
+        self.assertIn("<PERSONA_1>", anonymized_text)
+        self.assertIn("<EMAIL_1>", anonymized_text)
+        self.assertIn(preloaded[0], result.reversible_mapping)
+        self.assertEqual(restore_text(anonymized_text, result.reversible_mapping), original_text)
 
     def test_docx_reversible_mode_uses_consistent_mapping(self) -> None:
         docx_path = self.base / "reversibile.docx"

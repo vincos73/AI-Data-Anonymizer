@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from io import BytesIO, StringIO
 from pathlib import Path
+from typing import Iterable
 import csv
 import os
 import shutil
@@ -118,6 +119,8 @@ def anonymize_loaded_document(
     document: LoadedDocument,
     engine: PrivacyEngine,
     mode: AnonymizationMode = "standard",
+    *,
+    reversible_entries: Iterable[ReversibleMapEntry] | None = None,
 ) -> AnonymizedDocument:
     if mode == "reversible" and document.extension == ".pdf":
         raise ValueError(
@@ -126,7 +129,7 @@ def anonymize_loaded_document(
         )
 
     findings = engine.analyze(document.text, mode)
-    reversible_session = ReversibleAnonymizer() if mode == "reversible" else None
+    reversible_session = ReversibleAnonymizer(reversible_entries) if mode == "reversible" else None
     anonymized_text = (
         reversible_session.anonymize(document.text, findings)
         if reversible_session

@@ -88,6 +88,7 @@ class MainWindow(QMainWindow):
         self._loading_document_text = False
         self._updating_output_text = False
         self.reversible_mapping: tuple[ReversibleMapEntry, ...] = ()
+        self.loaded_reversible_entries: tuple[ReversibleMapEntry, ...] = ()
 
         self.setWindowTitle("OMISSIS")
         self.resize(1160, 760)
@@ -268,12 +269,16 @@ class MainWindow(QMainWindow):
         self.save_map_action = QAction("Salva mappa reversibile...", self)
         self.save_map_action.triggered.connect(self.save_reversible_map)
 
+        self.load_map_action = QAction("Carica mappa reversibile...", self)
+        self.load_map_action.triggered.connect(self.load_reversible_map)
+
         self.restore_map_action = QAction("Ricostruisci testo con mappa...", self)
         self.restore_map_action.triggered.connect(self.restore_with_reversible_map)
 
         tools_menu = self.menuBar().addMenu("Strumenti")
         tools_menu.addAction(activity_action)
         tools_menu.addSeparator()
+        tools_menu.addAction(self.load_map_action)
         tools_menu.addAction(self.save_map_action)
         tools_menu.addAction(self.restore_map_action)
 
@@ -567,7 +572,12 @@ class MainWindow(QMainWindow):
             return
         if self.loaded_document and not self.document_text_dirty:
             try:
-                self.anonymized_document = anonymize_loaded_document(self.loaded_document, self.engine, mode)
+                self.anonymized_document = anonymize_loaded_document(
+                    self.loaded_document,
+                    self.engine,
+                    mode,
+                    reversible_entries=self.loaded_reversible_entries,
+                )
             except Exception as exc:
                 self.anonymized_document = None
                 self.output_text.clear()
@@ -600,7 +610,9 @@ class MainWindow(QMainWindow):
         self._run_analysis()
         text = self.input_text.toPlainText()
         if mode == "reversible":
-            reversible_result = self.engine.anonymize_reversible(text, self.findings)
+            reversible_result = self.engine.anonymize_reversible(
+                text, self.findings, entries=self.loaded_reversible_entries
+            )
             self.reversible_mapping = reversible_result.mapping
             self._set_output_text(reversible_result.text)
         else:
@@ -689,6 +701,32 @@ class MainWindow(QMainWindow):
 
         self.statusBar().showMessage(f"Mappa reversibile salvata: {target_path}", 6000)
 
+    def load_reversible_map(self) -> None:
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Carica mappa reversibile",
+            str(Path.home()),
+            "Mappa OMISSIS (*.omissis-map);;Tutti i file (*.*)",
+        )
+        if not filename:
+            return
+
+        passphrase = self._ask_passphrase("Password mappa", "Inserisci la password della mappa:")
+        if passphrase is None:
+            return
+        try:
+            entries = read_encrypted_mapping(filename, passphrase)
+        except ReversibleMapError as exc:
+            self.statusBar().showMessage(str(exc), 8000)
+            return
+
+        self.loaded_reversible_entries = entries
+        self.reversible_mapping = entries
+        self._sync_action_state()
+        self.statusBar().showMessage(
+            f"Mappa reversibile caricata: {len(entries)} voci pronte per i prossimi documenti.", 7000
+        )
+
     def restore_with_reversible_map(self) -> None:
         source_text = self.output_text.toPlainText().strip() or self.input_text.toPlainText().strip()
         if not source_text:
@@ -726,6 +764,7 @@ class MainWindow(QMainWindow):
         self.document_text_dirty = False
         self.output_text_dirty = False
         self.reversible_mapping = ()
+        self.loaded_reversible_entries = ()
         self.document_label.setText("Nessun documento caricato. Puoi incollare testo o trascinare un file nella finestra.")
         self._update_mode_notice()
         self._sync_action_state()
