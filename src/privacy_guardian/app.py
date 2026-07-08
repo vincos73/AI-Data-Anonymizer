@@ -832,9 +832,17 @@ class MainWindow(QMainWindow):
 
         entity_by_label = {singular: entity_type for entity_type, (singular, _plural) in ENTITY_LABELS.items()}
         labels = sorted(entity_by_label)
-        label, ok = QInputDialog.getItem(self, "Tipo di dato", "Che tipo di dato è la selezione?", labels, 0, False)
-        if not ok or not label:
+
+        dialog = QInputDialog(self)
+        dialog.setWindowTitle("Tipo di dato")
+        dialog.setLabelText("Che tipo di dato è la selezione?")
+        dialog.setComboBoxItems(labels)
+        dialog.setStyleSheet(APP_STYLE)
+
+        ok = dialog.exec() == QInputDialog.Accepted
+        if not ok:
             return
+        label = dialog.textValue()
 
         if not self._findings_ready_for_filtering() and not self._run_analysis():
             return
