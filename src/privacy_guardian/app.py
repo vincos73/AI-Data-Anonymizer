@@ -605,7 +605,7 @@ class MainWindow(QMainWindow):
         if self.loaded_document and not self.document_text_dirty:
             manual_filter_supported = self._manual_filter_supported()
             filtered_findings = (
-                self._checked_findings() if manual_filter_supported and self._findings_ready_for_filtering() else None
+                self._checked_findings() if self._findings_ready_for_filtering() else None
             )
             try:
                 self.anonymized_document = anonymize_loaded_document(
@@ -976,7 +976,7 @@ class MainWindow(QMainWindow):
         self.copy_button.setEnabled(output_has_text)
         self.save_button.setEnabled(output_has_text or self.anonymized_document is not None)
         self.clear_button.setEnabled(has_anything)
-        self.add_selection_button.setEnabled(input_has_text)
+        self.add_selection_button.setEnabled(input_has_text and self._manual_filter_supported())
         if hasattr(self, "save_map_action"):
             self.save_map_action.setEnabled(bool(self.reversible_mapping))
 
