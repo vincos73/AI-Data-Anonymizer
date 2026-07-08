@@ -21,7 +21,7 @@ class PrivacyEngine:
         findings = self._recognizer.analyze(text, validate_anonymization_mode(mode))
         if self._ner:
             findings = self._recognizer.dedupe(findings + self._ner.analyze(text))
-        return findings
+        return self._recognizer.propagate_person_coreferences(text, findings)
 
     def anonymize(
         self,

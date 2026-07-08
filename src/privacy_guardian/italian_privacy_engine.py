@@ -156,6 +156,18 @@ class ItalianPrivacyRecognizer:
         "Nato",
         "Nata",
     }
+    COREFERENCE_SCORE = 0.75
+    KEYWORD_VOCABULARY = {
+        "via", "viale", "piazza", "piazzale", "corso", "largo", "vicolo", "strada",
+        "contrada", "localita", "località", "frazione",
+        "provincia", "regione", "comune", "municipio",
+        "sig", "sigra", "signora", "signor", "dott", "dottssa", "avv", "ing", "geom",
+        "rag", "prof", "profssa", "sottoscritto", "sottoscritta", "cliente", "referente",
+        "rappresentante", "titolare", "nato", "nata", "intestatario", "intestataria",
+        "beneficiario", "beneficiaria",
+        "srl", "spa", "snc", "sas", "soccoop", "cooperativa", "onlus", "aps", "ets",
+        "ditta", "societa", "società", "impresa", "azienda", "denominazione",
+    }
 
     def analyze(self, text: str, mode: AnonymizationMode = "standard") -> list[Finding]:
         findings: list[Finding] = []
@@ -347,6 +359,47 @@ class ItalianPrivacyRecognizer:
         if len(words) < 2 or any(word.strip(" .") in self.PERSON_STOPWORDS for word in words):
             return False
         return True
+
+    def propagate_person_coreferences(self, text: str, findings: list[Finding]) -> list[Finding]:
+        """Estende i PERSON con contesto forte alle altre occorrenze dello stesso nome o cognome."""
+        person_findings = [finding for finding in findings if finding.entity_type == "PERSON"]
+        if not person_findings:
+            return findings
+
+        existing_spans = [(finding.start, finding.end) for finding in findings]
+        new_findings: list[Finding] = []
+        seen_candidates: set[str] = set()
+
+        for finding in person_findings:
+            name = text[finding.start : finding.end].strip()
+            words = name.split()
+            if len(words) < 2:
+                continue
+
+            candidates = {name}
+            surname = words[-1].strip(" .")
+            if len(surname) >= 3 and surname[:1].isupper() and self._is_propagatable_surname(surname):
+                candidates.add(surname)
+
+            for candidate in candidates - seen_candidates:
+                seen_candidates.add(candidate)
+                for match in re.finditer(rf"\b{re.escape(candidate)}\b", text):
+                    if self._overlaps_any(match.start(), match.end(), existing_spans):
+                        continue
+                    new_findings.append(
+                        Finding("PERSON", match.start(), match.end(), self.COREFERENCE_SCORE, source="coreference")
+                    )
+
+        return self.dedupe(findings + new_findings) if new_findings else findings
+
+    def _is_propagatable_surname(self, surname: str) -> bool:
+        if surname in self.PERSON_STOPWORDS:
+            return False
+        normalized = re.sub(r"[.'’]", "", surname).lower()
+        return normalized not in self.KEYWORD_VOCABULARY
+
+    def _overlaps_any(self, start: int, end: int, spans: list[tuple[int, int]]) -> bool:
+        return any(start < span_end and span_start < end for span_start, span_end in spans)
 
     def dedupe(self, findings: list[Finding]) -> list[Finding]:
         priority = {

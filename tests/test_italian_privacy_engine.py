@@ -232,6 +232,47 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         address_values = [value for entity_type, value in findings if entity_type == "ADDRESS"]
         self.assertTrue(any(value.startswith("Via Appia 12") for value in address_values))
 
+    def test_propagates_person_coreferences_to_full_name_and_surname(self) -> None:
+        text = (
+            "Il sig. Mario Rossi ha firmato. Successivamente Rossi ha inviato una lettera "
+            "e Mario Rossi ha confermato."
+        )
+        findings = [
+            (finding.entity_type, text[finding.start : finding.end], finding.source)
+            for finding in self.engine.analyze(text, "reversible")
+        ]
+
+        self.assertIn(("PERSON", "Mario Rossi", "italian_rules"), findings)
+        self.assertIn(("PERSON", "Rossi", "coreference"), findings)
+        self.assertEqual(sum(1 for entity, value, _ in findings if entity == "PERSON" and value == "Mario Rossi"), 2)
+        self.assertEqual(source_label("coreference"), "Propagazione nome")
+
+        result = self.engine.anonymize_reversible(text, self.engine.analyze(text, "reversible"))
+        self.assertEqual(result.text.count("<PERSONA_1>"), 2)
+        self.assertNotIn("Mario Rossi", result.text)
+        self.assertNotIn("Rossi", result.text)
+        self.assertEqual(restore_text(result.text, result.mapping), text)
+
+    def test_does_not_propagate_surname_that_is_part_of_an_address(self) -> None:
+        text = "Il sig. Mario Verdi abita in via Verdi 3."
+        findings = self.findings_for(text)
+
+        self.assertIn(("PERSON", "Mario Verdi"), findings)
+        self.assertTrue(any(entity == "ADDRESS" and value.startswith("via Verdi 3") for entity, value in findings))
+        self.assertNotIn(("PERSON", "Verdi"), findings)
+
+        anonymized = self.engine.anonymize(text, mode="maximum")
+        self.assertIn("<INDIRIZZO>", anonymized)
+        self.assertNotIn("Verdi 3", anonymized)
+
+    def test_does_not_propagate_lowercase_surname_occurrences(self) -> None:
+        text = "Il sig. Mario Rossi ha firmato. Successivamente rossi ha inviato una lettera."
+        findings = self.findings_for(text)
+
+        self.assertIn(("PERSON", "Mario Rossi"), findings)
+        self.assertEqual([value for entity, value in findings if entity == "PERSON"], ["Mario Rossi"])
+        self.assertIn("rossi", self.engine.anonymize(text, mode="maximum"))
+
     def test_optional_local_ner_adds_uncontexted_person_names(self) -> None:
         from types import SimpleNamespace
 
