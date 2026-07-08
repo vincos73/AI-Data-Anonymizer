@@ -54,6 +54,8 @@ MODE_NOTES = {
 SOURCE_LABELS = {
     "italian_rules": "Regole italiane locali",
     "ner_local": "NER locale (spaCy)",
+    "coreference": "Propagazione nome",
+    "manual": "Aggiunto manualmente",
 }
 REVIEW_NOTE = "Rileggi sempre il risultato prima di condividerlo."
 

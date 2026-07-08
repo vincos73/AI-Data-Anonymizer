@@ -230,6 +230,49 @@ QFrame#CommandSeparator {
     margin-right: 12px;
 }
 
+QFrame#WorkflowStepper {
+    background: #1b232a;
+    border: 1px solid #2c3841;
+    border-radius: 0;
+}
+
+QLabel#StepPillPending {
+    background: transparent;
+    color: #6b7a85;
+    border: 1px solid #3a4750;
+    border-radius: 13px;
+    padding: 5px 13px;
+    font-size: 12px;
+    font-weight: 620;
+}
+
+QLabel#StepPillCurrent {
+    background: #0089b8;
+    color: #ffffff;
+    border: 1px solid #1aa2cf;
+    border-radius: 13px;
+    padding: 5px 13px;
+    font-size: 12px;
+    font-weight: 760;
+}
+
+QLabel#StepPillDone {
+    background: #17322c;
+    color: #7fd8b5;
+    border: 1px solid #2a5c47;
+    border-radius: 13px;
+    padding: 5px 13px;
+    font-size: 12px;
+    font-weight: 660;
+}
+
+QFrame#StepConnector {
+    background: #2c3841;
+    border: 0;
+    max-height: 2px;
+    min-height: 2px;
+}
+
 QTableWidget {
     background: #f7f8f7;
     color: #10161a;

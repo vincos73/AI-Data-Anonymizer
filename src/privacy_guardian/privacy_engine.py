@@ -6,7 +6,7 @@ from privacy_guardian import __version__
 from privacy_guardian.italian_privacy_engine import ItalianPrivacyRecognizer
 from privacy_guardian.models import AnonymizationMode, Finding, validate_anonymization_mode
 from privacy_guardian.ner_recognizer import NerPersonRecognizer
-from privacy_guardian.reversible import ReversibleAnonymizationResult, reversible_anonymize
+from privacy_guardian.reversible import ReversibleAnonymizationResult, ReversibleMapEntry, reversible_anonymize
 
 
 class PrivacyEngine:
@@ -21,7 +21,7 @@ class PrivacyEngine:
         findings = self._recognizer.analyze(text, validate_anonymization_mode(mode))
         if self._ner:
             findings = self._recognizer.dedupe(findings + self._ner.analyze(text))
-        return findings
+        return self._recognizer.propagate_person_coreferences(text, findings)
 
     def anonymize(
         self,
@@ -39,6 +39,7 @@ class PrivacyEngine:
         self,
         text: str,
         findings: Iterable[Finding] | None = None,
+        entries: Iterable[ReversibleMapEntry] | None = None,
     ) -> ReversibleAnonymizationResult:
         findings = list(findings if findings is not None else self.analyze(text, "reversible"))
-        return reversible_anonymize(text, findings)
+        return reversible_anonymize(text, findings, entries)
