@@ -83,6 +83,7 @@ class MainWindow(QMainWindow):
         self.findings: list[Finding] = []
         self.findings_stale = True
         self._findings_source_text: str | None = ""
+        self._findings_mode: AnonymizationMode | None = None
         self.loaded_document: LoadedDocument | None = None
         self.anonymized_document: AnonymizedDocument | None = None
         self.document_text_dirty = False
@@ -523,6 +524,7 @@ class MainWindow(QMainWindow):
         self.findings = []
         self.findings_stale = True
         self._findings_source_text = None
+        self._findings_mode = None
         self.table.setRowCount(0)
         self._loading_document_text = True
         try:
@@ -588,6 +590,7 @@ class MainWindow(QMainWindow):
         self.findings = self.engine.analyze(text, self._selected_mode())
         self.findings_stale = False
         self._findings_source_text = text
+        self._findings_mode = self._selected_mode()
         self._fill_table()
         self._highlight_findings()
         self._update_report()
@@ -621,6 +624,7 @@ class MainWindow(QMainWindow):
             self.findings = self.anonymized_document.findings
             self.findings_stale = False
             self._findings_source_text = self.input_text.toPlainText()
+            self._findings_mode = mode
             self.reversible_mapping = self.anonymized_document.reversible_mapping
             self._set_output_text(self.anonymized_document.text)
             self._fill_table()
@@ -806,6 +810,7 @@ class MainWindow(QMainWindow):
         self.findings = []
         self.findings_stale = True
         self._findings_source_text = ""
+        self._findings_mode = None
         self.loaded_document = None
         self.anonymized_document = None
         self.document_text_dirty = False
@@ -831,10 +836,14 @@ class MainWindow(QMainWindow):
         if not ok or not label:
             return
 
+        if not self._findings_ready_for_filtering() and not self._run_analysis():
+            return
+
         finding = Finding(entity_by_label[label], start, end, 1.0, source="manual")
         self.findings = self.engine._recognizer.dedupe(self.findings + [finding])
         self.findings_stale = False
         self._findings_source_text = self.input_text.toPlainText()
+        self._findings_mode = self._selected_mode()
         self._fill_table()
         self._highlight_findings()
         self._update_report()
@@ -896,7 +905,12 @@ class MainWindow(QMainWindow):
         return [finding for row, finding in enumerate(self.findings) if self._is_row_checked(row)]
 
     def _findings_ready_for_filtering(self) -> bool:
-        return bool(self.findings) and self.table.rowCount() == len(self.findings) and not self.findings_stale
+        return (
+            bool(self.findings)
+            and self.table.rowCount() == len(self.findings)
+            and not self.findings_stale
+            and self._findings_mode == self._selected_mode()
+        )
 
     def _manual_filter_supported(self) -> bool:
         if self.loaded_document is None or self.document_text_dirty:
