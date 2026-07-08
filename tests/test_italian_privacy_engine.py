@@ -574,6 +574,24 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertIn("<EMAIL>", decoded)
         self.assertNotIn("mario@example.com", decoded)
 
+    def test_txt_uses_prefiltered_findings_without_reanalyzing(self) -> None:
+        txt_path = self.base / "revisione.txt"
+        text = "Il sottoscritto Mario Rossi email mario@example.com nato il 10/01/1980."
+        txt_path.write_text(text, encoding="utf-8")
+
+        loaded = load_document(txt_path)
+        all_findings = self.engine.analyze(text, "maximum")
+        only_email = [finding for finding in all_findings if finding.entity_type == "EMAIL_ADDRESS"]
+        self.assertGreater(len(all_findings), len(only_email))
+
+        result = anonymize_loaded_document(loaded, self.engine, mode="maximum", findings=only_email)
+        decoded = result.data.decode("utf-8")
+
+        self.assertEqual(result.findings, only_email)
+        self.assertIn("<EMAIL>", decoded)
+        self.assertIn("Mario Rossi", decoded)
+        self.assertIn("10/01/1980", decoded)
+
     def test_txt_reversible_mode_returns_mapping_for_local_restore(self) -> None:
         txt_path = self.base / "reversibile.txt"
         original_text = "Il sottoscritto Mario Rossi email mario@example.com nato il 10/01/1980."

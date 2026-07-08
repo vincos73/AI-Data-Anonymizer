@@ -51,7 +51,7 @@ from privacy_guardian.reversible import (
     restore_text,
     write_encrypted_mapping,
 )
-from privacy_guardian.reporting import entity_label, mode_note, report_text, source_label
+from privacy_guardian.reporting import ENTITY_LABELS, entity_label, mode_note, report_text, source_label
 from privacy_guardian.styles import APP_STYLE
 
 
@@ -81,6 +81,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.engine = PrivacyEngine()
         self.findings: list[Finding] = []
+        self.findings_stale = True
+        self._findings_source_text: str | None = ""
         self.loaded_document: LoadedDocument | None = None
         self.anonymized_document: AnonymizedDocument | None = None
         self.document_text_dirty = False
@@ -105,8 +107,10 @@ class MainWindow(QMainWindow):
         self.output_text.setPlaceholderText("Il testo anonimizzato apparirà qui.")
         self.output_text.textChanged.connect(self._handle_output_text_changed)
 
-        self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels(["Tipo", "Valore trovato", "Intervallo", "Confidenza", "Origine"])
+        self.table = QTableWidget(0, 6)
+        self.table.setHorizontalHeaderLabels(
+            ["Includi", "Tipo", "Valore trovato", "Intervallo", "Confidenza", "Origine"]
+        )
         self.table.verticalHeader().setVisible(False)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setAlternatingRowColors(True)
@@ -178,6 +182,10 @@ class MainWindow(QMainWindow):
         self.clear_button.clicked.connect(self.clear_all)
         self.clear_button.setObjectName("SecondaryButton")
 
+        self.add_selection_button = QPushButton("Aggiungi selezione")
+        self.add_selection_button.clicked.connect(self.add_manual_finding)
+        self.add_selection_button.setObjectName("SecondaryButton")
+
         brand_row = QHBoxLayout()
         brand_row.setContentsMargins(18, 12, 18, 12)
         brand_row.setSpacing(10)
@@ -219,6 +227,12 @@ class MainWindow(QMainWindow):
         findings_title = QLabel("Dati rilevati")
         findings_title.setObjectName("SectionTitle")
 
+        findings_row = QHBoxLayout()
+        findings_row.setContentsMargins(0, 0, 0, 0)
+        findings_row.addWidget(findings_title)
+        findings_row.addStretch(1)
+        findings_row.addWidget(self.add_selection_button)
+
         layout = QVBoxLayout()
         layout.setContentsMargins(22, 18, 22, 16)
         layout.setSpacing(12)
@@ -227,7 +241,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.document_label)
         layout.addWidget(self.report_label)
         layout.addWidget(text_splitter, 4)
-        layout.addWidget(findings_title)
+        layout.addLayout(findings_row)
         layout.addWidget(self.table, 2)
 
         container = QWidget()
@@ -506,6 +520,10 @@ class MainWindow(QMainWindow):
         self.reversible_mapping = ()
         self.document_text_dirty = False
         self.output_text_dirty = False
+        self.findings = []
+        self.findings_stale = True
+        self._findings_source_text = None
+        self.table.setRowCount(0)
         self._loading_document_text = True
         try:
             signal_blocker = QSignalBlocker(self.input_text)
@@ -527,7 +545,8 @@ class MainWindow(QMainWindow):
                     "L'export creerà un PDF rasterizzato con oscuramenti permanenti."
                 )
                 self.statusBar().showMessage(
-                    "PDF scansionato letto con OCR locale. Controlla sempre il risultato OCR prima di condividere.",
+                    "PDF scansionato letto con OCR locale. Controlla sempre il risultato OCR prima di condividere. "
+                    "Per questo formato la selezione manuale non è ancora supportata.",
                     8000,
                 )
             else:
@@ -536,9 +555,17 @@ class MainWindow(QMainWindow):
                     "L'export creerà un PDF rasterizzato con oscuramenti permanenti."
                 )
                 self.statusBar().showMessage(
-                    "PDF caricato. L'anonimizzazione salverà una copia redatta non selezionabile.",
+                    "PDF caricato. L'anonimizzazione salverà una copia redatta non selezionabile. "
+                    "Per questo formato la selezione manuale non è ancora supportata.",
                     7000,
                 )
+        elif self.loaded_document.extension in {".docx", ".doc"}:
+            self.document_label.setText(f"Documento caricato: {self.loaded_document.path.name}")
+            self.statusBar().showMessage(
+                "Documento caricato. Per questo formato la selezione manuale non è ancora supportata: "
+                "verrà anonimizzato tutto ciò che viene rilevato.",
+                7000,
+            )
         else:
             self.document_label.setText(f"Documento caricato: {self.loaded_document.path.name}")
             self.statusBar().showMessage(
@@ -559,6 +586,8 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Incolla un testo o carica un documento prima di analizzare.", 5000)
             return False
         self.findings = self.engine.analyze(text, self._selected_mode())
+        self.findings_stale = False
+        self._findings_source_text = text
         self._fill_table()
         self._highlight_findings()
         self._update_report()
@@ -571,12 +600,17 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Incolla un testo o carica un documento prima di anonimizzare.", 5000)
             return
         if self.loaded_document and not self.document_text_dirty:
+            manual_filter_supported = self._manual_filter_supported()
+            filtered_findings = (
+                self._checked_findings() if manual_filter_supported and self._findings_ready_for_filtering() else None
+            )
             try:
                 self.anonymized_document = anonymize_loaded_document(
                     self.loaded_document,
                     self.engine,
                     mode,
                     reversible_entries=self.loaded_reversible_entries,
+                    findings=filtered_findings,
                 )
             except Exception as exc:
                 self.anonymized_document = None
@@ -585,20 +619,27 @@ class MainWindow(QMainWindow):
                 self._sync_action_state()
                 return
             self.findings = self.anonymized_document.findings
+            self.findings_stale = False
+            self._findings_source_text = self.input_text.toPlainText()
             self.reversible_mapping = self.anonymized_document.reversible_mapping
             self._set_output_text(self.anonymized_document.text)
             self._fill_table()
             self._highlight_findings()
             self._update_report()
             self._record_activity("anonymization", output_data=self.anonymized_document.data)
+            unsupported_note = (
+                " Per questo formato la selezione manuale non è ancora supportata." if not manual_filter_supported else ""
+            )
             if self.reversible_mapping:
                 self.statusBar().showMessage(
-                    f"Documento pronto: {self.anonymized_document.filename}. Salva anche la mappa reversibile.",
+                    f"Documento pronto: {self.anonymized_document.filename}. "
+                    f"Salva anche la mappa reversibile.{unsupported_note}",
                     7000,
                 )
             else:
                 self.statusBar().showMessage(
-                    f"Documento pronto: {self.anonymized_document.filename}. Elementi rilevati: {len(self.findings)}.",
+                    f"Documento pronto: {self.anonymized_document.filename}. "
+                    f"Elementi rilevati: {len(self.findings)}.{unsupported_note}",
                     5000,
                 )
             self._sync_action_state()
@@ -607,16 +648,20 @@ class MainWindow(QMainWindow):
         self.loaded_document = None
         self.anonymized_document = None
         self.document_text_dirty = False
-        self._run_analysis()
+        if self._findings_ready_for_filtering():
+            findings = self._checked_findings()
+        else:
+            self._run_analysis()
+            findings = list(self.findings)
         text = self.input_text.toPlainText()
         if mode == "reversible":
             reversible_result = self.engine.anonymize_reversible(
-                text, self.findings, entries=self.loaded_reversible_entries
+                text, findings, entries=self.loaded_reversible_entries
             )
             self.reversible_mapping = reversible_result.mapping
             self._set_output_text(reversible_result.text)
         else:
-            self._set_output_text(self.engine.anonymize(text, self.findings, mode))
+            self._set_output_text(self.engine.anonymize(text, findings, mode))
         self._update_report()
         self._record_activity("anonymization", output_data=self.output_text.toPlainText().encode("utf-8"))
         if self.reversible_mapping:
@@ -759,6 +804,8 @@ class MainWindow(QMainWindow):
         self.output_text.clear()
         self.table.setRowCount(0)
         self.findings = []
+        self.findings_stale = True
+        self._findings_source_text = ""
         self.loaded_document = None
         self.anonymized_document = None
         self.document_text_dirty = False
@@ -769,21 +816,59 @@ class MainWindow(QMainWindow):
         self._update_mode_notice()
         self._sync_action_state()
 
+    def add_manual_finding(self) -> None:
+        cursor = self.input_text.textCursor()
+        start, end = cursor.selectionStart(), cursor.selectionEnd()
+        if start == end:
+            self.statusBar().showMessage(
+                "Seleziona il testo da aggiungere nel pannello Testo originale prima di continuare.", 6000
+            )
+            return
+
+        entity_by_label = {singular: entity_type for entity_type, (singular, _plural) in ENTITY_LABELS.items()}
+        labels = sorted(entity_by_label)
+        label, ok = QInputDialog.getItem(self, "Tipo di dato", "Che tipo di dato è la selezione?", labels, 0, False)
+        if not ok or not label:
+            return
+
+        finding = Finding(entity_by_label[label], start, end, 1.0, source="manual")
+        self.findings = self.engine._recognizer.dedupe(self.findings + [finding])
+        self.findings_stale = False
+        self._findings_source_text = self.input_text.toPlainText()
+        self._fill_table()
+        self._highlight_findings()
+        self._update_report()
+        self.statusBar().showMessage(f"Aggiunto manualmente: {entity_label(finding.entity_type)}.", 4000)
+
     def _fill_table(self) -> None:
         source_text = self.input_text.toPlainText()
-        self.table.setRowCount(len(self.findings))
-        for row, finding in enumerate(self.findings):
-            values = [
-                entity_label(finding.entity_type),
-                self._finding_preview(source_text, finding),
-                finding.text_range,
-                f"{finding.score:.2f}",
-                source_label(finding.source),
-            ]
-            for col, value in enumerate(values):
-                item = QTableWidgetItem(value)
-                item.setFlags(item.flags() ^ Qt.ItemIsEditable)
-                self.table.setItem(row, col, item)
+        manual_filter_supported = self._manual_filter_supported()
+        blocker = QSignalBlocker(self.table)
+        try:
+            self.table.setRowCount(len(self.findings))
+            for row, finding in enumerate(self.findings):
+                checkbox_item = QTableWidgetItem()
+                checkbox_item.setCheckState(Qt.Checked)
+                checkbox_item.setFlags(
+                    Qt.ItemIsUserCheckable | Qt.ItemIsEnabled | Qt.ItemIsSelectable
+                    if manual_filter_supported
+                    else Qt.ItemIsSelectable
+                )
+                self.table.setItem(row, 0, checkbox_item)
+
+                values = [
+                    entity_label(finding.entity_type),
+                    self._finding_preview(source_text, finding),
+                    finding.text_range,
+                    f"{finding.score:.2f}",
+                    source_label(finding.source),
+                ]
+                for col, value in enumerate(values, start=1):
+                    item = QTableWidgetItem(value)
+                    item.setFlags(item.flags() ^ Qt.ItemIsEditable)
+                    self.table.setItem(row, col, item)
+        finally:
+            del blocker
         self.table.resizeColumnsToContents()
         self.table.horizontalHeader().setStretchLastSection(True)
 
@@ -795,11 +880,28 @@ class MainWindow(QMainWindow):
         highlight = QTextCharFormat()
         highlight.setBackground(QColor("#c8edf7"))
 
-        for finding in self.findings:
+        for row, finding in enumerate(self.findings):
+            if not self._is_row_checked(row):
+                continue
             cursor = self.input_text.textCursor()
             cursor.setPosition(finding.start)
             cursor.setPosition(finding.end, QTextCursor.KeepAnchor)
             cursor.setCharFormat(highlight)
+
+    def _is_row_checked(self, row: int) -> bool:
+        item = self.table.item(row, 0)
+        return item is None or item.checkState() == Qt.Checked
+
+    def _checked_findings(self) -> list[Finding]:
+        return [finding for row, finding in enumerate(self.findings) if self._is_row_checked(row)]
+
+    def _findings_ready_for_filtering(self) -> bool:
+        return bool(self.findings) and self.table.rowCount() == len(self.findings) and not self.findings_stale
+
+    def _manual_filter_supported(self) -> bool:
+        if self.loaded_document is None or self.document_text_dirty:
+            return True
+        return self.loaded_document.extension in {".txt", ".md", ".csv"}
 
     def _document_filter(self) -> str:
         extensions = "*.txt *.md *.csv *.docx *.pdf"
@@ -852,17 +954,21 @@ class MainWindow(QMainWindow):
         self.copy_button.setEnabled(output_has_text)
         self.save_button.setEnabled(output_has_text or self.anonymized_document is not None)
         self.clear_button.setEnabled(has_anything)
+        self.add_selection_button.setEnabled(input_has_text)
         if hasattr(self, "save_map_action"):
             self.save_map_action.setEnabled(bool(self.reversible_mapping))
 
     def _handle_input_text_changed(self) -> None:
-        if (
-            self.loaded_document
-            and not self._loading_document_text
-            and self.input_text.toPlainText() != self.loaded_document.text
-        ):
-            self.document_text_dirty = True
-            self.anonymized_document = None
+        if not self._loading_document_text:
+            current_text = self.input_text.toPlainText()
+            if self.loaded_document and current_text != self.loaded_document.text:
+                self.document_text_dirty = True
+                self.anonymized_document = None
+            # Il testo cambia identità (non solo formattazione) solo quando differisce
+            # dall'ultimo testo effettivamente analizzato: _highlight_findings tocca la
+            # formattazione e riemette textChanged senza alterare il contenuto.
+            if current_text != self._findings_source_text:
+                self.findings_stale = True
         self._sync_action_state()
 
     def _handle_output_text_changed(self) -> None:

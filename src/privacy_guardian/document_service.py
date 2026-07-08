@@ -121,6 +121,7 @@ def anonymize_loaded_document(
     mode: AnonymizationMode = "standard",
     *,
     reversible_entries: Iterable[ReversibleMapEntry] | None = None,
+    findings: list[Finding] | None = None,
 ) -> AnonymizedDocument:
     if mode == "reversible" and document.extension == ".pdf":
         raise ValueError(
@@ -128,7 +129,9 @@ def anonymize_loaded_document(
             "oppure incolla il testo estratto per lavorare con segnaposti ricostruibili."
         )
 
-    findings = engine.analyze(document.text, mode)
+    # Il filtro dei findings pre-calcolati è affidabile solo qui: .docx e .pdf ri-analizzano
+    # internamente il testo per parte (nodi XML o pagine) e ignorano questa lista.
+    findings = findings if findings is not None else engine.analyze(document.text, mode)
     reversible_session = ReversibleAnonymizer(reversible_entries) if mode == "reversible" else None
     anonymized_text = (
         reversible_session.anonymize(document.text, findings)
