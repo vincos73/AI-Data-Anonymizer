@@ -15,6 +15,7 @@ class PrivacyEngine:
     def __init__(self) -> None:
         self._recognizer = ItalianPrivacyRecognizer()
         self._ner = NerPersonRecognizer.create_if_available()
+        self.ner_active = self._ner is not None
         self.status = f"v{__version__} · NER locale attivo" if self._ner else f"v{__version__}"
 
     def analyze(self, text: str, mode: AnonymizationMode | str = "standard") -> list[Finding]:

@@ -229,12 +229,33 @@ saveButton.addEventListener("click", () => {
   }
 });
 
+const NER_NOTICE_TEXT = (
+  "Riconoscimento nomi ridotto: i nomi senza contesto (es. un nome e cognome isolati) potrebbero non essere " +
+  "rilevati. Per il riconoscimento completo installa spaCy con il modello italiano (vedi README)."
+);
+
+function showNerNotice() {
+  if (document.querySelector(".ner-notice")) {
+    return;
+  }
+  const notice = document.createElement("section");
+  notice.className = "ner-notice";
+  notice.setAttribute("aria-label", "Avviso riconoscimento nomi");
+  const text = document.createElement("p");
+  text.textContent = NER_NOTICE_TEXT;
+  notice.appendChild(text);
+  document.querySelector(".command-row").insertAdjacentElement("afterend", notice);
+}
+
 fetch("/api/health", {cache: "no-store"})
   .then((response) => response.json())
   .then((data) => {
     statusLabel.textContent = data.engine_status;
     modeNotes = data.mode_notes || modeNotes;
     maxFileBytes = data.max_file_bytes || 0;
+    if (data.ner_active === false) {
+      showNerNotice();
+    }
     renderReport(null);
   })
   .catch(() => {

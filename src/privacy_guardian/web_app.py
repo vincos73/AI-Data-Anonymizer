@@ -111,6 +111,7 @@ async def health():
     return {
         "ok": True,
         "engine_status": engine.status,
+        "ner_active": engine.ner_active,
         "max_text_length": MAX_TEXT_LENGTH,
         "max_file_bytes": MAX_FILE_BYTES,
         "supported_extensions": sorted(SUPPORTED_EXTENSIONS),

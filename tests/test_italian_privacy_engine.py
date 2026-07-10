@@ -35,6 +35,8 @@ from privacy_guardian.web_app import (
     analyze_document,
     anonymize as anonymize_text_endpoint,
     anonymize_document,
+    engine as web_app_engine,
+    health as health_endpoint,
 )
 
 
@@ -288,6 +290,34 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn(("PERSON", "Mario Rossi"), findings)
         self.assertEqual([value for entity, value in findings if entity == "PERSON"], ["Mario Rossi"])
         self.assertIn("rossi", self.engine.anonymize(text, mode="maximum"))
+
+    def test_ner_active_reflects_availability_of_local_ner(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        def fake_nlp(value: str):
+            return SimpleNamespace(ents=[])
+
+        with patch(
+            "privacy_guardian.privacy_engine.NerPersonRecognizer.create_if_available",
+            return_value=NerPersonRecognizer(fake_nlp),
+        ):
+            engine_with_ner = PrivacyEngine()
+        self.assertIsInstance(engine_with_ner.ner_active, bool)
+        self.assertTrue(engine_with_ner.ner_active)
+
+        with patch(
+            "privacy_guardian.privacy_engine.NerPersonRecognizer.create_if_available",
+            return_value=None,
+        ):
+            engine_without_ner = PrivacyEngine()
+        self.assertIsInstance(engine_without_ner.ner_active, bool)
+        self.assertFalse(engine_without_ner.ner_active)
+
+        default_engine = PrivacyEngine()
+        self.assertIsInstance(default_engine.ner_active, bool)
+        self.assertEqual(default_engine.ner_active, default_engine._ner is not None)
 
     def test_optional_local_ner_adds_uncontexted_person_names(self) -> None:
         from types import SimpleNamespace
@@ -890,6 +920,13 @@ class DocumentAnonymizationTest(unittest.TestCase):
 
 
 class WebAppTest(unittest.TestCase):
+    def test_health_reports_ner_active_flag(self) -> None:
+        payload = asyncio.run(health_endpoint())
+
+        self.assertIn("ner_active", payload)
+        self.assertIsInstance(payload["ner_active"], bool)
+        self.assertEqual(payload["ner_active"], web_app_engine.ner_active)
+
     def test_rejects_oversized_text_with_clear_message(self) -> None:
         payload = TextPayload(text="a" * (MAX_TEXT_LENGTH + 1), mode="standard")
 

@@ -118,6 +118,15 @@ QLabel#DocumentNotice {
     line-height: 1.35;
 }
 
+QLabel#NerNotice {
+    background: #3a2f14;
+    color: #f0d48a;
+    border: 1px solid #6b5a24;
+    border-radius: 0;
+    padding: 10px 12px;
+    line-height: 1.35;
+}
+
 QFrame#Panel {
     background: #222c34;
     border: 1px solid #3d4b56;
