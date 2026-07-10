@@ -282,6 +282,10 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         findings = self.findings_for("Consegna prevista 12345 Gennaio del prossimo anno.")
         self.assertEqual(findings, [])
 
+    def test_amount_followed_by_currency_is_not_matched_as_address(self) -> None:
+        findings = self.findings_for("Il compenso pattuito è di 10000 Euro da corrispondere in due rate.")
+        self.assertNotIn("ADDRESS", [entity_type for entity_type, _ in findings])
+
     def test_detects_international_phone_numbers(self) -> None:
         text = "Contatti: +44 20 7946 0958, +1 415 555 0132 e +39 333 123 4567."
         findings = self.findings_for(text)

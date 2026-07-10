@@ -138,6 +138,10 @@ class ItalianPrivacyRecognizer:
         "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
         "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
     }
+    POSTAL_CITY_STOPWORDS = {
+        "Euro", "Eur", "Dollari", "Sterline", "Franchi",
+        "Iva", "Netti", "Lordi", "Abitanti", "Unita", "Unità",
+    }
     PERSON_TRAILING_CONTEXT = re.compile(
         rf"\b(?P<name>{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}})\b"
         r"(?=\s*,?\s+(?i:nato|nata|residente|domiciliato|domiciliata|codice\s+fiscale|"
@@ -296,7 +300,11 @@ class ItalianPrivacyRecognizer:
         findings: list[Finding] = []
         for match in self.POSTAL_CODE_CITY.finditer(text):
             first_word = match.group("city").split()[0]
-            if first_word in self.PERSON_STOPWORDS or first_word in self.MONTH_NAMES:
+            if (
+                first_word in self.PERSON_STOPWORDS
+                or first_word in self.MONTH_NAMES
+                or first_word in self.POSTAL_CITY_STOPWORDS
+            ):
                 continue
             findings.append(Finding("ADDRESS", match.start(), match.end(), 0.8))
         return findings
