@@ -222,6 +222,56 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         findings = self.findings_for("Conto DE89 3704 0044 0532 0130 01 non valido.")
         self.assertNotIn("IBAN", [entity_type for entity_type, _ in findings])
 
+    def test_detects_credit_card_numbers_in_multiple_formats(self) -> None:
+        findings = self.findings_for("La carta è 4111 1111 1111 1111 per il pagamento.")
+        self.assertIn(("CREDIT_CARD", "4111 1111 1111 1111"), findings)
+
+        findings = self.findings_for("La carta è 4111-1111-1111-1111 per il pagamento.")
+        self.assertIn(("CREDIT_CARD", "4111-1111-1111-1111"), findings)
+
+        findings = self.findings_for("La carta è 4111111111111111 per il pagamento.")
+        self.assertIn(("CREDIT_CARD", "4111111111111111"), findings)
+
+    def test_rejects_credit_card_candidates_with_invalid_luhn_checksum(self) -> None:
+        findings = self.findings_for("Numero non valido 4111 1111 1111 1112.")
+        self.assertNotIn("CREDIT_CARD", [entity_type for entity_type, _ in findings])
+
+    def test_credit_card_digits_inside_iban_remain_iban(self) -> None:
+        text = "IBAN IT60X0542811101000000123456 per il bonifico."
+        findings = self.findings_for(text)
+
+        self.assertIn(("IBAN", "IT60X0542811101000000123456"), findings)
+        self.assertNotIn("CREDIT_CARD", [entity_type for entity_type, _ in findings])
+
+        text = "Bonifico su IBAN DE89 3704 0044 0532 0130 00 e altro."
+        findings = self.findings_for(text)
+        self.assertIn(("IBAN", "DE89 3704 0044 0532 0130 00"), findings)
+        self.assertNotIn("CREDIT_CARD", [entity_type for entity_type, _ in findings])
+
+    def test_maximum_protection_redacts_credit_card_number(self) -> None:
+        text = "La carta è 4111 1111 1111 1111 per il pagamento."
+        anonymized = self.engine.anonymize(text, mode="maximum")
+        self.assertIn("<CARTA_PAGAMENTO>", anonymized)
+        self.assertNotIn("4111", anonymized)
+
+    def test_detects_postal_code_with_city_as_address(self) -> None:
+        findings = self.findings_for("Abito a 00185 Roma da anni.")
+        self.assertIn(("ADDRESS", "00185 Roma"), findings)
+
+        findings = self.findings_for("Sede legale 20121 Milano centro.")
+        self.assertIn(("ADDRESS", "20121 Milano"), findings)
+
+        findings = self.findings_for("Ufficio 47521 Cesena aperto.")
+        self.assertIn(("ADDRESS", "47521 Cesena"), findings)
+
+    def test_postal_code_without_city_is_not_matched(self) -> None:
+        findings = self.findings_for("Il numero 00185 non è una città.")
+        self.assertNotIn("ADDRESS", [entity_type for entity_type, _ in findings])
+
+    def test_postal_code_followed_by_month_is_not_matched(self) -> None:
+        findings = self.findings_for("Consegna prevista 12345 Gennaio del prossimo anno.")
+        self.assertEqual(findings, [])
+
     def test_detects_international_phone_numbers(self) -> None:
         text = "Contatti: +44 20 7946 0958, +1 415 555 0132 e +39 333 123 4567."
         findings = self.findings_for(text)
@@ -479,6 +529,9 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
 
     def test_entity_labels_are_human_readable(self) -> None:
         self.assertEqual(entity_label("PERSON"), "persona")
+        self.assertEqual(entity_label("CREDIT_CARD"), "carta di pagamento")
+        self.assertEqual(entity_label("CREDIT_CARD", 2), "carte di pagamento")
+        self.assertEqual(entity_placeholder("CREDIT_CARD"), "<CARTA_PAGAMENTO>")
         self.assertEqual(entity_label("PHONE_NUMBER", 2), "telefoni")
         self.assertEqual(entity_label("IDENTITY_DOCUMENT"), "documento d'identità")
         self.assertEqual(entity_label("VEHICLE_PLATE", 2), "targhe veicolo")

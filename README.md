@@ -112,6 +112,7 @@ OMISSIS riconosce, con regole conservative:
 - indirizzi PEC, riconosciuti separatamente dalle email ordinarie quando il dominio o il contesto li indicano;
 - numeri di telefono italiani, inclusi formati con spazi, punti, trattini o slash, e numeri internazionali con prefisso `+`;
 - IBAN italiani e internazionali, con verifica del checksum e della lunghezza per paese, anche scritti con spazi;
+- numeri di carta di pagamento, con verifica del checksum (algoritmo di Luhn) e riconoscimento con o senza spazi/trattini;
 - codice fiscale;
 - partita IVA;
 - codici SDI, codici destinatario e codici univoci ufficio quando indicati con contesto esplicito;
@@ -120,6 +121,7 @@ OMISSIS riconosce, con regole conservative:
 - targhe veicolo quando indicate con contesto esplicito;
 - numeri di protocollo, pratica, fascicolo o istanza quando indicati con contesto esplicito;
 - indirizzi italiani con segnali forti come via, viale, piazza, corso, anche scritti in minuscolo quando è presente il numero civico;
+- CAP seguito da nome di località (es. `00185 Roma`);
 - nomi di persone con contesto forte, per esempio nascita, residenza o intestatario di pagamento;
 - aziende con forme giuridiche come `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperative e simili;
 - enti territoriali come `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`;

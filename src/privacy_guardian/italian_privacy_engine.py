@@ -130,6 +130,14 @@ class ItalianPrivacyRecognizer:
         r"beneficiario|beneficiaria)\s+"
         rf"(?P<name>{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}})",
     )
+    CREDIT_CARD = re.compile(r"(?<![\w-])(?!0)\d(?:[ -]?\d){12,18}(?![\w-])")
+    POSTAL_CODE_CITY = re.compile(
+        r"\b(?P<cap>\d{5})\s+(?P<city>[A-ZÀ-Ù][a-zà-ù]+(?:\s+[A-ZÀ-Ù][a-zà-ù]+){0,3})\b"
+    )
+    MONTH_NAMES = {
+        "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+        "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
+    }
     PERSON_TRAILING_CONTEXT = re.compile(
         rf"\b(?P<name>{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}})\b"
         r"(?=\s*,?\s+(?i:nato|nata|residente|domiciliato|domiciliata|codice\s+fiscale|"
@@ -183,8 +191,10 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._identity_document_findings(text))
         findings.extend(self._vehicle_plate_findings(text))
         findings.extend(self._protocol_case_findings(text))
+        findings.extend(self._credit_card_findings(text))
         findings.extend(self._regex_findings(text, "ADDRESS", self.ADDRESS, 0.86))
         findings.extend(self._lowercase_address_findings(text))
+        findings.extend(self._postal_code_city_findings(text))
         findings.extend(self._organization_findings(text))
         findings.extend(self._territorial_body_findings(text))
         findings.extend(self._person_findings(text))
@@ -270,6 +280,26 @@ class ItalianPrivacyRecognizer:
                 seen += 1
             index += 1
         return index
+
+    def _credit_card_findings(self, text: str) -> list[Finding]:
+        findings: list[Finding] = []
+        for match in self.CREDIT_CARD.finditer(text):
+            digits = re.sub(r"[ -]", "", match.group(0))
+            if not 13 <= len(digits) <= 19:
+                continue
+            if not self._valid_luhn(digits):
+                continue
+            findings.append(Finding("CREDIT_CARD", match.start(), match.end(), 0.95))
+        return findings
+
+    def _postal_code_city_findings(self, text: str) -> list[Finding]:
+        findings: list[Finding] = []
+        for match in self.POSTAL_CODE_CITY.finditer(text):
+            first_word = match.group("city").split()[0]
+            if first_word in self.PERSON_STOPWORDS or first_word in self.MONTH_NAMES:
+                continue
+            findings.append(Finding("ADDRESS", match.start(), match.end(), 0.8))
+        return findings
 
     def _international_phone_findings(self, text: str) -> list[Finding]:
         findings: list[Finding] = []
@@ -408,6 +438,7 @@ class ItalianPrivacyRecognizer:
             "IBAN": 7,
             "PEC_ADDRESS": 8,
             "EMAIL_ADDRESS": 7,
+            "CREDIT_CARD": 6,
             "PHONE_NUMBER": 7,
             "SDI_CODE": 7,
             "HEALTH_CARD": 7,
@@ -459,6 +490,19 @@ class ItalianPrivacyRecognizer:
 
     def _compact_iban(self, value: str) -> str:
         return re.sub(r"[\s-]", "", value).upper()
+
+    def _valid_luhn(self, digits: str) -> bool:
+        if not digits.isdigit():
+            return False
+        total = 0
+        for index, char in enumerate(reversed(digits)):
+            digit = int(char)
+            if index % 2 == 1:
+                digit *= 2
+                if digit > 9:
+                    digit -= 9
+            total += digit
+        return total % 10 == 0
 
     def _valid_iban(self, iban: str) -> bool:
         rearranged = iban[4:] + iban[:4]
