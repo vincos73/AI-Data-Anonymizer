@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 from io import BytesIO
+import json
 import tempfile
 import subprocess
 import unittest
@@ -28,7 +29,16 @@ from privacy_guardian.activity_log import (
 from privacy_guardian.document_service import OcrPageText, OcrWord, anonymize_loaded_document, load_document
 from privacy_guardian.privacy_engine import PrivacyEngine
 from privacy_guardian.reporting import entity_label, entity_placeholder, report_payload, report_text, source_label
-from privacy_guardian.reversible import ReversibleMapEntry, decrypt_mapping, encrypt_mapping, restore_text
+from privacy_guardian.reversible import (
+    MAP_SCHEMA_VERSION,
+    ReversibleMapEntry,
+    ReversibleMapError,
+    decrypt_mapping,
+    encrypt_mapping,
+    read_encrypted_mapping,
+    restore_text,
+    write_encrypted_mapping,
+)
 from privacy_guardian.web_app import (
     MAX_TEXT_LENGTH,
     TextPayload,
@@ -1150,6 +1160,55 @@ class ActivityLogTest(unittest.TestCase):
         self.assertIn("timestamp,action_label,source_label", csv_text)
         self.assertIn("Analisi", csv_text)
         self.assertIn("Testo incollato", csv_text)
+
+
+class ReversibleMapErrorTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.mapping = (ReversibleMapEntry(placeholder="<PERSONA_1>", entity_type="PERSON", value="Mario Rossi"),)
+
+    def test_encrypt_mapping_rejects_empty_passphrase(self) -> None:
+        with self.assertRaises(ReversibleMapError):
+            encrypt_mapping(self.mapping, "   ")
+
+    def test_decrypt_mapping_rejects_wrong_password(self) -> None:
+        encrypted = encrypt_mapping(self.mapping, "password corretta")
+
+        with self.assertRaises(ReversibleMapError):
+            decrypt_mapping(encrypted, "password sbagliata")
+
+    def test_decrypt_mapping_rejects_corrupted_or_truncated_data(self) -> None:
+        encrypted = encrypt_mapping(self.mapping, "password locale")
+
+        with self.assertRaises(ReversibleMapError):
+            decrypt_mapping(encrypted[: len(encrypted) // 2], "password locale")
+
+        with self.assertRaises(ReversibleMapError):
+            decrypt_mapping(b"non e' un json valido", "password locale")
+
+    def test_decrypt_mapping_rejects_unsupported_future_schema_version(self) -> None:
+        encrypted = encrypt_mapping(self.mapping, "password locale")
+        envelope = json.loads(encrypted.decode("utf-8"))
+        envelope["schema_version"] = MAP_SCHEMA_VERSION + 1
+        future_encrypted = json.dumps(envelope, ensure_ascii=False, indent=2).encode("utf-8")
+
+        with self.assertRaises(ReversibleMapError):
+            decrypt_mapping(future_encrypted, "password locale")
+
+    def test_write_and_read_encrypted_mapping_round_trip(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "mappa.omissis-map"
+            write_encrypted_mapping(path, self.mapping, "password locale")
+            restored = read_encrypted_mapping(path, "password locale")
+
+        self.assertEqual(restored, self.mapping)
+
+    def test_read_encrypted_mapping_rejects_wrong_password(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "mappa.omissis-map"
+            write_encrypted_mapping(path, self.mapping, "password corretta")
+
+            with self.assertRaises(ReversibleMapError):
+                read_encrypted_mapping(path, "password sbagliata")
 
 
 _ONE_PIXEL_PNG_BASE64 = (

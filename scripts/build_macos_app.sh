@@ -26,7 +26,24 @@ if [ -z "$PYTHON_BIN" ]; then
     uv python install 3.12
     PYTHON_BIN="$(uv python find 3.12)"
   else
-    echo "Serve Python 3.10, 3.11, 3.12 o 3.13. Installa uv da https://docs.astral.sh/uv/ oppure Python da python.org."
+    cat <<'MSG'
+Serve Python 3.10, 3.11, 3.12 o 3.13 per la build (PySide6 e PyInstaller non supportano ancora versioni più recenti come 3.14), ma non è stato trovato nessun interprete compatibile e uv non è installato.
+
+Per risolvere:
+
+  1. Installa uv (non tocca il Python di sistema):
+     curl -LsSf https://astral.sh/uv/install.sh | sh
+
+  2. Riapri il terminale (o esegui: source "$HOME/.local/bin/env")
+     in modo che il comando "uv" sia disponibile nel PATH.
+
+  3. Rilancia questo script:
+     ./scripts/build_macos_app.sh
+
+     Lo script userà automaticamente uv per installare Python 3.12 in locale
+     e creare l'ambiente virtuale della build, senza modificare o sostituire
+     il Python già presente sul sistema.
+MSG
     exit 1
   fi
 fi
