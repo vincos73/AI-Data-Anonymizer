@@ -8,6 +8,7 @@ from privacy_guardian.models import AnonymizationMode, Finding
 ENTITY_LABELS = {
     "ADDRESS": ("indirizzo", "indirizzi"),
     "CODICE_FISCALE": ("codice fiscale", "codici fiscali"),
+    "CREDIT_CARD": ("carta di pagamento", "carte di pagamento"),
     "DATE": ("data", "date"),
     "EMAIL_ADDRESS": ("email", "email"),
     "IBAN": ("IBAN", "IBAN"),
@@ -26,6 +27,7 @@ ENTITY_LABELS = {
 ENTITY_PLACEHOLDERS = {
     "ADDRESS": "INDIRIZZO",
     "CODICE_FISCALE": "CODICE_FISCALE",
+    "CREDIT_CARD": "CARTA_PAGAMENTO",
     "DATE": "DATA",
     "EMAIL_ADDRESS": "EMAIL",
     "HEALTH_CARD": "TESSERA_SANITARIA",

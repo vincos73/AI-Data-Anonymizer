@@ -155,6 +155,14 @@ class MainWindow(QMainWindow):
         self.document_label.setObjectName("DocumentNotice")
         self.document_label.setWordWrap(True)
 
+        self.ner_notice = QLabel(
+            "Riconoscimento nomi ridotto: i nomi senza contesto (es. un nome e cognome isolati) potrebbero non "
+            "essere rilevati. Per il riconoscimento completo installa spaCy con il modello italiano (vedi README)."
+        )
+        self.ner_notice.setObjectName("NerNotice")
+        self.ner_notice.setWordWrap(True)
+        self.ner_notice.setVisible(not self.engine.ner_active)
+
         self.report_label = QLabel()
         self.report_label.setObjectName("ReportNotice")
         self.report_label.setWordWrap(True)
@@ -272,6 +280,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(command_panel)
         layout.addWidget(self.workflow_stepper)
         layout.addWidget(self.document_label)
+        layout.addWidget(self.ner_notice)
         layout.addWidget(self.report_label)
         layout.addWidget(text_splitter, 4)
         layout.addLayout(findings_row)

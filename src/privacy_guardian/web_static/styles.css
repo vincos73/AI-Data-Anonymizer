@@ -237,6 +237,20 @@ select:focus {
   line-height: 1.35;
 }
 
+.ner-notice {
+  margin-bottom: 12px;
+  border-radius: 0;
+  padding: 10px 12px;
+  border: 1px solid #6b5a24;
+  background: #3a2f14;
+  color: #f0d48a;
+}
+
+.ner-notice p {
+  color: #f0d48a;
+  line-height: 1.35;
+}
+
 .report {
   border: 1px solid #315c68;
   background: #172d36;

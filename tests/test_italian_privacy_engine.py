@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 from io import BytesIO
+import json
 import tempfile
 import subprocess
 import unittest
@@ -28,13 +29,24 @@ from privacy_guardian.activity_log import (
 from privacy_guardian.document_service import OcrPageText, OcrWord, anonymize_loaded_document, load_document
 from privacy_guardian.privacy_engine import PrivacyEngine
 from privacy_guardian.reporting import entity_label, entity_placeholder, report_payload, report_text, source_label
-from privacy_guardian.reversible import ReversibleMapEntry, decrypt_mapping, encrypt_mapping, restore_text
+from privacy_guardian.reversible import (
+    MAP_SCHEMA_VERSION,
+    ReversibleMapEntry,
+    ReversibleMapError,
+    decrypt_mapping,
+    encrypt_mapping,
+    read_encrypted_mapping,
+    restore_text,
+    write_encrypted_mapping,
+)
 from privacy_guardian.web_app import (
     MAX_TEXT_LENGTH,
     TextPayload,
     analyze_document,
     anonymize as anonymize_text_endpoint,
     anonymize_document,
+    engine as web_app_engine,
+    health as health_endpoint,
 )
 
 
@@ -220,6 +232,60 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         findings = self.findings_for("Conto DE89 3704 0044 0532 0130 01 non valido.")
         self.assertNotIn("IBAN", [entity_type for entity_type, _ in findings])
 
+    def test_detects_credit_card_numbers_in_multiple_formats(self) -> None:
+        findings = self.findings_for("La carta è 4111 1111 1111 1111 per il pagamento.")
+        self.assertIn(("CREDIT_CARD", "4111 1111 1111 1111"), findings)
+
+        findings = self.findings_for("La carta è 4111-1111-1111-1111 per il pagamento.")
+        self.assertIn(("CREDIT_CARD", "4111-1111-1111-1111"), findings)
+
+        findings = self.findings_for("La carta è 4111111111111111 per il pagamento.")
+        self.assertIn(("CREDIT_CARD", "4111111111111111"), findings)
+
+    def test_rejects_credit_card_candidates_with_invalid_luhn_checksum(self) -> None:
+        findings = self.findings_for("Numero non valido 4111 1111 1111 1112.")
+        self.assertNotIn("CREDIT_CARD", [entity_type for entity_type, _ in findings])
+
+    def test_credit_card_digits_inside_iban_remain_iban(self) -> None:
+        text = "IBAN IT60X0542811101000000123456 per il bonifico."
+        findings = self.findings_for(text)
+
+        self.assertIn(("IBAN", "IT60X0542811101000000123456"), findings)
+        self.assertNotIn("CREDIT_CARD", [entity_type for entity_type, _ in findings])
+
+        text = "Bonifico su IBAN DE89 3704 0044 0532 0130 00 e altro."
+        findings = self.findings_for(text)
+        self.assertIn(("IBAN", "DE89 3704 0044 0532 0130 00"), findings)
+        self.assertNotIn("CREDIT_CARD", [entity_type for entity_type, _ in findings])
+
+    def test_maximum_protection_redacts_credit_card_number(self) -> None:
+        text = "La carta è 4111 1111 1111 1111 per il pagamento."
+        anonymized = self.engine.anonymize(text, mode="maximum")
+        self.assertIn("<CARTA_PAGAMENTO>", anonymized)
+        self.assertNotIn("4111", anonymized)
+
+    def test_detects_postal_code_with_city_as_address(self) -> None:
+        findings = self.findings_for("Abito a 00185 Roma da anni.")
+        self.assertIn(("ADDRESS", "00185 Roma"), findings)
+
+        findings = self.findings_for("Sede legale 20121 Milano centro.")
+        self.assertIn(("ADDRESS", "20121 Milano"), findings)
+
+        findings = self.findings_for("Ufficio 47521 Cesena aperto.")
+        self.assertIn(("ADDRESS", "47521 Cesena"), findings)
+
+    def test_postal_code_without_city_is_not_matched(self) -> None:
+        findings = self.findings_for("Il numero 00185 non è una città.")
+        self.assertNotIn("ADDRESS", [entity_type for entity_type, _ in findings])
+
+    def test_postal_code_followed_by_month_is_not_matched(self) -> None:
+        findings = self.findings_for("Consegna prevista 12345 Gennaio del prossimo anno.")
+        self.assertEqual(findings, [])
+
+    def test_amount_followed_by_currency_is_not_matched_as_address(self) -> None:
+        findings = self.findings_for("Il compenso pattuito è di 10000 Euro da corrispondere in due rate.")
+        self.assertNotIn("ADDRESS", [entity_type for entity_type, _ in findings])
+
     def test_detects_international_phone_numbers(self) -> None:
         text = "Contatti: +44 20 7946 0958, +1 415 555 0132 e +39 333 123 4567."
         findings = self.findings_for(text)
@@ -288,6 +354,34 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn(("PERSON", "Mario Rossi"), findings)
         self.assertEqual([value for entity, value in findings if entity == "PERSON"], ["Mario Rossi"])
         self.assertIn("rossi", self.engine.anonymize(text, mode="maximum"))
+
+    def test_ner_active_reflects_availability_of_local_ner(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        def fake_nlp(value: str):
+            return SimpleNamespace(ents=[])
+
+        with patch(
+            "privacy_guardian.privacy_engine.NerPersonRecognizer.create_if_available",
+            return_value=NerPersonRecognizer(fake_nlp),
+        ):
+            engine_with_ner = PrivacyEngine()
+        self.assertIsInstance(engine_with_ner.ner_active, bool)
+        self.assertTrue(engine_with_ner.ner_active)
+
+        with patch(
+            "privacy_guardian.privacy_engine.NerPersonRecognizer.create_if_available",
+            return_value=None,
+        ):
+            engine_without_ner = PrivacyEngine()
+        self.assertIsInstance(engine_without_ner.ner_active, bool)
+        self.assertFalse(engine_without_ner.ner_active)
+
+        default_engine = PrivacyEngine()
+        self.assertIsInstance(default_engine.ner_active, bool)
+        self.assertEqual(default_engine.ner_active, default_engine._ner is not None)
 
     def test_optional_local_ner_adds_uncontexted_person_names(self) -> None:
         from types import SimpleNamespace
@@ -449,6 +543,9 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
 
     def test_entity_labels_are_human_readable(self) -> None:
         self.assertEqual(entity_label("PERSON"), "persona")
+        self.assertEqual(entity_label("CREDIT_CARD"), "carta di pagamento")
+        self.assertEqual(entity_label("CREDIT_CARD", 2), "carte di pagamento")
+        self.assertEqual(entity_placeholder("CREDIT_CARD"), "<CARTA_PAGAMENTO>")
         self.assertEqual(entity_label("PHONE_NUMBER", 2), "telefoni")
         self.assertEqual(entity_label("IDENTITY_DOCUMENT"), "documento d'identità")
         self.assertEqual(entity_label("VEHICLE_PLATE", 2), "targhe veicolo")
@@ -890,6 +987,13 @@ class DocumentAnonymizationTest(unittest.TestCase):
 
 
 class WebAppTest(unittest.TestCase):
+    def test_health_reports_ner_active_flag(self) -> None:
+        payload = asyncio.run(health_endpoint())
+
+        self.assertIn("ner_active", payload)
+        self.assertIsInstance(payload["ner_active"], bool)
+        self.assertEqual(payload["ner_active"], web_app_engine.ner_active)
+
     def test_rejects_oversized_text_with_clear_message(self) -> None:
         payload = TextPayload(text="a" * (MAX_TEXT_LENGTH + 1), mode="standard")
 
@@ -1060,6 +1164,55 @@ class ActivityLogTest(unittest.TestCase):
         self.assertIn("timestamp,action_label,source_label", csv_text)
         self.assertIn("Analisi", csv_text)
         self.assertIn("Testo incollato", csv_text)
+
+
+class ReversibleMapErrorTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.mapping = (ReversibleMapEntry(placeholder="<PERSONA_1>", entity_type="PERSON", value="Mario Rossi"),)
+
+    def test_encrypt_mapping_rejects_empty_passphrase(self) -> None:
+        with self.assertRaises(ReversibleMapError):
+            encrypt_mapping(self.mapping, "   ")
+
+    def test_decrypt_mapping_rejects_wrong_password(self) -> None:
+        encrypted = encrypt_mapping(self.mapping, "password corretta")
+
+        with self.assertRaises(ReversibleMapError):
+            decrypt_mapping(encrypted, "password sbagliata")
+
+    def test_decrypt_mapping_rejects_corrupted_or_truncated_data(self) -> None:
+        encrypted = encrypt_mapping(self.mapping, "password locale")
+
+        with self.assertRaises(ReversibleMapError):
+            decrypt_mapping(encrypted[: len(encrypted) // 2], "password locale")
+
+        with self.assertRaises(ReversibleMapError):
+            decrypt_mapping(b"non e' un json valido", "password locale")
+
+    def test_decrypt_mapping_rejects_unsupported_future_schema_version(self) -> None:
+        encrypted = encrypt_mapping(self.mapping, "password locale")
+        envelope = json.loads(encrypted.decode("utf-8"))
+        envelope["schema_version"] = MAP_SCHEMA_VERSION + 1
+        future_encrypted = json.dumps(envelope, ensure_ascii=False, indent=2).encode("utf-8")
+
+        with self.assertRaises(ReversibleMapError):
+            decrypt_mapping(future_encrypted, "password locale")
+
+    def test_write_and_read_encrypted_mapping_round_trip(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "mappa.omissis-map"
+            write_encrypted_mapping(path, self.mapping, "password locale")
+            restored = read_encrypted_mapping(path, "password locale")
+
+        self.assertEqual(restored, self.mapping)
+
+    def test_read_encrypted_mapping_rejects_wrong_password(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "mappa.omissis-map"
+            write_encrypted_mapping(path, self.mapping, "password corretta")
+
+            with self.assertRaises(ReversibleMapError):
+                read_encrypted_mapping(path, "password sbagliata")
 
 
 _ONE_PIXEL_PNG_BASE64 = (
