@@ -1043,16 +1043,16 @@ class WebAppTest(unittest.TestCase):
         self.assertEqual(findings_by_type["VEHICLE_PLATE"]["label"], "targa veicolo")
         self.assertEqual(findings_by_type["VEHICLE_PLATE"]["source_label"], "Regole italiane locali")
 
-    def test_web_reversible_mode_returns_numbered_placeholders(self) -> None:
-        payload = asyncio.run(
-            anonymize_text_endpoint(
-                TextPayload(text="Il sottoscritto Mario Rossi email mario@example.com", mode="reversible")
+    def test_web_reversible_mode_requires_passphrase(self) -> None:
+        with self.assertRaises(HTTPException) as context:
+            asyncio.run(
+                anonymize_text_endpoint(
+                    TextPayload(text="Il sottoscritto Mario Rossi email mario@example.com", mode="reversible")
+                )
             )
-        )
 
-        self.assertIn("<PERSONA_1>", payload["text"])
-        self.assertIn("<EMAIL_1>", payload["text"])
-        self.assertEqual(payload["report"]["mode_label"], "Reversibile")
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertIn("solo nell'app desktop", context.exception.detail)
 
     def test_rejects_oversized_uploaded_document(self) -> None:
         upload = UploadFile(BytesIO(b"123456789"), filename="troppo.txt")

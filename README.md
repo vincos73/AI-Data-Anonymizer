@@ -102,7 +102,7 @@ Il testo con segnaposti può essere incollato in ChatGPT o altri strumenti. Quan
 
 La mappa `.omissis-map` contiene i valori originali cifrati: resta sul tuo dispositivo, va protetta come materiale sensibile e non va caricata in chatbot o servizi cloud.
 
-Questa modalità è disponibile per testo, `.txt`, `.md`, `.csv` e `.docx`. Per i PDF usa **Massima protezione**, perché l'output PDF sicuro è un documento redatto con oscuramenti permanenti.
+Questa modalità è disponibile per testo incollato, `.txt` e `.docx` nell'app desktop. Per `.md`, `.csv` e PDF usa **Massima protezione**, perché questi formati producono output non reversibili.
 
 ## Dati Riconosciuti
 
@@ -144,7 +144,7 @@ Il modello gira interamente sul tuo computer: nessun dato viene inviato a serviz
 | --- | --- |
 | `.txt`, `.md`, `.csv` | Legge e salva file di testo anonimizzati |
 | `.docx` | Legge e salva documenti Word mantenendo struttura, stili, tabelle e immagini quando possibile |
-| `.pdf` | Estrae il testo per analisi e salva un PDF rasterizzato con oscuramenti permanenti; se trova pagine scansionate può usare OCR locale Tesseract quando disponibile |
+| `.pdf` | Estrae il testo per analisi e salva un PDF rasterizzato con oscuramenti permanenti; gestisce anche pagine miste testo/immagini usando OCR locale Tesseract quando disponibile |
 | `.doc` | Supportato solo su macOS, convertito in `.docx` prima dell'anonimizzazione |
 
 I PDF scansionati o composti solo da immagini richiedono OCR. OMISSIS può usare **Tesseract OCR locale** quando è installato sul computer; non chiama servizi OCR esterni. Se Tesseract non è disponibile o non trova testo affidabile, l'app blocca il PDF, così l'utente non scambia un file non letto per un documento già sicuro. Il PDF anonimizzato viene ricostruito come immagini di pagina redatte: questo evita di lasciare il testo originale sotto gli oscuramenti, ma il testo del PDF finale non sarà copiabile o ricercabile.
@@ -192,6 +192,8 @@ http://127.0.0.1:8080
 La web app permette di incollare testo oppure caricare documenti supportati e scaricare il file anonimizzato. Per impostazione predefinita accetta fino a **100.000 caratteri** per il testo estratto e **10 MB** per file.
 
 Anche la web app parte in **Massima protezione** e mostra una breve checklist finale per ricordare il controllo manuale prima della condivisione.
+
+La modalità Reversibile e il ripristino tramite mappa cifrata sono disponibili solo nell'app desktop. La web app espone esclusivamente Standard e Massima protezione: questa scelta evita di inviare passphrase e mappe a un server. Una futura versione potrà aggiungere la cifratura interamente nel browser.
 
 Con Docker:
 
@@ -241,7 +243,7 @@ pip install -e ".[desktop,web]"
 python -m unittest discover -s tests -v
 ```
 
-La suite copre falsi positivi italiani, riconoscimento di persone e organizzazioni, enti territoriali, PEC, numeri di protocollo/pratica, identificativi strutturati, modalità Standard e Massima protezione, anonimizzazione documenti, preservazione della struttura e della formattazione `.docx`, pulizia di contenuti nascosti `.docx`, OCR locale opzionale per PDF scansionati, rifiuto dei PDF non leggibili e redazione PDF rasterizzata senza testo originale estraibile.
+La suite copre falsi positivi italiani, riconoscimento di persone e organizzazioni, enti territoriali, PEC, numeri di protocollo/pratica, identificativi strutturati, modalità Standard, Massima protezione e Reversibile desktop, mappe cifrate, anonimizzazione documenti, preservazione della struttura e della formattazione `.docx`, pulizia di contenuti nascosti `.docx`, OCR locale opzionale per PDF scansionati e pagine miste, rifiuto dei PDF non leggibili e redazione PDF rasterizzata senza testo originale estraibile.
 
 ## Build Desktop
 

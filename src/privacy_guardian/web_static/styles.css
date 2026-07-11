@@ -94,8 +94,7 @@ p {
   font-size: 12px;
   font-weight: 560;
   align-self: flex-end;
-  padding-bottom: 0;
-  transform: translateY(4px);
+  padding-bottom: 4px;
   white-space: nowrap;
 }
 
@@ -219,6 +218,42 @@ select:focus {
   display: none;
 }
 
+input[type="file"],
+input[type="password"] {
+  font: inherit;
+}
+
+input[type="password"] {
+  display: block;
+  width: 100%;
+  min-height: 34px;
+  margin-top: 6px;
+  border: 1px solid #667781;
+  border-radius: 0;
+  background: #f7f8f7;
+  color: var(--ink);
+  padding: 7px 9px;
+  outline: none;
+}
+
+input[type="password"]:focus,
+input[type="file"]:focus-visible {
+  border-color: var(--cyan);
+  outline: 2px solid #7bd0e5;
+  outline-offset: 1px;
+}
+
+input[type="file"] {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--text);
+  font-size: 13px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
 .document-notice,
 .report {
   margin-bottom: 12px;
@@ -230,6 +265,68 @@ select:focus {
   border: 1px solid #bfd4dd;
   background: var(--paper-soft);
   color: #14212a;
+}
+
+.reversible-panel,
+.restore-panel {
+  margin-bottom: 12px;
+  border: 1px solid #315c68;
+  border-radius: 0;
+  background: #172d36;
+  color: #dff7fc;
+  padding: 11px 12px;
+}
+
+.reversible-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 320px) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.reversible-panel h2,
+.restore-panel h2 {
+  color: #f4f8fa;
+}
+
+.field-note {
+  margin-top: 4px;
+  color: #b8d5dc;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.field-label {
+  display: block;
+  color: #e8f7fa;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.reversible-panel button {
+  min-height: 34px;
+}
+
+.restore-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.restore-fields {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(220px, 320px);
+  gap: 12px;
+  align-items: end;
+}
+
+.restore-status {
+  min-height: 18px;
+  margin-top: 8px;
+  color: #b8d5dc;
+  font-size: 12px;
 }
 
 .document-notice p {
@@ -395,5 +492,15 @@ tbody tr:nth-child(even) {
 
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .reversible-panel,
+  .restore-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .restore-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 }

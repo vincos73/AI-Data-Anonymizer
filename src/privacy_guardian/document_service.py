@@ -207,11 +207,13 @@ def _anonymize_legacy_doc(
 
 
 def _anonymize_pdf(path: Path, engine: PrivacyEngine, mode: AnonymizationMode) -> bytes:
+    from pypdf import PdfReader
     import pypdfium2 as pdfium
     from reportlab.lib.utils import ImageReader
     from reportlab.pdfgen import canvas
 
     source_pdf = pdfium.PdfDocument(str(path))
+    reader = PdfReader(path)
     output = BytesIO()
     redacted_pdf = canvas.Canvas(output)
 
@@ -233,12 +235,23 @@ def _anonymize_pdf(path: Path, engine: PrivacyEngine, mode: AnonymizationMode) -
                 findings = engine.analyze(page_text, mode)
                 redaction_rects = _pdf_redaction_rects(text_page, page_text, findings, page_index)
                 _draw_pdf_redactions(image, (width, height), redaction_rects)
-            elif _tesseract_available():
+
+            # A page can contain extractable text and an embedded image. Redacting only
+            # the text would leave any personal data in that image visible.
+            page_has_images = _pdf_page_has_images(reader.pages[page_index])
+            if page_has_images:
+                if not _tesseract_available():
+                    raise ValueError(_ocr_unavailable_message(str(page_index + 1)))
                 ocr_text = _ocr_image(image)
                 findings = engine.analyze(ocr_text.text, mode)
                 _draw_ocr_redactions(image, ocr_text.words, findings)
-            else:
-                raise ValueError(_ocr_unavailable_message(str(page_index + 1)))
+            elif not page_text.strip():
+                if _tesseract_available():
+                    ocr_text = _ocr_image(image)
+                    findings = engine.analyze(ocr_text.text, mode)
+                    _draw_ocr_redactions(image, ocr_text.words, findings)
+                else:
+                    raise ValueError(_ocr_unavailable_message(str(page_index + 1)))
 
             redacted_pdf.setPageSize((width, height))
             redacted_pdf.drawImage(ImageReader(image), 0, 0, width=width, height=height)
@@ -617,11 +630,12 @@ def _read_pdf(path: Path) -> PdfTextResult:
     try:
         for page_number, page in enumerate(reader.pages, start=1):
             text = (page.extract_text() or "").strip()
+            page_has_images = _pdf_page_has_images(page)
             if text:
-                pages.append(text)
-                continue
-
-            if not _pdf_page_has_images(page):
+                if not page_has_images:
+                    pages.append(text)
+                    continue
+            elif not page_has_images:
                 continue
 
             if not _tesseract_available():
@@ -787,8 +801,9 @@ def _tesseract_command() -> str | None:
 def _ocr_unavailable_message(pages_label: str) -> str:
     page_detail = f" (pagine: {pages_label})" if pages_label else ""
     return (
-        "Il PDF contiene pagine immagine o scansionate senza testo selezionabile"
-        f"{page_detail}. Per leggerle senza servizi esterni installa Tesseract OCR locale e riprova."
+        "Il PDF contiene immagini che potrebbero includere dati personali"
+        f"{page_detail}. Per anonimizzarlo in sicurezza installa Tesseract OCR locale e riprova: "
+        "serve anche quando la pagina contiene testo selezionabile."
     )
 
 

@@ -9,21 +9,42 @@ const reportChecklist = document.querySelector("#report-checklist");
 const fileInput = document.querySelector("#file-input");
 const fileStatus = document.querySelector("#file-status");
 const saveButton = document.querySelector("#save-btn");
+const saveMapButton = document.querySelector("#save-map-btn");
 const workflowFileButton = document.querySelector(".workflow-button[for='file-input']");
+const processingNotice = document.querySelector("#processing-notice");
+const reversiblePanel = document.querySelector("#reversible-panel");
+const passphraseInput = document.querySelector("#passphrase-input");
+const mapInput = document.querySelector("#map-input");
+const restorePassphraseInput = document.querySelector("#restore-passphrase-input");
+const restoreButton = document.querySelector("#restore-btn");
+const restoreStatus = document.querySelector("#restore-status");
 let modeNotes = {
   standard: "Standard conserva iniziali e date: per testo da condividere con chatbot valuta Massima protezione.",
   maximum: "Massima protezione usa segnaposto completi e redige anche date comuni riconosciute.",
-  reversible: "Reversibile usa segnaposto numerati e permette di salvare una mappa locale cifrata nella desktop app.",
+  reversible: "Reversibile sostituisce i dati con segnaposto numerati: conserva la mappa cifrata per poterli ricostruire.",
 };
 let maxFileBytes = 0;
 let activeDocument = false;
+let pendingMapping = null;
+
+function updateProcessingNotice() {
+  const hostname = location.hostname;
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  processingNotice.textContent = isLocalhost
+    ? "Elaborazione locale · i dati restano sul dispositivo"
+    : "Elaborazione sul server OMISSIS configurato · i dati vengono inviati a questo server";
+}
 
 async function postJson(path, text) {
+  const payload = {text, mode: modeSelect.value};
+  if (modeSelect.value === "reversible") {
+    payload.passphrase = passphraseInput.value;
+  }
   const response = await fetch(path, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     cache: "no-store",
-    body: JSON.stringify({text, mode: modeSelect.value}),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -41,6 +62,9 @@ async function postDocument(path) {
 
   const formData = new FormData();
   formData.append("mode", modeSelect.value);
+  if (modeSelect.value === "reversible") {
+    formData.append("passphrase", passphraseInput.value);
+  }
   formData.append("file", fileInput.files[0]);
 
   const response = await fetch(path, {
@@ -102,6 +126,35 @@ function hasDocument() {
 
 function hasText() {
   return source.value.trim().length > 0;
+}
+
+function updateReversibleControls() {
+  reversiblePanel.hidden = modeSelect.value !== "reversible";
+  if (modeSelect.value !== "reversible") {
+    passphraseInput.value = "";
+  }
+}
+
+function requirePassphrase() {
+  if (modeSelect.value === "reversible" && !passphraseInput.value.trim()) {
+    throw new Error("Per la modalità reversibile inserisci una passphrase.");
+  }
+}
+
+function clearPendingMapping() {
+  pendingMapping = null;
+  saveMapButton.disabled = true;
+}
+
+function storeMapping(data) {
+  pendingMapping = data.mapping_base64
+    ? {
+        contentBase64: data.mapping_base64,
+        filename: data.mapping_filename || "omissis-mappa.omissis-map",
+        mediaType: data.mapping_media_type || "application/json",
+      }
+    : null;
+  saveMapButton.disabled = !pendingMapping;
 }
 
 function downloadBase64(filename, contentBase64, mediaType) {
@@ -188,9 +241,11 @@ async function analyze() {
 async function anonymize() {
   setBusy(true);
   try {
+    requirePassphrase();
     const data = hasDocument() && !hasText()
       ? await postDocument("/api/anonymize-document")
       : await postJson("/api/anonymize", source.value);
+    storeMapping(data);
     if (data.content_base64) {
       downloadBase64(data.filename, data.content_base64, data.media_type);
       result.value = "";
@@ -199,6 +254,9 @@ async function anonymize() {
       result.value = data.text;
     }
     statusLabel.textContent = data.engine_status;
+    if (pendingMapping) {
+      fileStatus.textContent += " Mappa cifrata pronta per il download.";
+    }
     renderFindings(data.findings);
     renderReport(data.report);
   } catch (error) {
@@ -217,6 +275,11 @@ document.querySelector("#clear-btn").addEventListener("click", () => {
   fileInput.value = "";
   activeDocument = false;
   fileStatus.textContent = "Nessun file selezionato";
+  passphraseInput.value = "";
+  mapInput.value = "";
+  restorePassphraseInput.value = "";
+  restoreStatus.textContent = "";
+  clearPendingMapping();
   renderFindings([]);
   renderReport(null);
 });
@@ -228,11 +291,59 @@ saveButton.addEventListener("click", () => {
     downloadText("testo_anonimizzato.txt", result.value);
   }
 });
+saveMapButton.addEventListener("click", () => {
+  if (pendingMapping) {
+    downloadBase64(pendingMapping.filename, pendingMapping.contentBase64, pendingMapping.mediaType);
+  }
+});
+
+restoreButton.addEventListener("click", async () => {
+  if (!result.value.trim()) {
+    restoreStatus.textContent = "Inserisci o genera il testo anonimizzato prima di ricostruirlo.";
+    return;
+  }
+  if (!mapInput.files.length) {
+    restoreStatus.textContent = "Scegli una mappa reversibile cifrata.";
+    return;
+  }
+  if (!restorePassphraseInput.value.trim()) {
+    restoreStatus.textContent = "Inserisci la passphrase della mappa reversibile.";
+    return;
+  }
+
+  setBusy(true);
+  restoreStatus.textContent = "Ricostruzione in corso...";
+  try {
+    const formData = new FormData();
+    formData.append("text", result.value);
+    formData.append("passphrase", restorePassphraseInput.value);
+    formData.append("mapping", mapInput.files[0]);
+    const response = await fetch("/api/restore", {
+      method: "POST",
+      cache: "no-store",
+      body: formData,
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.detail || "Ricostruzione non riuscita");
+    }
+    const data = await response.json();
+    result.value = data.text;
+    statusLabel.textContent = data.engine_status;
+    restoreStatus.textContent = `Testo ricostruito: ${data.entries} ${data.entries === 1 ? "voce" : "voci"}.`;
+  } catch (error) {
+    restoreStatus.textContent = error.message;
+  } finally {
+    setBusy(false);
+  }
+});
 
 const NER_NOTICE_TEXT = (
   "Riconoscimento nomi ridotto: i nomi senza contesto (es. un nome e cognome isolati) potrebbero non essere " +
   "rilevati. Per il riconoscimento completo installa spaCy con il modello italiano (vedi README)."
 );
+
+updateProcessingNotice();
 
 function showNerNotice() {
   if (document.querySelector(".ner-notice")) {
@@ -257,6 +368,7 @@ fetch("/api/health", {cache: "no-store"})
       showNerNotice();
     }
     renderReport(null);
+    updateReversibleControls();
   })
   .catch(() => {
     statusLabel.textContent = "Server non raggiungibile.";
@@ -272,6 +384,7 @@ fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
   const limit = maxFileBytes ? `, limite ${formatBytes(maxFileBytes)}` : "";
   activeDocument = true;
+  clearPendingMapping();
   source.value = "";
   result.value = "";
   if (file.name.toLowerCase().endsWith(".pdf")) {
@@ -287,10 +400,12 @@ fileInput.addEventListener("change", () => {
 });
 
 modeSelect.addEventListener("change", () => {
+  updateReversibleControls();
   renderReport(null);
 });
 
 source.addEventListener("input", () => {
+  clearPendingMapping();
   if (source.value.trim() && activeDocument) {
     activeDocument = false;
     fileInput.value = "";
@@ -310,3 +425,5 @@ document.addEventListener("drop", (event) => {
   fileInput.files = event.dataTransfer.files;
   fileInput.dispatchEvent(new Event("change"));
 });
+
+updateReversibleControls();

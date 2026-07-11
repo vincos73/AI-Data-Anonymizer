@@ -16,7 +16,7 @@
           <span class="byline">by vincos</span>
         </div>
         <div class="brand-meta">
-          <span class="local-pill">Elaborazione locale · i dati restano sul dispositivo</span>
+          <span id="processing-notice" class="local-pill">Elaborazione sul server OMISSIS configurato.</span>
           <span id="engine-status" class="version-pill">avvio...</span>
         </div>
       </header>
@@ -28,7 +28,6 @@
         <button id="anonymize-btn" type="button" class="primary">03&nbsp;&nbsp;Anonimizza</button>
         <select id="mode-select" aria-label="Modalità protezione">
           <option value="maximum">Massima protezione (consigliata)</option>
-          <option value="reversible">Reversibile con mappa locale</option>
           <option value="standard">Standard (più leggibile)</option>
         </select>
         <span class="command-spacer"></span>
@@ -40,6 +39,18 @@
 
       <section class="document-notice" aria-label="Documento caricato">
         <p id="file-status">Nessun documento caricato. Puoi incollare testo o trascinare un file nella finestra.</p>
+      </section>
+
+      <section id="reversible-panel" class="reversible-panel" aria-labelledby="reversible-heading" hidden>
+        <div>
+          <h2 id="reversible-heading">Mappa reversibile</h2>
+          <p class="field-note">La passphrase è necessaria per creare la mappa cifrata.</p>
+        </div>
+        <label class="field-label" for="passphrase-input">
+          Passphrase
+          <input id="passphrase-input" type="password" autocomplete="new-password" spellcheck="false" />
+        </label>
+        <button id="save-map-btn" type="button" class="secondary" disabled>Scarica mappa cifrata</button>
       </section>
 
       <section class="report" aria-label="Report anonimizzazione">
@@ -82,6 +93,27 @@
             <tbody id="findings-body"></tbody>
           </table>
         </div>
+      </section>
+
+      <section class="restore-panel" aria-labelledby="restore-heading" hidden>
+        <div class="restore-heading">
+          <div>
+            <h2 id="restore-heading">Ricostruisci testo</h2>
+            <p class="field-note">Carica la mappa cifrata usata per l'anonimizzazione.</p>
+          </div>
+          <button id="restore-btn" type="button" class="secondary">Ricostruisci</button>
+        </div>
+        <div class="restore-fields">
+          <label class="field-label" for="map-input">
+            Mappa cifrata
+            <input id="map-input" type="file" accept=".omissis-map,application/json" />
+          </label>
+          <label class="field-label" for="restore-passphrase-input">
+            Passphrase della mappa
+            <input id="restore-passphrase-input" type="password" autocomplete="current-password" spellcheck="false" />
+          </label>
+        </div>
+        <p id="restore-status" class="restore-status" role="status" aria-live="polite"></p>
       </section>
     </main>
     <script src="/static/app.js"></script>

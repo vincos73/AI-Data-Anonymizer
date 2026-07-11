@@ -51,7 +51,7 @@ It is not a legal compliance product and it does not guarantee perfect anonymiza
 | --- | --- |
 | `.txt`, `.md`, `.csv` | Reads and saves anonymized text files |
 | `.docx` | Reads and saves anonymized Word documents, preserving formatting where possible |
-| `.pdf` | Extracts selectable text for analysis and saves a rasterized redacted PDF; when scanned pages are found, it can use local Tesseract OCR if available. |
+| `.pdf` | Extracts text for analysis and saves a rasterized redacted PDF; mixed text/image pages can use local Tesseract OCR when available. |
 | `.doc` | Supported on macOS only; converted to `.docx` before anonymization |
 
 On Windows, convert legacy `.doc` files to `.docx` before using the desktop app.
@@ -89,7 +89,7 @@ Typical workflow:
 
 The desktop app defaults to maximum-protection mode, which is the recommended choice before sharing content with ChatGPT or other AI tools.
 
-Reversible mode is available for pasted text, `.txt`, `.md`, `.csv`, and `.docx`. PDF output remains permanently redacted and is not reversible.
+Reversible mode is available for pasted text, `.txt`, and `.docx` in the desktop app. Use maximum protection for `.md`, `.csv`, and PDF files because those outputs are not reversible.
 
 ### macOS
 
@@ -165,6 +165,8 @@ The web app supports pasted text and supported document uploads, then downloads 
 
 The web app also defaults to **maximum protection** and shows a short final checklist before sharing.
 
+Reversible mode and encrypted-map restoration are available only in the desktop app. The web app exposes Standard and Maximum protection only, avoiding the transmission of passphrases and maps to a server. A future version may add encryption fully in the browser.
+
 Run with Docker:
 
 ```bash
@@ -220,7 +222,7 @@ pip install -e ".[desktop,web]"
 python -m unittest discover -s tests -v
 ```
 
-The test suite covers Italian false positives, person and organization recognition, territorial bodies, PEC addresses, protocol/case numbers, structured identifiers, standard, maximum-protection and reversible anonymization, encrypted reversible maps, document anonymization, `.docx` structure and formatting preservation, hidden `.docx` metadata/content sanitization, optional local OCR for scanned PDFs, unreadable PDF rejection, and rasterized PDF redaction without extractable original text.
+The test suite covers Italian false positives, person and organization recognition, territorial bodies, PEC addresses, protocol/case numbers, structured identifiers, standard, maximum-protection and desktop reversible anonymization, encrypted reversible maps, document anonymization, `.docx` structure and formatting preservation, hidden `.docx` metadata/content sanitization, optional local OCR for scanned and mixed PDF pages, unreadable PDF rejection, and rasterized PDF redaction without extractable original text.
 
 ## Project Status
 

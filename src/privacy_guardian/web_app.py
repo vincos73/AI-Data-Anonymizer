@@ -18,10 +18,20 @@ from privacy_guardian.document_service import SUPPORTED_EXTENSIONS, anonymize_lo
 from privacy_guardian.models import ANONYMIZATION_MODES, AnonymizationMode, Finding
 from privacy_guardian.privacy_engine import PrivacyEngine
 from privacy_guardian.reporting import entity_label, mode_note, report_payload, source_label
+from privacy_guardian.reversible import (
+    MAP_EXTENSION,
+    ReversibleMapError,
+    decrypt_mapping,
+    encrypt_mapping,
+    restore_text,
+)
 
 MAX_TEXT_LENGTH = 100_000
 MAX_FILE_BYTES = 10 * 1024 * 1024
+MAX_MAP_BYTES = 2 * 1024 * 1024
 MAX_REQUEST_BYTES = MAX_FILE_BYTES + 512 * 1024
+WEB_SUPPORTED_MODES = tuple(mode for mode in ANONYMIZATION_MODES if mode != "reversible")
+REVERSIBLE_DOCUMENT_EXTENSIONS = {".txt", ".docx"}
 DOCUMENT_MEDIA_TYPES = {
     ".csv": "text/csv; charset=utf-8",
     ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -47,6 +57,7 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 class TextPayload(BaseModel):
     text: str
     mode: AnonymizationMode = "maximum"
+    passphrase: str | None = None
 
 
 def serialize_finding(finding: Finding, text: str) -> dict[str, object]:
@@ -115,13 +126,15 @@ async def health():
         "max_text_length": MAX_TEXT_LENGTH,
         "max_file_bytes": MAX_FILE_BYTES,
         "supported_extensions": sorted(SUPPORTED_EXTENSIONS),
-        "modes": ANONYMIZATION_MODES,
-        "mode_notes": {mode: mode_note(mode) for mode in ANONYMIZATION_MODES},
+        "modes": WEB_SUPPORTED_MODES,
+        "mode_notes": {mode: mode_note(mode) for mode in WEB_SUPPORTED_MODES},
+        "reversible_document_extensions": sorted(REVERSIBLE_DOCUMENT_EXTENSIONS),
     }
 
 
 @app.post("/api/analyze")
 async def analyze(payload: TextPayload):
+    _reject_web_reversible(payload.mode)
     _validate_text_length(payload.text)
     if not payload.text.strip():
         return {"findings": [], "report": report_payload([], payload.mode), "engine_status": engine.status}
@@ -135,28 +148,49 @@ async def analyze(payload: TextPayload):
 
 @app.post("/api/anonymize")
 async def anonymize(payload: TextPayload):
+    _reject_web_reversible(payload.mode)
     _validate_text_length(payload.text)
+    passphrase = _required_passphrase(payload.mode, payload.passphrase)
     if not payload.text.strip():
-        return {"text": "", "findings": [], "report": report_payload([], payload.mode), "engine_status": engine.status}
+        response = {
+            "text": "",
+            "findings": [],
+            "report": report_payload([], payload.mode),
+            "engine_status": engine.status,
+        }
+        if payload.mode == "reversible":
+            response.update(_mapping_payload((), passphrase, "testo_anonimizzato"))
+        return response
     findings = engine.analyze(payload.text, payload.mode)
-    return {
-        "text": engine.anonymize(payload.text, findings, payload.mode),
+    response = {
+        "text": "",
         "findings": [serialize_finding(finding, payload.text) for finding in findings],
         "report": report_payload(findings, payload.mode),
         "engine_status": engine.status,
     }
+    if payload.mode == "reversible":
+        reversible_result = engine.anonymize_reversible(payload.text, findings)
+        response["text"] = reversible_result.text
+        response.update(_mapping_payload(reversible_result.mapping, passphrase, "testo_anonimizzato"))
+    else:
+        response["text"] = engine.anonymize(payload.text, findings, payload.mode)
+    return response
 
 
 @app.post("/api/anonymize-document")
 async def anonymize_document(
     mode: AnonymizationMode = Form("maximum"),
+    passphrase: str = Form(""),
     file: UploadFile = File(...),
 ):
+    _reject_web_reversible(mode)
     filename = _safe_upload_filename(file.filename)
     extension = Path(filename).suffix.lower()
     if extension not in SUPPORTED_EXTENSIONS:
         supported = ", ".join(sorted(SUPPORTED_EXTENSIONS))
         raise HTTPException(status_code=400, detail=f"Formato non supportato. Usa uno di questi: {supported}")
+    _validate_document_mode(mode, extension)
+    passphrase = _required_passphrase(mode, passphrase)
 
     content = await _read_upload(file)
     if not content:
@@ -174,7 +208,7 @@ async def anonymize_document(
         except RuntimeError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return {
+    response = {
         "filename": result.filename,
         "media_type": DOCUMENT_MEDIA_TYPES.get(Path(result.filename).suffix.lower(), "application/octet-stream"),
         "content_base64": base64.b64encode(result.data).decode("ascii"),
@@ -182,6 +216,9 @@ async def anonymize_document(
         "report": report_payload(result.findings, mode),
         "engine_status": engine.status,
     }
+    if mode == "reversible":
+        response.update(_mapping_payload(result.reversible_mapping, passphrase, Path(result.filename).stem))
+    return response
 
 
 @app.post("/api/analyze-document")
@@ -189,11 +226,13 @@ async def analyze_document(
     mode: AnonymizationMode = Form("maximum"),
     file: UploadFile = File(...),
 ):
+    _reject_web_reversible(mode)
     filename = _safe_upload_filename(file.filename)
     extension = Path(filename).suffix.lower()
     if extension not in SUPPORTED_EXTENSIONS:
         supported = ", ".join(sorted(SUPPORTED_EXTENSIONS))
         raise HTTPException(status_code=400, detail=f"Formato non supportato. Usa uno di questi: {supported}")
+    _validate_document_mode(mode, extension)
 
     content = await _read_upload(file)
     if not content:
@@ -219,11 +258,72 @@ async def analyze_document(
     }
 
 
+@app.post("/api/restore")
+async def restore(
+    text: str = Form(""),
+    passphrase: str = Form(""),
+    mapping: UploadFile = File(...),
+):
+    raise HTTPException(
+        status_code=400,
+        detail="Il ripristino reversibile non è disponibile nella web app. Usa l'app desktop OMISSIS.",
+    )
+
+    # Kept below as the shared implementation for a future browser-local flow.
+    _validate_text_length(text)
+    if not text:
+        raise HTTPException(status_code=400, detail="Inserisci il testo anonimizzato da ricostruire.")
+    passphrase = _required_passphrase("reversible", passphrase)
+    mapping_data = await _read_mapping_upload(mapping)
+    try:
+        entries = decrypt_mapping(mapping_data, passphrase)
+    except ReversibleMapError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="File mappa reversibile non valido.") from exc
+
+    return {
+        "text": restore_text(text, entries),
+        "entries": len(entries),
+        "engine_status": engine.status,
+    }
+
+
 def _validate_text_length(text: str) -> None:
     if len(text) > MAX_TEXT_LENGTH:
         raise HTTPException(
             status_code=413,
             detail=f"Testo troppo lungo. Limite massimo: {MAX_TEXT_LENGTH:,} caratteri.".replace(",", "."),
+        )
+
+
+def _required_passphrase(mode: AnonymizationMode, passphrase: str | None) -> str:
+    normalized = passphrase.strip() if isinstance(passphrase, str) else ""
+    if mode == "reversible" and not normalized:
+        raise HTTPException(status_code=400, detail="Per la modalità reversibile inserisci una passphrase.")
+    return normalized
+
+
+def _reject_web_reversible(mode: AnonymizationMode) -> None:
+    if mode == "reversible":
+        raise HTTPException(
+            status_code=400,
+            detail="La modalità reversibile è disponibile solo nell'app desktop OMISSIS.",
+        )
+
+
+def _validate_document_mode(mode: AnonymizationMode, extension: str) -> None:
+    if mode != "reversible":
+        return
+    if extension == ".pdf":
+        raise HTTPException(
+            status_code=400,
+            detail="La modalità reversibile è rifiutata per i PDF. Usa Massima protezione per creare un PDF redatto.",
+        )
+    if extension not in REVERSIBLE_DOCUMENT_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="La modalità reversibile è disponibile solo per testo incollato, file TXT e DOCX.",
         )
 
 
@@ -236,6 +336,28 @@ async def _read_upload(file: UploadFile) -> bytes:
             detail=f"File troppo grande. Limite massimo: {_format_bytes(MAX_FILE_BYTES)}.",
         )
     return content
+
+
+async def _read_mapping_upload(file: UploadFile) -> bytes:
+    content = await file.read(MAX_MAP_BYTES + 1)
+    await file.close()
+    if len(content) > MAX_MAP_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"La mappa reversibile è troppo grande. Limite massimo: {_format_bytes(MAX_MAP_BYTES)}.",
+        )
+    if not content:
+        raise HTTPException(status_code=400, detail="Il file mappa reversibile è vuoto.")
+    return content
+
+
+def _mapping_payload(mapping, passphrase: str, base_name: str) -> dict[str, object]:
+    encrypted = encrypt_mapping(mapping, passphrase)
+    return {
+        "mapping_filename": f"{base_name}{MAP_EXTENSION}",
+        "mapping_media_type": "application/json",
+        "mapping_base64": base64.b64encode(encrypted).decode("ascii"),
+    }
 
 
 def _safe_upload_filename(filename: str | None) -> str:
