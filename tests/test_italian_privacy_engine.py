@@ -26,7 +26,15 @@ from privacy_guardian.activity_log import (
     load_activity_entries,
     record_activity,
 )
-from privacy_guardian.document_service import OcrPageText, OcrWord, anonymize_loaded_document, load_document
+from privacy_guardian import document_service
+from privacy_guardian.document_service import (
+    OcrPageText,
+    OcrWord,
+    anonymize_loaded_document,
+    excluded_value_pairs,
+    load_document,
+)
+from privacy_guardian.models import Finding
 from privacy_guardian.privacy_engine import PrivacyEngine
 from privacy_guardian.reporting import entity_label, entity_placeholder, report_payload, report_text, source_label
 from privacy_guardian.reversible import (
@@ -208,6 +216,45 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         findings = self.findings_for("Residente in Via Appia e domiciliato in Viale Europa 10.")
         self.assertIn(("ADDRESS", "Via Appia"), findings)
         self.assertIn(("ADDRESS", "Viale Europa 10"), findings)
+
+    def test_full_address_with_cap_and_city_is_a_single_finding(self) -> None:
+        text = "Via Garibaldi 45, 00185 Roma"
+        findings = self.engine.analyze(text, "maximum")
+        addresses = [finding for finding in findings if finding.entity_type == "ADDRESS"]
+
+        self.assertEqual(len(addresses), 1)
+        self.assertEqual(text[addresses[0].start : addresses[0].end], text)
+
+        anonymized = self.engine.anonymize(text, findings, "maximum")
+        self.assertNotIn("Roma", anonymized)
+        self.assertNotIn("00185", anonymized)
+        self.assertFalse(any(char.isdigit() for char in anonymized))
+
+    def test_full_address_without_comma_is_fully_covered(self) -> None:
+        text = "Via Garibaldi 45 00185 Roma"
+        findings = self.engine.analyze(text, "maximum")
+        addresses = [finding for finding in findings if finding.entity_type == "ADDRESS"]
+
+        self.assertEqual(len(addresses), 1)
+        self.assertEqual(text[addresses[0].start : addresses[0].end], text)
+
+        anonymized = self.engine.anonymize(text, findings, "maximum")
+        self.assertNotIn("Roma", anonymized)
+        self.assertNotIn("00185", anonymized)
+        self.assertFalse(any(char.isdigit() for char in anonymized))
+
+    def test_full_address_with_alphanumeric_civic_is_fully_covered(self) -> None:
+        text = "Via Roma 45B, 00185 Roma"
+        findings = self.engine.analyze(text, "maximum")
+        addresses = [finding for finding in findings if finding.entity_type == "ADDRESS"]
+
+        self.assertEqual(len(addresses), 1)
+        self.assertEqual(text[addresses[0].start : addresses[0].end], text)
+
+        anonymized = self.engine.anonymize(text, findings, "maximum")
+        self.assertNotIn("Roma", anonymized)
+        self.assertNotIn("00185", anonymized)
+        self.assertFalse(any(char.isdigit() for char in anonymized))
 
     def test_detects_structured_italian_data(self) -> None:
         text = "IBAN IT60X0542811101000000123456 CF RSSMRA80A01H501U email mario.rossi@example.com tel +39 333 123 4567"
@@ -563,6 +610,38 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertEqual(source_label("italian_rules"), "Regole italiane locali")
 
 
+class ExcludedValuePairsTest(unittest.TestCase):
+    """Fail-closed computation of the (entity_type, value) pairs excluded by the UI mask."""
+
+    def test_pair_excluded_only_when_every_occurrence_is_unchecked(self) -> None:
+        email = "mario@example.com"
+        text = f"{email} conferma da {email}"
+        second = text.index(email, 1)
+        findings = [
+            Finding("EMAIL_ADDRESS", 0, len(email), 0.98),
+            Finding("EMAIL_ADDRESS", second, second + len(email), 0.98),
+        ]
+
+        self.assertEqual(excluded_value_pairs(text, findings, [False, True]), frozenset())
+        self.assertEqual(excluded_value_pairs(text, findings, [True, False]), frozenset())
+        self.assertEqual(
+            excluded_value_pairs(text, findings, [False, False]),
+            frozenset({("EMAIL_ADDRESS", email)}),
+        )
+
+    def test_short_mask_counts_missing_indices_as_included(self) -> None:
+        email = "mario@example.com"
+        text = f"{email} conferma da {email}"
+        second = text.index(email, 1)
+        findings = [
+            Finding("EMAIL_ADDRESS", 0, len(email), 0.98),
+            Finding("EMAIL_ADDRESS", second, second + len(email), 0.98),
+        ]
+
+        self.assertEqual(excluded_value_pairs(text, findings, [False]), frozenset())
+        self.assertEqual(excluded_value_pairs(text, findings, []), frozenset())
+
+
 class DocumentAnonymizationTest(unittest.TestCase):
     def setUp(self) -> None:
         self.engine = PrivacyEngine()
@@ -688,6 +767,206 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertIn("<EMAIL>", decoded)
         self.assertIn("Mario Rossi", decoded)
         self.assertIn("10/01/1980", decoded)
+
+    def test_docx_honors_value_exclusions_preserving_structure_and_formatting(self) -> None:
+        email = "mario@example.com"
+        docx_path = self.base / "esclusioni.docx"
+        doc = Document()
+        paragraph = doc.add_paragraph("Il sottoscritto ")
+        bold_run = paragraph.add_run("Mario Rossi")
+        bold_run.bold = True
+        italic_run = paragraph.add_run(" con recapito ")
+        italic_run.italic = True
+        paragraph.add_run(email)
+        table = doc.add_table(rows=1, cols=2)
+        table.rows[0].cells[0].text = "Recapito:"
+        table.rows[0].cells[1].text = email
+        header = doc.sections[0].header
+        header.is_linked_to_previous = False
+        header.paragraphs[0].text = f"Il sottoscritto Mario Rossi, email {email}"
+        doc.save(docx_path)
+        source_doc = Document(docx_path)
+
+        result = anonymize_loaded_document(
+            load_document(docx_path),
+            self.engine,
+            mode="maximum",
+            excluded_values=frozenset({("EMAIL_ADDRESS", email)}),
+        )
+        out_docx = self.base / result.filename
+        out_docx.write_bytes(result.data)
+        output_doc = Document(out_docx)
+
+        # (a) Excluded email in clear everywhere; name anonymized in body and header.
+        output_paragraph = output_doc.paragraphs[0]
+        self.assertEqual(output_paragraph.text, f"Il sottoscritto <PERSONA> con recapito {email}")
+        self.assertEqual(output_doc.tables[0].rows[0].cells[1].text, email)
+        header_text = output_doc.sections[0].header.paragraphs[0].text
+        self.assertIn(email, header_text)
+        self.assertIn("<PERSONA>", header_text)
+        self.assertNotIn("Mario Rossi", header_text)
+
+        # (b) Run formatting preserved on the anonymized and untouched runs.
+        self.assertTrue(any(run.bold and run.text == "<PERSONA>" for run in output_paragraph.runs))
+        self.assertTrue(any(run.italic and run.text == " con recapito " for run in output_paragraph.runs))
+
+        # (c) Structure intact: paragraphs, table shape, run count.
+        self.assertEqual(len(output_doc.paragraphs), len(source_doc.paragraphs))
+        self.assertEqual(len(output_doc.tables[0].rows), len(source_doc.tables[0].rows))
+        self.assertEqual(len(output_doc.tables[0].rows[0].cells), len(source_doc.tables[0].rows[0].cells))
+        self.assertEqual(len(output_paragraph.runs), len(source_doc.paragraphs[0].runs))
+
+        # (d) Raw XML: no included value left anywhere, excluded value still present.
+        with zipfile.ZipFile(BytesIO(result.data)) as package:
+            header_parts = [name for name in package.namelist() if name.startswith("word/header")]
+            self.assertTrue(header_parts)
+            for part_name in ["word/document.xml", *header_parts]:
+                payload = package.read(part_name)
+                self.assertNotIn("Mario Rossi".encode("utf-8"), payload)
+                self.assertIn(email.encode("utf-8"), payload)
+
+    def test_docx_reversible_mode_keeps_excluded_values_out_of_the_mapping(self) -> None:
+        email = "mario@example.com"
+        docx_path = self.base / "reversibile_esclusioni.docx"
+        doc = Document()
+        doc.add_paragraph(f"Il sottoscritto Mario Rossi email {email}")
+        doc.save(docx_path)
+
+        result = anonymize_loaded_document(
+            load_document(docx_path),
+            self.engine,
+            mode="reversible",
+            excluded_values=frozenset({("EMAIL_ADDRESS", email)}),
+        )
+        out_docx = self.base / result.filename
+        out_docx.write_bytes(result.data)
+        output_text = "\n".join(paragraph.text for paragraph in Document(out_docx).paragraphs)
+
+        self.assertIn("<PERSONA_1>", output_text)
+        self.assertIn(email, output_text)
+        self.assertNotIn("Mario Rossi", output_text)
+        self.assertNotIn(email, [entry.value for entry in result.reversible_mapping])
+        self.assertIn("Mario Rossi", [entry.value for entry in result.reversible_mapping])
+        self.assertIn(email, result.text)
+        self.assertNotIn("<EMAIL_1>", result.text)
+
+    def test_pdf_native_honors_value_exclusions_on_final_file(self) -> None:
+        import pypdfium2 as pdfium
+
+        email = "mario@example.com"
+        pdf_path = self.base / "esclusioni.pdf"
+        pdf = canvas.Canvas(str(pdf_path), pagesize=(612, 792))
+        pdf.setFont("Helvetica", 14)
+        pdf.drawString(72, 720, "Il sottoscritto Mario Rossi")
+        pdf.drawString(72, 650, f"Contatto: {email}")
+        pdf.save()
+
+        result = anonymize_loaded_document(
+            load_document(pdf_path),
+            self.engine,
+            mode="maximum",
+            excluded_values=frozenset({("EMAIL_ADDRESS", email)}),
+        )
+
+        # (a) Valid PDF, same page count; (c) no extractable text (rasterized by design).
+        reader = PdfReader(BytesIO(result.data))
+        self.assertEqual(len(reader.pages), 1)
+        self.assertTrue(result.data.startswith(b"%PDF"))
+        self.assertFalse("".join(page.extract_text() or "" for page in reader.pages).strip())
+
+        # (b) Charbox coordinates from the SOURCE pdf, pixels checked on the output render.
+        source_pdf = pdfium.PdfDocument(str(pdf_path))
+        try:
+            text_page = source_pdf[0].get_textpage()
+            page_text = text_page.get_text_range()
+            name_box = self._merged_charbox(text_page, page_text, "Mario Rossi")
+            email_box = self._merged_charbox(text_page, page_text, email)
+        finally:
+            source_pdf.close()
+
+        self.assertLess(self._region_mean_intensity(result.data, name_box, 792), 30)
+        self.assertGreater(self._region_mean_intensity(result.data, email_box, 792), 120)
+
+    def test_pdf_ocr_exclusion_with_spacing_mismatch_stays_redacted(self) -> None:
+        from PIL import Image
+
+        image = Image.new("RGB", (20, 20), "white")
+        image_data = BytesIO()
+        image.save(image_data, format="PNG")
+        image_data.seek(0)
+        pdf_path = self.base / "scansione_esclusioni.pdf"
+        pdf = canvas.Canvas(str(pdf_path), pagesize=(200, 200))
+        pdf.drawImage(ImageReader(image_data), 20, 20, width=160, height=160)
+        pdf.save()
+
+        ocr_text = OcrPageText(
+            text="Il sottoscritto Mario Rossi",
+            words=[
+                OcrWord("Mario", 16, 21, 250, 300, 295, 330),
+                OcrWord("Rossi", 22, 27, 300, 300, 340, 330),
+            ],
+        )
+        with patch.object(document_service, "_tesseract_available", return_value=True):
+            with patch.object(document_service, "_ocr_pdfium_page", return_value=ocr_text):
+                loaded = load_document(pdf_path)
+            with patch.object(document_service, "_ocr_image", return_value=ocr_text):
+                # Il valore escluso ha una spaziatura diversa da quella vista dall'OCR:
+                # il confronto esatto fallisce e il dato deve restare redatto (fail-closed).
+                result = anonymize_loaded_document(
+                    loaded,
+                    self.engine,
+                    mode="maximum",
+                    excluded_values=frozenset({("PERSON", "Mario  Rossi")}),
+                )
+
+        self.assertLess(self._rendered_pixel(result.data, 270, 315), 10)
+        self.assertLess(self._rendered_pixel(result.data, 320, 315), 10)
+
+    @staticmethod
+    def _merged_charbox(text_page, page_text: str, value: str) -> tuple[float, float, float, float]:
+        start = page_text.index(value)
+        boxes = [
+            text_page.get_charbox(index)
+            for index in range(start, start + len(value))
+            if not page_text[index].isspace()
+        ]
+        return (
+            min(box[0] for box in boxes),
+            min(box[1] for box in boxes),
+            max(box[2] for box in boxes),
+            max(box[3] for box in boxes),
+        )
+
+    @staticmethod
+    def _region_mean_intensity(pdf_data: bytes, box: tuple[float, float, float, float], page_height: float) -> float:
+        import pypdfium2 as pdfium
+        from PIL import ImageStat
+
+        document = pdfium.PdfDocument(pdf_data)
+        bitmap = document[0].render(scale=2)
+        try:
+            image = bitmap.to_pil().convert("L")
+        finally:
+            bitmap.close()
+            document.close()
+        left, bottom, right, top = box
+        crop = image.crop(
+            (int(left * 2), int((page_height - top) * 2), int(right * 2) + 1, int((page_height - bottom) * 2) + 1)
+        )
+        return ImageStat.Stat(crop).mean[0]
+
+    @staticmethod
+    def _rendered_pixel(pdf_data: bytes, x: int, y: int) -> int:
+        import pypdfium2 as pdfium
+
+        document = pdfium.PdfDocument(pdf_data)
+        bitmap = document[0].render(scale=2)
+        try:
+            pixel = bitmap.to_pil().convert("RGB").getpixel((x, y))
+        finally:
+            bitmap.close()
+            document.close()
+        return max(pixel)
 
     def test_txt_reversible_mode_returns_mapping_for_local_restore(self) -> None:
         txt_path = self.base / "reversibile.txt"

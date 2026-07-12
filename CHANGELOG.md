@@ -2,6 +2,14 @@
 
 Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
+## [In sviluppo]
+
+### Aggiunto
+- Esclusione dei dati rilevati anche su documenti DOCX e PDF: le caselle del pannello "Dati rilevati" ora funzionano con un documento caricato, mantenendo il formato in uscita (DOCX resta formattato, PDF resta redatto). Su questi formati l'esclusione vale per tutte le occorrenze dello stesso valore; sui PDF scansionati (OCR) un'esclusione non riconosciuta lascia comunque il dato anonimizzato, per sicurezza.
+
+### Corretto
+- Indirizzi con CAP a 5 cifre: "Via Garibaldi 45, 00185 Roma" veniva rilevato solo fino a "0018", lasciando "5 Roma" in chiaro dopo l'anonimizzazione.
+
 ## [0.4.0] - Redesign Dark Pro
 
 ### Aggiunto

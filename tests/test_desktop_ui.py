@@ -207,7 +207,7 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         self.assertEqual(len(self.window._checked_findings()), 0)
         self.assertIn("35 esclusi", group_item.text())
 
-    def test_extract_document_as_text_reenables_manual_filtering(self) -> None:
+    def test_extract_document_as_text_reenables_manual_add(self) -> None:
         loaded = LoadedDocument(
             path=Path("relazione.docx"),
             text="Mario Rossi lavora presso Acme S.p.A.",
@@ -215,12 +215,75 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         )
         self.window.loaded_document = loaded
         self.window.input_text.setPlainText(loaded.text)
-        self.assertFalse(self.window._manual_filter_supported())
+        self.assertFalse(self.window._manual_add_supported())
+        self.assertTrue(self.window._selection_filter_supported())
+        self.assertTrue(self.window._value_level_selection_active())
 
         self.window._extract_document_as_text()
 
         self.assertIsNone(self.window.loaded_document)
-        self.assertTrue(self.window._manual_filter_supported())
+        self.assertTrue(self.window._manual_add_supported())
+        self.assertFalse(self.window._value_level_selection_active())
+
+    def _load_fake_document_with_findings(
+        self, extension: str, text: str, findings: list[Finding]
+    ) -> None:
+        """Puts the window in the state _load_document_from_path + analysis would leave,
+        without touching the filesystem or the real recognizer."""
+        self.window.loaded_document = LoadedDocument(
+            path=Path(f"documento{extension}"), text=text, extension=extension
+        )
+        self.window.input_text.setPlainText(text)
+        self.window.document_text_dirty = False
+        self.window.findings = findings
+        self.window.findings_stale = False
+        self.window._findings_source_text = text
+        self.window._findings_mode = self.window._selected_mode()
+        self.window._fill_table()
+        self.window._sync_action_state()
+
+    def test_docx_value_level_toggle_propagates_to_same_value_rows(self) -> None:
+        email = "mario@example.com"
+        text = f"{email} scrive a laura@example.com poi ancora {email}"
+        second = text.index(email, 1)
+        other = text.index("laura@example.com")
+        findings = [
+            Finding("EMAIL_ADDRESS", 0, len(email), 0.98),
+            Finding("EMAIL_ADDRESS", other, other + len("laura@example.com"), 0.98),
+            Finding("EMAIL_ADDRESS", second, second + len(email), 0.98),
+        ]
+        self._load_fake_document_with_findings(".docx", text, findings)
+        panel = self.window.findings_panel
+
+        self.assertTrue(self.window._value_level_selection_active())
+        first_item = panel._index_to_item[0]
+        self.assertTrue(first_item.flags() & Qt.ItemIsUserCheckable)
+        self.assertEqual(self.window.primary_button.text(), "Anonimizza 3 dati")
+        self.assertFalse(panel.notice_frame.isHidden())
+        self.assertIn("puoi escludere i dati rilevati con le caselle", panel.notice_label.text())
+
+        first_item.setCheckState(Qt.Unchecked)
+
+        self.assertEqual(panel.included_mask(), [False, True, False])
+        self.assertEqual(len(self.window._checked_findings()), 1)
+        self.assertEqual(self.window.primary_button.text(), "Anonimizza 1 dato")
+
+    def test_plain_text_toggle_stays_per_occurrence(self) -> None:
+        email = "mario@example.com"
+        text = f"{email} e di nuovo {email}"
+        second = text.index(email, 1)
+        findings = [
+            Finding("EMAIL_ADDRESS", 0, len(email), 0.98),
+            Finding("EMAIL_ADDRESS", second, second + len(email), 0.98),
+        ]
+        self._set_synthetic_findings(text, findings)
+        panel = self.window.findings_panel
+
+        self.assertFalse(self.window._value_level_selection_active())
+        panel._index_to_item[0].setCheckState(Qt.Unchecked)
+
+        self.assertEqual(panel.included_mask(), [False, True])
+        self.assertEqual(len(self.window._checked_findings()), 1)
 
 
 if __name__ == "__main__":

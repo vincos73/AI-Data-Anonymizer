@@ -180,6 +180,7 @@ class FindingsPanel(QFrame):
         self._findings: list[Finding] = []
         self._source_text: str = ""
         self._checkable: bool = True
+        self._value_level: bool = False
         self._included: list[bool] = []
         self._selected_index: int | None = None
         self._filter_category: str = "Tutti"
@@ -239,13 +240,14 @@ class FindingsPanel(QFrame):
         header_layout.addLayout(top_row)
         header_layout.addLayout(pill_row)
 
-        # ---- Unsupported-format notice (PDF/DOCX) ----
+        # ---- PDF/DOCX notice: value-level exclusions on, manual add requires extraction ----
         self.notice_frame = QFrame()
         self.notice_frame.setObjectName("UnsupportedNotice")
         self.notice_label = QLabel(
-            "La selezione manuale non è disponibile su PDF e DOCX: viene anonimizzato tutto ciò "
-            "che è rilevato. Per scegliere manualmente, estrai il contenuto come testo (il "
-            "salvataggio sarà in .txt)."
+            "Su PDF e DOCX puoi escludere i dati rilevati con le caselle: l'esclusione vale per "
+            "tutte le occorrenze dello stesso valore. Per aggiungere selezioni manuali usa "
+            "Estrai come testo. Sui PDF scansionati (OCR) alcune esclusioni possono non "
+            "applicarsi: in quel caso il dato resta comunque anonimizzato."
         )
         self.notice_label.setObjectName("UnsupportedNoticeLabel")
         self.notice_label.setWordWrap(True)
@@ -294,10 +296,21 @@ class FindingsPanel(QFrame):
 
     # ------------------------------------------------------------- public API
 
-    def set_findings(self, findings: list[Finding], source_text: str, checkable: bool) -> None:
+    def set_findings(
+        self,
+        findings: list[Finding],
+        source_text: str,
+        checkable: bool,
+        *,
+        value_level: bool = False,
+    ) -> None:
+        """When value_level is True (loaded .docx/.pdf) toggling a row propagates the new
+        state to every finding with the same (entity_type, exact value) pair, because the
+        document pipeline can only exclude by exact value, not by occurrence."""
         self._findings = list(findings)
         self._source_text = source_text
         self._checkable = checkable
+        self._value_level = value_level
         self._included = [True] * len(self._findings)
         self._selected_index = None
         self._filter_category = "Tutti"
@@ -317,6 +330,7 @@ class FindingsPanel(QFrame):
     def clear(self) -> None:
         self._findings = []
         self._source_text = ""
+        self._value_level = False
         self._included = []
         self._selected_index = None
         self._filter_category = "Tutti"
@@ -422,6 +436,12 @@ class FindingsPanel(QFrame):
     def _value_text(self, index: int) -> str:
         finding = self._findings[index]
         return self._source_text[finding.start : finding.end].replace("\n", " ").strip()
+
+    def _raw_value(self, index: int) -> str:
+        """Exact document slice for a finding: the same string the value-level exclusion
+        pipeline compares against (no normalization, fail-closed by design)."""
+        finding = self._findings[index]
+        return self._source_text[finding.start : finding.end]
 
     def _visible_indices(self) -> list[int]:
         search = self._search_text.strip().lower()
@@ -575,6 +595,16 @@ class FindingsPanel(QFrame):
         item_label = "elemento" if total == 1 else "elementi"
         self.counter_label.setText(f"{total} {item_label}")
 
+    def _same_value_indices(self, indices: list[int]) -> list[int]:
+        """Expand a set of finding indices to every finding sharing the same
+        (entity_type, exact value) pair — used in value-level (docx/pdf) mode."""
+        pairs = {(self._findings[i].entity_type, self._raw_value(i)) for i in indices}
+        return [
+            i
+            for i, finding in enumerate(self._findings)
+            if (finding.entity_type, self._raw_value(i)) in pairs
+        ]
+
     def _on_item_changed(self, item: QStandardItem) -> None:
         if self._updating_model or item.column() != 0:
             return
@@ -583,11 +613,15 @@ class FindingsPanel(QFrame):
             return
         new_state = item.checkState()
         included_value = new_state != Qt.Unchecked
+        is_group = bool(item.data(ROLE_IS_GROUP))
+        target_indices = list(indices)
+        if self._value_level and not is_group:
+            target_indices = self._same_value_indices(indices)
         self._updating_model = True
         try:
-            for idx in indices:
+            for idx in target_indices:
                 self._included[idx] = included_value
-            if item.data(ROLE_IS_GROUP):
+            if is_group:
                 for row in range(item.rowCount()):
                     child = item.child(row, 0)
                     if child is None:
@@ -596,11 +630,23 @@ class FindingsPanel(QFrame):
                         child.setData(Qt.Checked if included_value else Qt.Unchecked, Qt.CheckStateRole)
                     child.setData(included_value, ROLE_INCLUDED)
                 self._refresh_group_item(item)
+                item.setData(included_value, ROLE_INCLUDED)
             else:
-                parent = item.parent()
-                if parent is not None:
+                touched: dict[int, QStandardItem] = {id(item): item}
+                for idx in target_indices:
+                    other = self._index_to_item.get(idx)
+                    if other is not None:
+                        touched[id(other)] = other
+                parents: dict[int, QStandardItem] = {}
+                for row_item in touched.values():
+                    if self._checkable:
+                        row_item.setData(Qt.Checked if included_value else Qt.Unchecked, Qt.CheckStateRole)
+                    row_item.setData(included_value, ROLE_INCLUDED)
+                    parent = row_item.parent()
+                    if parent is not None:
+                        parents[id(parent)] = parent
+                for parent in parents.values():
                     self._refresh_group_item(parent)
-            item.setData(included_value, ROLE_INCLUDED)
         finally:
             self._updating_model = False
         self.tree.viewport().update()

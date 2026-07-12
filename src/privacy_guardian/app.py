@@ -52,6 +52,7 @@ from privacy_guardian.document_service import (
     AnonymizedDocument,
     LoadedDocument,
     anonymize_loaded_document,
+    excluded_value_pairs,
     load_document,
 )
 from privacy_guardian.entity_categories import entity_color
@@ -753,7 +754,8 @@ class MainWindow(QMainWindow):
                 )
                 self.statusBar().showMessage(
                     "PDF scansionato letto con OCR locale. Controlla sempre il risultato OCR prima di condividere. "
-                    "Per questo formato la selezione manuale non è ancora supportata.",
+                    "Puoi escludere i dati rilevati con le caselle; sulle scansioni alcune esclusioni possono "
+                    "non applicarsi e il dato resta anonimizzato.",
                     8000,
                 )
             else:
@@ -763,13 +765,20 @@ class MainWindow(QMainWindow):
                 )
                 self.statusBar().showMessage(
                     "PDF caricato. L'anonimizzazione salverà una copia redatta non selezionabile. "
-                    "Per questo formato la selezione manuale non è ancora supportata.",
+                    "Puoi escludere i dati rilevati con le caselle.",
                     7000,
                 )
-        elif self.loaded_document.extension in {".docx", ".doc"}:
+        elif self.loaded_document.extension == ".docx":
             self.document_label.setText(f"Documento caricato: {self.loaded_document.path.name}")
             self.statusBar().showMessage(
-                "Documento caricato. Per questo formato la selezione manuale non è ancora supportata: "
+                "Documento caricato. Puoi escludere i dati rilevati con le caselle; "
+                "per aggiungere selezioni manuali usa Estrai come testo.",
+                7000,
+            )
+        elif self.loaded_document.extension == ".doc":
+            self.document_label.setText(f"Documento caricato: {self.loaded_document.path.name}")
+            self.statusBar().showMessage(
+                "Documento caricato. Per il formato .doc la selezione non è supportata: "
                 "verrà anonimizzato tutto ciò che viene rilevato.",
                 7000,
             )
@@ -812,10 +821,19 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Incolla un testo o carica un documento prima di anonimizzare.", 5000)
             return
         if self.loaded_document and not self.document_text_dirty:
-            manual_filter_supported = self._manual_filter_supported()
-            filtered_findings = (
-                self._checked_findings() if self._findings_ready_for_filtering() else None
-            )
+            manual_add_supported = self._manual_add_supported()
+            findings_ready = self._findings_ready_for_filtering()
+            filtered_findings = self._checked_findings() if findings_ready else None
+            excluded_values: frozenset[tuple[str, str]] | None = None
+            if findings_ready and self._value_level_selection_active():
+                # Fail-closed: le coppie (tipo, valore) escluse si calcolano da findings
+                # completi + maschera completa, MAI dalla lista già filtrata.
+                pairs = excluded_value_pairs(
+                    self.input_text.toPlainText(),
+                    self.findings,
+                    self.findings_panel.included_mask(),
+                )
+                excluded_values = pairs or None
             try:
                 self.anonymized_document = anonymize_loaded_document(
                     self.loaded_document,
@@ -823,6 +841,7 @@ class MainWindow(QMainWindow):
                     mode,
                     reversible_entries=self.loaded_reversible_entries,
                     findings=filtered_findings,
+                    excluded_values=excluded_values,
                 )
             except Exception as exc:
                 self.anonymized_document = None
@@ -841,7 +860,7 @@ class MainWindow(QMainWindow):
             self._update_report()
             self._record_activity("anonymization", output_data=self.anonymized_document.data)
             unsupported_note = (
-                " Per questo formato la selezione manuale non è ancora supportata." if not manual_filter_supported else ""
+                " Per aggiungere selezioni manuali usa Estrai come testo." if not manual_add_supported else ""
             )
             if self.reversible_mapping:
                 self.statusBar().showMessage(
@@ -1070,10 +1089,14 @@ class MainWindow(QMainWindow):
 
     def _fill_table(self) -> None:
         source_text = self.input_text.toPlainText()
-        manual_filter_supported = self._manual_filter_supported()
-        self.findings_panel.set_findings(self.findings, source_text, manual_filter_supported)
+        self.findings_panel.set_findings(
+            self.findings,
+            source_text,
+            self._selection_filter_supported(),
+            value_level=self._value_level_selection_active(),
+        )
         self.findings_panel.set_unsupported_notice(
-            not manual_filter_supported and self.loaded_document is not None
+            not self._manual_add_supported() and self.loaded_document is not None
         )
 
     def _highlight_findings(self) -> None:
@@ -1150,10 +1173,26 @@ class MainWindow(QMainWindow):
         self._sync_action_state()
         self.statusBar().showMessage("Contenuto estratto come testo modificabile.", 4000)
 
-    def _manual_filter_supported(self) -> bool:
+    def _selection_filter_supported(self) -> bool:
+        """Le caselle di esclusione sono attive: per testo/testo estratto (per occorrenza)
+        e per .docx/.pdf caricati (per valore esatto)."""
+        if self.loaded_document is None or self.document_text_dirty:
+            return True
+        return self.loaded_document.extension in {".txt", ".md", ".csv", ".docx", ".pdf"}
+
+    def _manual_add_supported(self) -> bool:
+        """Il bottone "Aggiungi selezione" resta limitato ai formati testuali."""
         if self.loaded_document is None or self.document_text_dirty:
             return True
         return self.loaded_document.extension in {".txt", ".md", ".csv"}
+
+    def _value_level_selection_active(self) -> bool:
+        """True quando le esclusioni si applicano per valore esatto (documento .docx/.pdf caricato)."""
+        return (
+            self.loaded_document is not None
+            and not self.document_text_dirty
+            and self.loaded_document.extension in {".docx", ".pdf"}
+        )
 
     def _document_filter(self) -> str:
         extensions = "*.txt *.md *.csv *.docx *.pdf"
@@ -1243,7 +1282,7 @@ class MainWindow(QMainWindow):
         self.copy_button.setEnabled(output_has_text)
         self.save_button.setEnabled(output_has_text or self.anonymized_document is not None)
         self.clear_button.setEnabled(has_anything)
-        self.add_selection_button.setEnabled(input_has_text and self._manual_filter_supported())
+        self.add_selection_button.setEnabled(input_has_text and self._manual_add_supported())
         if hasattr(self, "save_map_action"):
             self.save_map_action.setEnabled(bool(self.reversible_mapping))
         self._update_workflow_steps()
