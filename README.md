@@ -10,12 +10,12 @@ La web app esiste solo come opzione avanzata per sviluppatori, demo locali o ins
 
 ## Scarica App Desktop
 
-Ultima versione: **v0.3.0**
+Ultima versione: **v0.4.0**
 
 | Sistema | Download |
 | --- | --- |
-| Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Scarica DMG per macOS](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.3.0/OMISSIS-macOS-Apple-Silicon.dmg) |
-| Windows | [Scarica ZIP per Windows](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.3.0/OMISSIS-Windows.zip) |
+| Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Scarica DMG per macOS](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.4.0/OMISSIS-macOS-Apple-Silicon.dmg) |
+| Windows | [Scarica ZIP per Windows](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.4.0/OMISSIS-Windows.zip) |
 
 Tutti i file sono disponibili nella pagina [Releases](https://github.com/vincos73/AI-Data-Anonymizer/releases).
 
