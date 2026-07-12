@@ -403,6 +403,17 @@ QSplitter::handle {
     width: 14px;
 }
 
+QSplitter#WorkspaceSplitter::handle {
+    height: 10px;
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 0, y2: 1,
+        stop: 0 transparent, stop: 0.46 transparent,
+        stop: 0.5 #232D38,
+        stop: 0.54 transparent, stop: 1 transparent
+    );
+}
+
+/* Registro attività dialog still uses a plain QTableWidget. */
 QTableWidget {
     background: #1A222B;
     color: #E8EDF2;
@@ -436,6 +447,116 @@ QTableWidget::item {
 QTableWidget::item:selected {
     background: #14202B;
     color: #E8EDF2;
+}
+
+/* ---------- Findings panel (Dati rilevati) ---------- */
+
+QLabel#FindingsCounter {
+    color: #5F6F7F;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+QPushButton#FilterPill {
+    background: transparent;
+    color: #AABBCB;
+    border: 1px solid #35414E;
+    border-radius: 99px;
+    padding: 3px 12px;
+    min-height: 22px;
+    font-size: 11.5px;
+    font-weight: 600;
+}
+
+QPushButton#FilterPill:hover {
+    border-color: #4FB8E7;
+    color: #E8EDF2;
+}
+
+QPushButton#FilterPill:checked {
+    background: #4FB8E7;
+    border-color: #4FB8E7;
+    color: #0D1218;
+}
+
+QLineEdit#FindingsSearch {
+    background: #12181F;
+    color: #E8EDF2;
+    border: 1px solid #232D38;
+    border-radius: 7px;
+    padding: 5px 10px;
+    min-height: 22px;
+    font-size: 12px;
+}
+
+QLineEdit#FindingsSearch:focus {
+    border: 1px solid #4FB8E7;
+}
+
+QFrame#UnsupportedNotice {
+    background: #241F10;
+    border: 1px solid #6B5A2B;
+    border-radius: 10px;
+}
+
+QLabel#UnsupportedNoticeLabel {
+    background: transparent;
+    color: #E5C368;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+QPushButton#UnsupportedNoticeButton {
+    background: transparent;
+    color: #E5C368;
+    border: 1px solid #6B5A2B;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+QPushButton#UnsupportedNoticeButton:hover {
+    background: #2E2712;
+    border-color: #E5C368;
+}
+
+QTreeView#FindingsTree {
+    background: #161D25;
+    color: #E8EDF2;
+    border: 1px solid #232D38;
+    border-radius: 10px;
+    outline: 0;
+    show-decoration-selected: 1;
+}
+
+QTreeView#FindingsTree::item {
+    height: 33px;
+    padding: 0 2px;
+    border: 0;
+    border-bottom: 1px solid #1D2531;
+}
+
+QTreeView#FindingsTree::item:hover {
+    background: #1A222B;
+}
+
+QTreeView#FindingsTree::item:selected {
+    background: #14202B;
+    color: #E8EDF2;
+}
+
+QTreeView#FindingsTree::branch {
+    background: transparent;
+    border: 0;
+}
+
+QTreeView#FindingsTree QHeaderView::section {
+    background: #161D25;
+    color: #8899AA;
+    border: 0;
+    border-bottom: 1px solid #232D38;
+    padding: 7px 8px;
+    font-weight: 700;
+    font-size: 10.5px;
 }
 
 QScrollBar:vertical {

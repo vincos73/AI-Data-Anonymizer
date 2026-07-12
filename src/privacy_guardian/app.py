@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QSignalBlocker, QSize, Qt
+from PySide6.QtCore import QEvent, QSignalBlocker, QSize, Qt
 from PySide6.QtGui import (
     QAction,
     QColor,
@@ -54,6 +54,8 @@ from privacy_guardian.document_service import (
     anonymize_loaded_document,
     load_document,
 )
+from privacy_guardian.entity_categories import entity_color
+from privacy_guardian.findings_panel import FindingsPanel
 from privacy_guardian.models import AnonymizationMode, Finding, validate_anonymization_mode
 from privacy_guardian.privacy_engine import PrivacyEngine
 from privacy_guardian.reversible import (
@@ -64,7 +66,7 @@ from privacy_guardian.reversible import (
     restore_text,
     write_encrypted_mapping,
 )
-from privacy_guardian.reporting import ENTITY_LABELS, entity_label, mode_note, report_text, source_label
+from privacy_guardian.reporting import ENTITY_LABELS, entity_label, mode_note, report_text
 from privacy_guardian.styles import APP_STYLE
 
 
@@ -147,6 +149,7 @@ class MainWindow(QMainWindow):
         self._updating_output_text = False
         self.reversible_mapping: tuple[ReversibleMapEntry, ...] = ()
         self.loaded_reversible_entries: tuple[ReversibleMapEntry, ...] = ()
+        self._selected_finding_index: int | None = None
 
         self.setWindowTitle("OMISSIS")
         self.resize(1160, 760)
@@ -157,23 +160,19 @@ class MainWindow(QMainWindow):
         self.input_text.setAcceptDrops(False)
         self.input_text.setPlaceholderText("Incolla qui il testo da controllare oppure carica un documento.")
         self.input_text.textChanged.connect(self._handle_input_text_changed)
+        self.input_text.installEventFilter(self)
+        self.input_text.viewport().installEventFilter(self)
 
         self.output_text = QTextEdit()
         self.output_text.setAcceptDrops(False)
         self.output_text.setPlaceholderText("Il testo anonimizzato apparirà qui.")
         self.output_text.textChanged.connect(self._handle_output_text_changed)
 
-        self.table = QTableWidget(0, 6)
-        self.table.setHorizontalHeaderLabels(
-            ["Includi", "Tipo", "Valore trovato", "Intervallo", "Confidenza", "Origine"]
-        )
-        self.table.verticalHeader().setVisible(False)
-        self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table.setAlternatingRowColors(True)
-        self.table.setShowGrid(False)
-        self.table.verticalHeader().setDefaultSectionSize(34)
-        self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.findings_panel = FindingsPanel()
+        self.findings_panel.finding_selected.connect(self._scroll_editor_to_finding)
+        self.findings_panel.inclusion_changed.connect(self._handle_inclusion_changed)
+        self.findings_panel.selection_cleared.connect(self._handle_selection_cleared)
+        self.findings_panel.extract_as_text_requested.connect(self._extract_document_as_text)
 
         self.version_label = QLabel(f"v{__version__}")
         self.version_label.setObjectName("VersionPill")
@@ -382,16 +381,22 @@ class MainWindow(QMainWindow):
         text_splitter.addWidget(self._panel("Testo anonimizzato", self.output_text))
         text_splitter.setSizes([540, 540])
 
-        findings_title = QLabel("Dati rilevati")
-        findings_title.setObjectName("SectionTitle")
+        self.workspace_splitter = QSplitter(Qt.Vertical)
+        self.workspace_splitter.setObjectName("WorkspaceSplitter")
+        self.workspace_splitter.setHandleWidth(10)
+        self.workspace_splitter.addWidget(text_splitter)
+        self.workspace_splitter.addWidget(self.findings_panel)
+        self.workspace_splitter.setStretchFactor(0, 4)
+        self.workspace_splitter.setStretchFactor(1, 2)
+        self.workspace_splitter.setCollapsible(0, False)
+        self.workspace_splitter.setCollapsible(1, False)
+        self.workspace_splitter.setSizes([560, 280])
 
         main_area_layout = QVBoxLayout()
         main_area_layout.setContentsMargins(22, 18, 22, 16)
         main_area_layout.setSpacing(14)
         main_area_layout.addWidget(document_toolbar)
-        main_area_layout.addWidget(text_splitter, 4)
-        main_area_layout.addWidget(findings_title)
-        main_area_layout.addWidget(self.table, 2)
+        main_area_layout.addWidget(self.workspace_splitter, 1)
 
         main_area = QWidget()
         main_area.setLayout(main_area_layout)
@@ -694,6 +699,22 @@ class MainWindow(QMainWindow):
         self._load_document_from_path(path)
         event.acceptProposedAction()
 
+    def eventFilter(self, obj: QWidget, event) -> bool:  # noqa: ANN001
+        if obj is self.input_text.viewport() and event.type() == QEvent.MouseButtonRelease:
+            if event.button() == Qt.LeftButton and not self.input_text.textCursor().hasSelection():
+                position = self.input_text.cursorForPosition(event.pos()).position()
+                index = self._finding_at_position(position)
+                if index is not None:
+                    self._selected_finding_index = index
+                    self.findings_panel.select_finding(index)
+                else:
+                    self._selected_finding_index = None
+                self._highlight_findings()
+        elif obj is self.input_text and event.type() == QEvent.KeyPress and event.key() == Qt.Key_Escape:
+            self._selected_finding_index = None
+            self._highlight_findings()
+        return super().eventFilter(obj, event)
+
     def _load_document_from_path(self, filename: str | Path) -> None:
         try:
             self.loaded_document = load_document(filename)
@@ -709,7 +730,7 @@ class MainWindow(QMainWindow):
         self.findings_stale = True
         self._findings_source_text = None
         self._findings_mode = None
-        self.table.setRowCount(0)
+        self.findings_panel.clear()
         self._loading_document_text = True
         try:
             signal_blocker = QSignalBlocker(self.input_text)
@@ -778,6 +799,10 @@ class MainWindow(QMainWindow):
         self._fill_table()
         self._highlight_findings()
         self._update_report()
+        # Extra selections don't mutate the document, so unlike the old setCharFormat-based
+        # highlight, _highlight_findings() no longer re-triggers textChanged -> _sync_action_state().
+        # Refresh explicitly so the step-aware primary button/label reflect the new findings.
+        self._sync_action_state()
         return True
 
     def anonymize_text(self) -> None:
@@ -990,11 +1015,12 @@ class MainWindow(QMainWindow):
     def clear_all(self) -> None:
         self.input_text.clear()
         self.output_text.clear()
-        self.table.setRowCount(0)
+        self.findings_panel.clear()
         self.findings = []
         self.findings_stale = True
         self._findings_source_text = ""
         self._findings_mode = None
+        self._selected_finding_index = None
         self.loaded_document = None
         self.anonymized_document = None
         self.document_text_dirty = False
@@ -1039,59 +1065,38 @@ class MainWindow(QMainWindow):
         self._fill_table()
         self._highlight_findings()
         self._update_report()
+        self._sync_action_state()
         self.statusBar().showMessage(f"Aggiunto manualmente: {entity_label(finding.entity_type)}.", 4000)
 
     def _fill_table(self) -> None:
         source_text = self.input_text.toPlainText()
         manual_filter_supported = self._manual_filter_supported()
-        blocker = QSignalBlocker(self.table)
-        try:
-            self.table.setRowCount(len(self.findings))
-            for row, finding in enumerate(self.findings):
-                checkbox_item = QTableWidgetItem()
-                checkbox_item.setCheckState(Qt.Checked)
-                checkbox_item.setFlags(
-                    Qt.ItemIsUserCheckable | Qt.ItemIsEnabled | Qt.ItemIsSelectable
-                    if manual_filter_supported
-                    else Qt.ItemIsSelectable
-                )
-                self.table.setItem(row, 0, checkbox_item)
-
-                values = [
-                    entity_label(finding.entity_type),
-                    self._finding_preview(source_text, finding),
-                    finding.text_range,
-                    f"{finding.score:.2f}",
-                    source_label(finding.source),
-                ]
-                for col, value in enumerate(values, start=1):
-                    item = QTableWidgetItem(value)
-                    item.setFlags(item.flags() ^ Qt.ItemIsEditable)
-                    self.table.setItem(row, col, item)
-        finally:
-            del blocker
-        self.table.resizeColumnsToContents()
-        self.table.horizontalHeader().setStretchLastSection(True)
+        self.findings_panel.set_findings(self.findings, source_text, manual_filter_supported)
+        self.findings_panel.set_unsupported_notice(
+            not manual_filter_supported and self.loaded_document is not None
+        )
 
     def _highlight_findings(self) -> None:
-        cursor = self.input_text.textCursor()
-        cursor.select(QTextCursor.Document)
-        cursor.setCharFormat(QTextCharFormat())
-
-        highlight = QTextCharFormat()
-        highlight.setBackground(QColor(79, 184, 231, 70))  # accent #4FB8E7 at low opacity
-
+        selections = []
         for row, finding in enumerate(self.findings):
             if not self._is_row_checked(row):
                 continue
-            cursor = self.input_text.textCursor()
+            color = QColor(entity_color(finding.entity_type))
+            color.setAlpha(72 if row == self._selected_finding_index else 40)
+            char_format = QTextCharFormat()
+            char_format.setBackground(color)
+            cursor = QTextCursor(self.input_text.document())
             cursor.setPosition(finding.start)
             cursor.setPosition(finding.end, QTextCursor.KeepAnchor)
-            cursor.setCharFormat(highlight)
+            selection = QTextEdit.ExtraSelection()
+            selection.cursor = cursor
+            selection.format = char_format
+            selections.append(selection)
+        self.input_text.setExtraSelections(selections)
 
     def _is_row_checked(self, row: int) -> bool:
-        item = self.table.item(row, 0)
-        return item is None or item.checkState() == Qt.Checked
+        mask = self.findings_panel.included_mask()
+        return row >= len(mask) or mask[row]
 
     def _checked_findings(self) -> list[Finding]:
         return [finding for row, finding in enumerate(self.findings) if self._is_row_checked(row)]
@@ -1099,10 +1104,51 @@ class MainWindow(QMainWindow):
     def _findings_ready_for_filtering(self) -> bool:
         return (
             bool(self.findings)
-            and self.table.rowCount() == len(self.findings)
+            and len(self.findings_panel.included_mask()) == len(self.findings)
             and not self.findings_stale
             and self._findings_mode == self._selected_mode()
         )
+
+    def _finding_at_position(self, position: int) -> int | None:
+        candidates = [
+            (finding.end - finding.start, index)
+            for index, finding in enumerate(self.findings)
+            if finding.start <= position < finding.end
+        ]
+        if not candidates:
+            return None
+        candidates.sort()
+        return candidates[0][1]
+
+    def _scroll_editor_to_finding(self, index: int) -> None:
+        if not (0 <= index < len(self.findings)):
+            return
+        self._selected_finding_index = index
+        cursor = self.input_text.textCursor()
+        cursor.setPosition(self.findings[index].start)
+        self.input_text.setTextCursor(cursor)
+        self.input_text.ensureCursorVisible()
+        self._highlight_findings()
+
+    def _handle_inclusion_changed(self) -> None:
+        self._sync_action_state()
+        self._highlight_findings()
+
+    def _handle_selection_cleared(self) -> None:
+        self._selected_finding_index = None
+        self._highlight_findings()
+
+    def _extract_document_as_text(self) -> None:
+        self.loaded_document = None
+        self.anonymized_document = None
+        self.document_text_dirty = False
+        self.document_label.setText(
+            "Contenuto estratto come testo: la selezione manuale è attiva, il salvataggio sarà in .txt."
+        )
+        if self.findings:
+            self._fill_table()
+        self._sync_action_state()
+        self.statusBar().showMessage("Contenuto estratto come testo modificabile.", 4000)
 
     def _manual_filter_supported(self) -> bool:
         if self.loaded_document is None or self.document_text_dirty:
@@ -1186,12 +1232,6 @@ class MainWindow(QMainWindow):
             if url.isLocalFile():
                 return Path(url.toLocalFile())
         return None
-
-    def _finding_preview(self, source_text: str, finding: Finding) -> str:
-        preview = source_text[finding.start : finding.end].replace("\n", " ").strip()
-        if len(preview) > 80:
-            return f"{preview[:77]}..."
-        return preview
 
     def _sync_action_state(self) -> None:
         input_has_text = bool(self.input_text.toPlainText().strip())
