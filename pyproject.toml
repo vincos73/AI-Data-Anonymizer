@@ -48,4 +48,4 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-privacy_guardian = ["assets/*.svg", "web_static/*"]
+privacy_guardian = ["assets/*.svg", "assets/fonts/*.ttf", "assets/fonts/OFL.txt", "web_static/*"]

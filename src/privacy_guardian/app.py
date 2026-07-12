@@ -4,10 +4,21 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QSignalBlocker, QSize, Qt
-from PySide6.QtGui import QAction, QColor, QDragEnterEvent, QDropEvent, QPixmap, QTextCharFormat, QTextCursor
+from PySide6.QtGui import (
+    QAction,
+    QColor,
+    QDragEnterEvent,
+    QDropEvent,
+    QFontDatabase,
+    QMouseEvent,
+    QPainter,
+    QPixmap,
+    QTextCharFormat,
+    QTextCursor,
+)
 from PySide6.QtWidgets import (
     QApplication,
-    QComboBox,
+    QButtonGroup,
     QDialog,
     QFileDialog,
     QFrame,
@@ -18,6 +29,8 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QPushButton,
+    QRadioButton,
+    QScrollArea,
     QSplitter,
     QTableWidget,
     QTableWidgetItem,
@@ -76,6 +89,48 @@ def _asset_path(filename: str) -> Path:
     return candidates[0]
 
 
+def _tinted_pixmap(pixmap: QPixmap, color: QColor) -> QPixmap:
+    """Recolor a pixmap's opaque pixels to a flat color, keeping its alpha mask.
+
+    The bundled wordmark SVG renders dark text meant for a light background; on the
+    Dark Pro theme it would be nearly invisible, so we re-tint it (e.g. to white)
+    while preserving its silhouette.
+    """
+    if pixmap.isNull():
+        return pixmap
+    tinted = QPixmap(pixmap.size())
+    tinted.setDevicePixelRatio(pixmap.devicePixelRatio())
+    tinted.fill(Qt.transparent)
+    painter = QPainter(tinted)
+    painter.drawPixmap(0, 0, pixmap)
+    painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+    painter.fillRect(tinted.rect(), color)
+    painter.end()
+    return tinted
+
+
+def _load_app_fonts() -> None:
+    """Register the bundled IBM Plex fonts with Qt's font database."""
+    fonts_dir = _asset_path("fonts")
+    if not fonts_dir.is_dir():
+        return
+    for font_file in sorted(fonts_dir.glob("*.ttf")):
+        QFontDatabase.addApplicationFont(str(_asset_path(f"fonts/{font_file.name}")))
+
+
+class _ClickableCard(QFrame):
+    """A QFrame that forwards left-clicks to an embedded checkable widget (e.g. a radio card)."""
+
+    def __init__(self, target: QRadioButton) -> None:
+        super().__init__()
+        self._target = target
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.LeftButton and self._target.isEnabled():
+            self._target.setChecked(True)
+        super().mousePressEvent(event)
+
+
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -127,63 +182,51 @@ class MainWindow(QMainWindow):
         self.logo_mark_label.setObjectName("BrandMark")
         logo_mark_pixmap = QPixmap(str(_asset_path("omissis-logo.svg")))
         if not logo_mark_pixmap.isNull():
-            self.logo_mark_label.setPixmap(logo_mark_pixmap.scaledToHeight(38, Qt.SmoothTransformation))
-        self.logo_mark_label.setFixedHeight(42)
+            self.logo_mark_label.setPixmap(logo_mark_pixmap.scaledToHeight(30, Qt.SmoothTransformation))
+        self.logo_mark_label.setFixedHeight(32)
 
         self.logo_label = QLabel("OMISSIS")
         self.logo_label.setObjectName("BrandLogo")
         logo_pixmap = QPixmap(str(_asset_path("omissis-logotype.svg")))
         if not logo_pixmap.isNull():
             self.logo_label.setText("")
-            self.logo_label.setPixmap(logo_pixmap.scaledToHeight(42, Qt.SmoothTransformation))
-        self.logo_label.setFixedHeight(48)
+            tinted_logo = _tinted_pixmap(logo_pixmap, QColor("#FFFFFF"))
+            self.logo_label.setPixmap(tinted_logo.scaledToHeight(30, Qt.SmoothTransformation))
+        self.logo_label.setFixedHeight(32)
 
         byline = QLabel("by vincos")
         byline.setObjectName("Byline")
 
         self.local_notice = QLabel("Elaborazione locale · i dati restano sul dispositivo")
         self.local_notice.setObjectName("LocalNotice")
-
-        self.mode_select = QComboBox()
-        self.mode_select.addItem("Massima protezione (consigliata)", "maximum")
-        self.mode_select.addItem("Reversibile con mappa locale", "reversible")
-        self.mode_select.addItem("Standard (più leggibile)", "standard")
-        self.mode_select.setObjectName("ModeSelect")
-        self.mode_select.currentIndexChanged.connect(self._update_mode_notice)
+        self.local_notice.setWordWrap(True)
 
         self.document_label = QLabel("Nessun documento caricato. Puoi incollare testo o trascinare un file nella finestra.")
         self.document_label.setObjectName("DocumentNotice")
         self.document_label.setWordWrap(True)
 
-        self.ner_notice = QLabel(
-            "Riconoscimento nomi ridotto: i nomi senza contesto (es. un nome e cognome isolati) potrebbero non "
-            "essere rilevati. Per il riconoscimento completo installa spaCy con il modello italiano (vedi README)."
-        )
-        self.ner_notice.setObjectName("NerNotice")
+        # Rail hint shown only when the optional local NER model is not installed.
+        self.ner_notice = QLabel("Installa il modello — vedi README")
+        self.ner_notice.setObjectName("NerHint")
         self.ner_notice.setWordWrap(True)
         self.ner_notice.setVisible(not self.engine.ner_active)
 
+        # Kept as internal state (not added to the layout): callers update it via
+        # _update_report()/_update_mode_notice() and it can be surfaced again later.
         self.report_label = QLabel()
         self.report_label.setObjectName("ReportNotice")
         self.report_label.setWordWrap(True)
 
-        self.load_button = QPushButton("01  Carica o trascina file")
+        self.load_button = QPushButton("Carica")
         self.load_button.clicked.connect(self.open_file)
-        self.load_button.setObjectName("WorkflowButton")
+        self.load_button.setObjectName("SecondaryButton")
+        self.load_button.setToolTip("Carica un documento oppure trascinalo nella finestra.")
 
-        self.analyze_button = QPushButton("02  Analizza dati")
-        self.analyze_button.clicked.connect(self.analyze_text)
-        self.analyze_button.setObjectName("WorkflowButton")
-
-        self.anonymize_button = QPushButton("03  Anonimizza")
-        self.anonymize_button.clicked.connect(self.anonymize_text)
-        self.anonymize_button.setObjectName("PrimaryButton")
-
-        self.copy_button = QPushButton("Copia risultato")
+        self.copy_button = QPushButton("Copia")
         self.copy_button.clicked.connect(self.copy_output)
         self.copy_button.setObjectName("SecondaryButton")
 
-        self.save_button = QPushButton("Salva risultato")
+        self.save_button = QPushButton("Salva")
         self.save_button.clicked.connect(self.save_output)
         self.save_button.setObjectName("SecondaryButton")
 
@@ -199,67 +242,142 @@ class MainWindow(QMainWindow):
             "automaticamente, poi clicca qui per aggiungerla manualmente."
         )
 
-        brand_row = QHBoxLayout()
-        brand_row.setContentsMargins(18, 12, 18, 12)
-        brand_row.setSpacing(10)
-        brand_row.addWidget(self.logo_mark_label, 0, Qt.AlignVCenter)
-        brand_row.addWidget(self.logo_label, 0, Qt.AlignVCenter)
-        brand_row.addWidget(byline, 0, Qt.AlignBottom)
-        brand_row.addStretch(1)
-        brand_row.addWidget(self.local_notice, 0, Qt.AlignVCenter)
-        brand_row.addWidget(self.version_label, 0, Qt.AlignVCenter)
+        self.primary_button = QPushButton("Analizza dati")
+        self.primary_button.setObjectName("PrimaryButton")
+        self.primary_button.clicked.connect(self._primary_action)
 
-        brand_panel = QFrame()
-        brand_panel.setObjectName("BrandPanel")
-        brand_panel.setLayout(brand_row)
+        # ---- Rail: brand block ----
+        brand_top_row = QHBoxLayout()
+        brand_top_row.setSpacing(8)
+        brand_top_row.addWidget(self.logo_mark_label, 0, Qt.AlignVCenter)
+        brand_top_row.addWidget(self.logo_label, 0, Qt.AlignVCenter)
+        brand_top_row.addStretch(1)
 
-        button_row = QHBoxLayout()
-        button_row.setContentsMargins(14, 12, 14, 12)
-        button_row.setSpacing(8)
-        for button in (self.load_button, self.analyze_button, self.anonymize_button):
-            button_row.addWidget(button)
-        button_row.addWidget(self.mode_select)
-        button_row.addStretch(1)
-        separator = QFrame()
-        separator.setObjectName("CommandSeparator")
-        separator.setFrameShape(QFrame.VLine)
-        separator.setFixedWidth(1)
-        button_row.addWidget(separator)
-        for button in (self.copy_button, self.save_button, self.clear_button):
-            button_row.addWidget(button)
+        brand_column = QVBoxLayout()
+        brand_column.setSpacing(2)
+        brand_column.addLayout(brand_top_row)
+        brand_column.addWidget(byline)
 
-        command_panel = QFrame()
-        command_panel.setObjectName("CommandPanel")
-        command_panel.setLayout(button_row)
-
-        self.step_pill_labels: list[QLabel] = []
-        step_texts = [
-            "1 · Carica documento",
-            "2 · Analizza dati",
-            "3 · Rivedi selezione (facoltativo)",
-            "4 · Anonimizza e scarica",
+        # ---- Rail: vertical workflow stepper ----
+        self.step_rows: list[QFrame] = []
+        step_definitions = [
+            "Carica documento",
+            "Analizza dati",
+            "Rivedi selezione",
+            "Anonimizza",
         ]
-        stepper_row = QHBoxLayout()
-        stepper_row.setContentsMargins(16, 10, 16, 10)
-        stepper_row.setSpacing(0)
-        for index, step_text in enumerate(step_texts):
-            pill = QLabel(step_text)
-            pill.setObjectName("StepPillPending")
-            pill.setAlignment(Qt.AlignCenter)
-            self.step_pill_labels.append(pill)
-            stepper_row.addWidget(pill)
-            if index < len(step_texts) - 1:
-                connector = QFrame()
-                connector.setObjectName("StepConnector")
-                connector.setFrameShape(QFrame.HLine)
-                connector.setFixedHeight(2)
-                stepper_row.addWidget(connector, 1)
+        stepper_column = QVBoxLayout()
+        stepper_column.setSpacing(6)
+        for index, title in enumerate(step_definitions, start=1):
+            row = self._build_step_row(index, title)
+            self.step_rows.append(row)
+            stepper_column.addWidget(row)
 
-        self.workflow_stepper = QFrame()
-        self.workflow_stepper.setObjectName("WorkflowStepper")
-        self.workflow_stepper.setLayout(stepper_row)
+        # ---- Rail: protection mode radio cards ----
+        self.mode_group = QButtonGroup(self)
+        self.mode_group.setExclusive(True)
+        self.mode_radios: dict[str, QRadioButton] = {}
+        self.mode_cards: dict[str, QFrame] = {}
+        self.mode_descriptions: dict[str, QLabel] = {}
+        mode_options: list[tuple[AnonymizationMode, str]] = [
+            ("maximum", "Massima protezione (consigliata)"),
+            ("reversible", "Reversibile con mappa locale"),
+            ("standard", "Standard (più leggibile)"),
+        ]
+        protection_column = QVBoxLayout()
+        protection_column.setSpacing(8)
+        for mode, title in mode_options:
+            radio = QRadioButton(title)
+            radio.setObjectName("ModeCardRadio")
+
+            description = QLabel(mode_note(mode))
+            description.setObjectName("ModeCardDescription")
+            description.setWordWrap(True)
+
+            card = _ClickableCard(radio)
+            card_layout = QVBoxLayout()
+            card_layout.setContentsMargins(12, 10, 12, 10)
+            card_layout.setSpacing(6)
+            card_layout.addWidget(radio)
+            card_layout.addWidget(description)
+            card.setLayout(card_layout)
+
+            self.mode_group.addButton(radio)
+            self.mode_radios[mode] = radio
+            self.mode_cards[mode] = card
+            self.mode_descriptions[mode] = description
+            protection_column.addWidget(card)
+
+        self.mode_radios["maximum"].setChecked(True)
+        for radio in self.mode_radios.values():
+            radio.toggled.connect(self._handle_mode_toggled)
+
+        # ---- Rail: recognition status ----
+        rules_status = QLabel("Regole ✓")
+        rules_status.setObjectName("StatusOk")
+
+        self.ner_status_label = QLabel("NER attivo" if self.engine.ner_active else "NER non attivo")
+        self.ner_status_label.setObjectName("StatusOk" if self.engine.ner_active else "StatusWarning")
+
+        recognition_column = QVBoxLayout()
+        recognition_column.setSpacing(4)
+        recognition_column.addWidget(rules_status)
+        recognition_column.addWidget(self.ner_status_label)
+        recognition_column.addWidget(self.ner_notice)
+
+        rail_content_layout = QVBoxLayout()
+        rail_content_layout.setContentsMargins(20, 20, 20, 16)
+        rail_content_layout.setSpacing(10)
+        rail_content_layout.addLayout(brand_column)
+        rail_content_layout.addSpacing(8)
+        rail_content_layout.addWidget(self._rail_section_label("FLUSSO"))
+        rail_content_layout.addLayout(stepper_column)
+        rail_content_layout.addWidget(self._rail_section_label("PROTEZIONE"))
+        rail_content_layout.addLayout(protection_column)
+        rail_content_layout.addWidget(self._rail_section_label("RICONOSCIMENTO"))
+        rail_content_layout.addLayout(recognition_column)
+        rail_content_layout.addStretch(1)
+        rail_content_layout.addWidget(self.local_notice)
+        rail_content_layout.addWidget(self.version_label)
+
+        rail_content = QWidget()
+        rail_content.setLayout(rail_content_layout)
+
+        rail_scroll = QScrollArea()
+        rail_scroll.setObjectName("RailScroll")
+        rail_scroll.setWidget(rail_content)
+        rail_scroll.setWidgetResizable(True)
+        rail_scroll.setFrameShape(QFrame.NoFrame)
+        rail_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        rail_outer_layout = QVBoxLayout()
+        rail_outer_layout.setContentsMargins(0, 0, 0, 0)
+        rail_outer_layout.addWidget(rail_scroll)
+
+        rail = QFrame()
+        rail.setObjectName("Rail")
+        rail.setFixedWidth(264)
+        rail.setLayout(rail_outer_layout)
+
+        # ---- Main area: document toolbar ----
+        toolbar_row = QHBoxLayout()
+        toolbar_row.setContentsMargins(16, 0, 16, 0)
+        toolbar_row.setSpacing(8)
+        toolbar_row.addWidget(self.load_button, 0, Qt.AlignVCenter)
+        toolbar_row.addWidget(self.document_label, 1, Qt.AlignVCenter)
+        toolbar_row.addWidget(self.copy_button, 0, Qt.AlignVCenter)
+        toolbar_row.addWidget(self.save_button, 0, Qt.AlignVCenter)
+        toolbar_row.addWidget(self.clear_button, 0, Qt.AlignVCenter)
+        toolbar_row.addWidget(self.add_selection_button, 0, Qt.AlignVCenter)
+        toolbar_row.addWidget(self.primary_button, 0, Qt.AlignVCenter)
+
+        document_toolbar = QFrame()
+        document_toolbar.setObjectName("DocumentToolbar")
+        document_toolbar.setMinimumHeight(56)
+        document_toolbar.setLayout(toolbar_row)
 
         text_splitter = QSplitter(Qt.Horizontal)
+        text_splitter.setHandleWidth(14)
         text_splitter.addWidget(self._panel("Testo originale", self.input_text))
         text_splitter.addWidget(self._panel("Testo anonimizzato", self.output_text))
         text_splitter.setSizes([540, 540])
@@ -267,32 +385,56 @@ class MainWindow(QMainWindow):
         findings_title = QLabel("Dati rilevati")
         findings_title.setObjectName("SectionTitle")
 
-        findings_row = QHBoxLayout()
-        findings_row.setContentsMargins(0, 0, 0, 0)
-        findings_row.addWidget(findings_title)
-        findings_row.addStretch(1)
-        findings_row.addWidget(self.add_selection_button)
+        main_area_layout = QVBoxLayout()
+        main_area_layout.setContentsMargins(22, 18, 22, 16)
+        main_area_layout.setSpacing(14)
+        main_area_layout.addWidget(document_toolbar)
+        main_area_layout.addWidget(text_splitter, 4)
+        main_area_layout.addWidget(findings_title)
+        main_area_layout.addWidget(self.table, 2)
 
-        layout = QVBoxLayout()
-        layout.setContentsMargins(22, 18, 22, 16)
-        layout.setSpacing(12)
-        layout.addWidget(brand_panel)
-        layout.addWidget(command_panel)
-        layout.addWidget(self.workflow_stepper)
-        layout.addWidget(self.document_label)
-        layout.addWidget(self.ner_notice)
-        layout.addWidget(self.report_label)
-        layout.addWidget(text_splitter, 4)
-        layout.addLayout(findings_row)
-        layout.addWidget(self.table, 2)
+        main_area = QWidget()
+        main_area.setLayout(main_area_layout)
+
+        root_layout = QHBoxLayout()
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
+        root_layout.addWidget(rail, 0)
+        root_layout.addWidget(main_area, 1)
 
         container = QWidget()
-        container.setLayout(layout)
+        container.setLayout(root_layout)
         self.setCentralWidget(container)
         self.setStyleSheet(APP_STYLE)
         self._build_menu()
         self._update_mode_notice()
         self._sync_action_state()
+
+    def _rail_section_label(self, text: str) -> QLabel:
+        label = QLabel(text)
+        label.setObjectName("RailSectionLabel")
+        return label
+
+    def _build_step_row(self, index: int, title: str) -> QFrame:
+        row = QFrame()
+        row.setObjectName("StepRowPending")
+
+        dot = QLabel(str(index))
+        dot.setObjectName("StepDot")
+        dot.setAlignment(Qt.AlignCenter)
+        dot.setFixedSize(20, 20)
+
+        title_label = QLabel(title)
+        title_label.setObjectName("StepTitle")
+        title_label.setWordWrap(True)
+
+        row_layout = QHBoxLayout()
+        row_layout.setContentsMargins(10, 8, 10, 8)
+        row_layout.setSpacing(10)
+        row_layout.addWidget(dot, 0, Qt.AlignTop)
+        row_layout.addWidget(title_label, 1)
+        row.setLayout(row_layout)
+        return row
 
     def _panel(self, title: str, widget: QTextEdit) -> QWidget:
         label = QLabel(title)
@@ -368,7 +510,7 @@ class MainWindow(QMainWindow):
             "<b>PDF:</b> i PDF con testo selezionabile vengono esportati come pagine rasterizzate "
             "con oscuramenti permanenti. I PDF scansionati possono essere letti con Tesseract OCR locale "
             "quando è installato; non vengono usati servizi OCR esterni.<br><br>"
-            f'<a style="color:#0089b8;" href="{PROJECT_SECURITY_URL}">Apri la pagina sicurezza su GitHub</a>'
+            f'<a style="color:#4FB8E7;" href="{PROJECT_SECURITY_URL}">Apri la pagina sicurezza su GitHub</a>'
         )
         details.setObjectName("DialogDetails")
         details.setTextFormat(Qt.RichText)
@@ -491,15 +633,16 @@ class MainWindow(QMainWindow):
         logo_pixmap = QPixmap(str(_asset_path("omissis-logotype.svg")))
         if not logo_pixmap.isNull():
             logo.setText("")
-            logo.setPixmap(logo_pixmap.scaledToHeight(34, Qt.SmoothTransformation))
+            tinted_logo = _tinted_pixmap(logo_pixmap, QColor("#FFFFFF"))
+            logo.setPixmap(tinted_logo.scaledToHeight(34, Qt.SmoothTransformation))
 
         details = QLabel(
             f"<b>Versione:</b> {__version__}<br>"
             f"<b>Build:</b> {__version__}<br>"
             "<b>Autore:</b> Vincenzo Cosenza aka Vincos<br>"
-            '<b>Sito web:</b> <a style="color:#0089b8;" href="https://vincos.it">vincos.it</a><br>'
-            f'<b>Repository:</b> <a style="color:#0089b8;" href="{PROJECT_REPO_URL}">GitHub</a><br>'
-            f'<b>Nuove versioni:</b> <a style="color:#0089b8;" href="{PROJECT_RELEASES_URL}">pagina Releases</a><br><br>'
+            '<b>Sito web:</b> <a style="color:#4FB8E7;" href="https://vincos.it">vincos.it</a><br>'
+            f'<b>Repository:</b> <a style="color:#4FB8E7;" href="{PROJECT_REPO_URL}">GitHub</a><br>'
+            f'<b>Nuove versioni:</b> <a style="color:#4FB8E7;" href="{PROJECT_RELEASES_URL}">pagina Releases</a><br><br>'
             "Anonimizzatore locale per documenti italiani."
         )
         details.setObjectName("AboutDetails")
@@ -936,7 +1079,7 @@ class MainWindow(QMainWindow):
         cursor.setCharFormat(QTextCharFormat())
 
         highlight = QTextCharFormat()
-        highlight.setBackground(QColor("#c8edf7"))
+        highlight.setBackground(QColor(79, 184, 231, 70))  # accent #4FB8E7 at low opacity
 
         for row, finding in enumerate(self.findings):
             if not self._is_row_checked(row):
@@ -973,13 +1116,55 @@ class MainWindow(QMainWindow):
         return f"Documenti supportati ({extensions});;Tutti i file (*.*)"
 
     def _selected_mode(self) -> AnonymizationMode:
-        return validate_anonymization_mode(str(self.mode_select.currentData()))
+        for mode, radio in self.mode_radios.items():
+            if radio.isChecked():
+                return validate_anonymization_mode(mode)
+        return "maximum"
+
+    def _handle_mode_toggled(self, checked: bool) -> None:
+        if not checked:
+            return
+        self._update_mode_notice()
+        self._sync_action_state()
+
+    def _refresh_mode_cards(self) -> None:
+        for mode, card in self.mode_cards.items():
+            selected = self.mode_radios[mode].isChecked()
+            object_name = "ModeCardSelected" if selected else "ModeCard"
+            if card.objectName() != object_name:
+                card.setObjectName(object_name)
+                card.style().unpolish(card)
+                card.style().polish(card)
+            self.mode_descriptions[mode].setVisible(selected)
 
     def _update_mode_notice(self, *args) -> None:
         self.report_label.setText(mode_note(self._selected_mode()))
+        self._refresh_mode_cards()
 
     def _update_report(self) -> None:
         self.report_label.setText(report_text(self.findings, self._selected_mode()))
+
+    def _primary_state(self) -> tuple[str, str, bool]:
+        """Return (action_kind, button_label, enabled) for the single step-aware primary button."""
+        input_has_text = bool(self.input_text.toPlainText().strip())
+        output_has_text = bool(self.output_text.toPlainText().strip())
+        output_ready = output_has_text or self.anonymized_document is not None
+        if output_ready:
+            return "copy", "Copia risultato", output_has_text
+        if self._findings_ready_for_filtering() and input_has_text:
+            count = len(self._checked_findings())
+            label = "Anonimizza 1 dato" if count == 1 else f"Anonimizza {count} dati"
+            return "anonymize", label, input_has_text
+        return "analyze", "Analizza dati", input_has_text
+
+    def _primary_action(self) -> None:
+        kind, _label, _enabled = self._primary_state()
+        if kind == "copy":
+            self.copy_output()
+        elif kind == "anonymize":
+            self.anonymize_text()
+        else:
+            self.analyze_text()
 
     def _friendly_error_message(self, exc: Exception) -> str:
         message = str(exc)
@@ -1012,8 +1197,9 @@ class MainWindow(QMainWindow):
         input_has_text = bool(self.input_text.toPlainText().strip())
         output_has_text = bool(self.output_text.toPlainText().strip())
         has_anything = input_has_text or output_has_text or self.loaded_document is not None
-        self.analyze_button.setEnabled(input_has_text)
-        self.anonymize_button.setEnabled(input_has_text)
+        _kind, label, primary_enabled = self._primary_state()
+        self.primary_button.setText(label)
+        self.primary_button.setEnabled(primary_enabled)
         self.copy_button.setEnabled(output_has_text)
         self.save_button.setEnabled(output_has_text or self.anonymized_document is not None)
         self.clear_button.setEnabled(has_anything)
@@ -1041,13 +1227,22 @@ class MainWindow(QMainWindow):
         ]
 
     def _update_workflow_steps(self) -> None:
-        object_names = {"pending": "StepPillPending", "current": "StepPillCurrent", "done": "StepPillDone"}
-        for label, step_state in zip(self.step_pill_labels, self._workflow_step_states()):
+        object_names = {"pending": "StepRowPending", "current": "StepRowCurrent", "done": "StepRowDone"}
+        for row, step_state in zip(self.step_rows, self._workflow_step_states()):
             object_name = object_names[step_state]
-            if label.objectName() != object_name:
-                label.setObjectName(object_name)
-                label.style().unpolish(label)
-                label.style().polish(label)
+            if row.objectName() != object_name:
+                row.setObjectName(object_name)
+                row.style().unpolish(row)
+                row.style().polish(row)
+                for child in row.findChildren(QLabel):
+                    child.style().unpolish(child)
+                    child.style().polish(child)
+                    # The title's font weight changes with state (e.g. bolder when
+                    # done/current), which can change its wrapped height. Without
+                    # invalidating the cached size hints here, the QVBoxLayout keeps
+                    # the geometry computed before the restyle and rows can overlap.
+                    child.updateGeometry()
+                row.updateGeometry()
 
     def _handle_input_text_changed(self) -> None:
         if not self._loading_document_text:
@@ -1161,6 +1356,7 @@ class MainWindow(QMainWindow):
 
 def main() -> int:
     app = QApplication(sys.argv)
+    _load_app_fonts()
     window = MainWindow()
     window.show()
     return app.exec()
