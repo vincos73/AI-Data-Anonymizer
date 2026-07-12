@@ -96,7 +96,9 @@ class ItalianPrivacyRecognizer:
         rf"\b(?i:via|v\.|viale|v\.le|piazza|p\.zza|piazzale|corso|c\.so|vicolo|largo|strada|contrada|"
         rf"localit[aà]|loc\.|frazione)\s+"
         rf"(?:{CAPITAL_WORD}|[A-Z0-9]{{1,5}})(?:\s+(?:{CAPITAL_WORD}|[a-zà-öø-ÿ]{{2,}}|[A-Z0-9]{{1,5}})){{0,7}}"
-        rf"(?:\s*,?\s+\d{{1,4}}[A-Za-z]?)?"
+        # (?![0-9]) impedisce al civico di fermarsi a metà di un CAP a 5 cifre
+        # ("45, 00185 Roma" non deve diventare "45, 0018" lasciando "5 Roma" in chiaro)
+        rf"(?:\s*,?\s+\d{{1,4}}(?![0-9])[A-Za-z]?)?"
         rf"(?:\s*,?\s*(?:\d{{5}}\s+)?{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{0,2}})?",
     )
     ADDRESS_LOWERCASE = re.compile(
