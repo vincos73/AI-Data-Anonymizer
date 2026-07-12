@@ -1,0 +1,9 @@
+@@ -355,7 +355,7 @@
+ 
+         rail = QFrame()
+         rail.setObjectName("Rail")
+-        rail.setFixedWidth(264)
++        rail.setFixedWidth(288)
+         rail.setLayout(rail_outer_layout)
+ 
+         # ---- Main area: document toolbar ----

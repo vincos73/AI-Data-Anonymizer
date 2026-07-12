@@ -74,6 +74,27 @@ QMenu::item:selected {
     color: #4FB8E7;
 }
 
+QComboBox {
+    background: #1A222B;
+    color: #E8EDF2;
+    border: 1px solid #232D38;
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+QComboBox:on {
+    border-color: #4FB8E7;
+}
+
+QComboBox QAbstractItemView {
+    background: #1A222B;
+    color: #E8EDF2;
+    border: 1px solid #232D38;
+    outline: none;
+    selection-background-color: #14202B;
+    selection-color: #4FB8E7;
+}
+
 QStatusBar {
     background: #0D1218;
     color: #8899AA;

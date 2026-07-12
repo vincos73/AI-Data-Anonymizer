@@ -1,0 +1,9 @@
+@@ -434,7 +434,7 @@
+         title_label.setWordWrap(True)
+ 
+         row_layout = QHBoxLayout()
+-        row_layout.setContentsMargins(10, 8, 10, 8)
++        row_layout.setContentsMargins(10, 10, 10, 10)
+         row_layout.setSpacing(10)
+         row_layout.addWidget(dot, 0, Qt.AlignTop)
+         row_layout.addWidget(title_label, 1)

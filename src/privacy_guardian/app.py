@@ -355,7 +355,7 @@ class MainWindow(QMainWindow):
 
         rail = QFrame()
         rail.setObjectName("Rail")
-        rail.setFixedWidth(264)
+        rail.setFixedWidth(288)
         rail.setLayout(rail_outer_layout)
 
         # ---- Main area: document toolbar ----
@@ -434,7 +434,7 @@ class MainWindow(QMainWindow):
         title_label.setWordWrap(True)
 
         row_layout = QHBoxLayout()
-        row_layout.setContentsMargins(10, 8, 10, 8)
+        row_layout.setContentsMargins(10, 10, 10, 10)
         row_layout.setSpacing(10)
         row_layout.addWidget(dot, 0, Qt.AlignTop)
         row_layout.addWidget(title_label, 1)
