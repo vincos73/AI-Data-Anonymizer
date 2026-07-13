@@ -761,8 +761,8 @@ class MainWindow(QMainWindow):
                 )
                 self.statusBar().showMessage(
                     "PDF scansionato letto con OCR locale. Controlla sempre il risultato OCR prima di condividere. "
-                    "Puoi escludere i dati rilevati con le caselle; sulle scansioni alcune esclusioni possono "
-                    "non applicarsi e il dato resta anonimizzato.",
+                    "Puoi escludere i dati rilevati con le caselle e aggiungere selezioni manuali; sulle scansioni "
+                    "alcune esclusioni possono non applicarsi e il dato resta anonimizzato.",
                     8000,
                 )
             else:
@@ -772,14 +772,13 @@ class MainWindow(QMainWindow):
                 )
                 self.statusBar().showMessage(
                     "PDF caricato. L'anonimizzazione salverà una copia redatta non selezionabile. "
-                    "Puoi escludere i dati rilevati con le caselle.",
+                    "Puoi escludere i dati rilevati con le caselle e aggiungere selezioni manuali.",
                     7000,
                 )
         elif self.loaded_document.extension == ".docx":
             self.document_label.setText(f"Documento caricato: {self.loaded_document.path.name}")
             self.statusBar().showMessage(
-                "Documento caricato. Puoi escludere i dati rilevati con le caselle; "
-                "per aggiungere selezioni manuali usa Estrai come testo.",
+                "Documento caricato. Puoi escludere i dati rilevati con le caselle e aggiungere selezioni manuali.",
                 7000,
             )
         elif self.loaded_document.extension == ".doc":
@@ -941,6 +940,17 @@ class MainWindow(QMainWindow):
                     self.findings_panel.included_mask(),
                 )
                 excluded_values = pairs or None
+            extra_values: frozenset[tuple[str, str]] | None = None
+            if findings_ready:
+                # Le selezioni manuali (checked) vengono redatte ovunque compaia lo stesso
+                # valore nel documento, anche se la pipeline .docx/.pdf ri-analizza per parte.
+                source_text = self.input_text.toPlainText()
+                manual_pairs = frozenset(
+                    (finding.entity_type, source_text[finding.start : finding.end])
+                    for row, finding in enumerate(self.findings)
+                    if finding.source == "manual" and self._is_row_checked(row)
+                )
+                extra_values = manual_pairs or None
             try:
                 self.anonymized_document = anonymize_loaded_document(
                     self.loaded_document,
@@ -949,6 +959,7 @@ class MainWindow(QMainWindow):
                     reversible_entries=self.loaded_reversible_entries,
                     findings=filtered_findings,
                     excluded_values=excluded_values,
+                    extra_values=extra_values,
                 )
             except OcrUnavailableError:
                 self.anonymized_document = None
@@ -1294,10 +1305,12 @@ class MainWindow(QMainWindow):
         return self.loaded_document.extension in {".txt", ".md", ".csv", ".docx", ".pdf"}
 
     def _manual_add_supported(self) -> bool:
-        """Il bottone "Aggiungi selezione" resta limitato ai formati testuali."""
+        """Il bottone "Aggiungi selezione" è supportato per i formati testuali e per
+        .docx/.pdf: la pipeline documento redige ogni occorrenza letterale del valore
+        selezionato tramite extra_values. Resta escluso il solo .doc legacy."""
         if self.loaded_document is None or self.document_text_dirty:
             return True
-        return self.loaded_document.extension in {".txt", ".md", ".csv"}
+        return self.loaded_document.extension in {".txt", ".md", ".csv", ".docx", ".pdf"}
 
     def _value_level_selection_active(self) -> bool:
         """True quando le esclusioni si applicano per valore esatto (documento .docx/.pdf caricato)."""

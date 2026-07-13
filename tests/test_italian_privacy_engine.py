@@ -737,6 +737,47 @@ class ExcludedValuePairsTest(unittest.TestCase):
         self.assertEqual(excluded_value_pairs(text, findings, []), frozenset())
 
 
+class AddExtraValueFindingsTest(unittest.TestCase):
+    """_add_extra_value_findings aggiunge un finding per ogni occorrenza letterale di un
+    valore selezionato manualmente, senza duplicare quelle già coperte."""
+
+    def test_adds_a_finding_for_every_occurrence(self) -> None:
+        value = "ABC9988"
+        text = f"Documento {value} rilasciato, copia {value} allegata."
+        result = document_service._add_extra_value_findings(text, [], frozenset({("IDENTITY_DOCUMENT", value)}))
+
+        self.assertEqual(len(result), 2)
+        for finding in result:
+            self.assertEqual(finding.entity_type, "IDENTITY_DOCUMENT")
+            self.assertEqual(text[finding.start : finding.end], value)
+            self.assertEqual(finding.source, "manual")
+
+    def test_skips_occurrence_overlapping_an_existing_finding(self) -> None:
+        email = "mario@example.com"
+        text = f"Contatto: {email}"
+        existing = Finding("EMAIL_ADDRESS", text.index(email), text.index(email) + len(email), 0.98)
+
+        result = document_service._add_extra_value_findings(text, [existing], frozenset({("EMAIL_ADDRESS", email)}))
+
+        self.assertEqual(result, [existing])
+
+    def test_value_not_present_is_a_no_op(self) -> None:
+        text = "Nessun dato sensibile qui."
+        result = document_service._add_extra_value_findings(text, [], frozenset({("PERSON", "Mario Rossi")}))
+        self.assertEqual(result, [])
+
+    def test_case_sensitive_exact_match(self) -> None:
+        text = "valore ABC9988 e abc9988 minuscolo"
+        result = document_service._add_extra_value_findings(text, [], frozenset({("IDENTITY_DOCUMENT", "ABC9988")}))
+        self.assertEqual(len(result), 1)
+        self.assertEqual(text[result[0].start : result[0].end], "ABC9988")
+
+    def test_no_extra_values_returns_findings_unchanged(self) -> None:
+        findings = [Finding("EMAIL_ADDRESS", 0, 5, 0.9)]
+        self.assertEqual(document_service._add_extra_value_findings("hello", findings, None), findings)
+        self.assertEqual(document_service._add_extra_value_findings("hello", findings, frozenset()), findings)
+
+
 class DocumentAnonymizationTest(unittest.TestCase):
     def setUp(self) -> None:
         self.engine = PrivacyEngine()
@@ -1062,6 +1103,137 @@ class DocumentAnonymizationTest(unittest.TestCase):
             bitmap.close()
             document.close()
         return max(pixel)
+
+    def test_pdf_native_redacts_manual_selection_added_via_extra_values(self) -> None:
+        import pypdfium2 as pdfium
+
+        manual_value = "ABC9988"
+        pdf_path = self.base / "selezione_manuale.pdf"
+        pdf = canvas.Canvas(str(pdf_path), pagesize=(612, 792))
+        pdf.setFont("Helvetica", 14)
+        pdf.drawString(72, 720, "Il sottoscritto Mario Rossi")
+        pdf.drawString(72, 690, f"Prima occorrenza: {manual_value}")
+        pdf.drawString(72, 660, f"Seconda occorrenza: {manual_value}")
+        pdf.save()
+
+        result = anonymize_loaded_document(
+            load_document(pdf_path),
+            self.engine,
+            mode="maximum",
+            extra_values=frozenset({("IDENTITY_DOCUMENT", manual_value)}),
+        )
+
+        reader = PdfReader(BytesIO(result.data))
+        self.assertEqual(len(reader.pages), 1)
+        self.assertFalse("".join(page.extract_text() or "" for page in reader.pages).strip())
+
+        source_pdf = pdfium.PdfDocument(str(pdf_path))
+        try:
+            text_page = source_pdf[0].get_textpage()
+            page_text = text_page.get_text_range()
+            name_box = self._merged_charbox(text_page, page_text, "Mario Rossi")
+            first_start = page_text.index(manual_value)
+            second_start = page_text.index(manual_value, first_start + 1)
+            first_box = self._merged_charbox_at(text_page, page_text, first_start, len(manual_value))
+            second_box = self._merged_charbox_at(text_page, page_text, second_start, len(manual_value))
+        finally:
+            source_pdf.close()
+
+        self.assertLess(self._region_mean_intensity(result.data, name_box, 792), 30)
+        self.assertLess(self._region_mean_intensity(result.data, first_box, 792), 30)
+        self.assertLess(self._region_mean_intensity(result.data, second_box, 792), 30)
+
+    def test_docx_redacts_manual_selection_in_bold_run_and_table_cell(self) -> None:
+        manual_value = "ABC9988"
+        docx_path = self.base / "selezione_manuale.docx"
+        doc = Document()
+        paragraph = doc.add_paragraph("Documento numero ")
+        bold_run = paragraph.add_run(manual_value)
+        bold_run.bold = True
+        table = doc.add_table(rows=1, cols=2)
+        table.rows[0].cells[0].text = "Riferimento:"
+        table.rows[0].cells[1].text = manual_value
+        doc.save(docx_path)
+        source_doc = Document(docx_path)
+
+        result = anonymize_loaded_document(
+            load_document(docx_path),
+            self.engine,
+            mode="maximum",
+            extra_values=frozenset({("IDENTITY_DOCUMENT", manual_value)}),
+        )
+        out_docx = self.base / result.filename
+        out_docx.write_bytes(result.data)
+        output_doc = Document(out_docx)
+
+        output_paragraph = output_doc.paragraphs[0]
+        self.assertNotIn(manual_value, output_paragraph.text)
+        self.assertTrue(any(run.bold and manual_value not in run.text for run in output_paragraph.runs))
+        self.assertNotIn(manual_value, output_doc.tables[0].rows[0].cells[1].text)
+
+        # Struttura preservata.
+        self.assertEqual(len(output_doc.paragraphs), len(source_doc.paragraphs))
+        self.assertEqual(len(output_doc.tables[0].rows[0].cells), len(source_doc.tables[0].rows[0].cells))
+
+        with zipfile.ZipFile(BytesIO(result.data)) as package:
+            payload = package.read("word/document.xml")
+            self.assertNotIn(manual_value.encode("utf-8"), payload)
+
+    def test_docx_reversible_manual_selection_enters_mapping(self) -> None:
+        manual_value = "ABC9988"
+        docx_path = self.base / "selezione_manuale_reversibile.docx"
+        doc = Document()
+        doc.add_paragraph(f"Documento numero {manual_value} rilasciato oggi.")
+        doc.save(docx_path)
+
+        result = anonymize_loaded_document(
+            load_document(docx_path),
+            self.engine,
+            mode="reversible",
+            extra_values=frozenset({("IDENTITY_DOCUMENT", manual_value)}),
+        )
+        out_docx = self.base / result.filename
+        out_docx.write_bytes(result.data)
+        output_text = "\n".join(paragraph.text for paragraph in Document(out_docx).paragraphs)
+
+        self.assertNotIn(manual_value, output_text)
+        self.assertIn("<DOCUMENTO_IDENTITA_1>", output_text)
+        self.assertIn(manual_value, [entry.value for entry in result.reversible_mapping])
+        self.assertEqual(restore_text(output_text, result.reversible_mapping), f"Documento numero {manual_value} rilasciato oggi.")
+
+    def test_docx_extra_value_absent_from_text_is_a_no_op(self) -> None:
+        docx_path = self.base / "selezione_manuale_assente.docx"
+        doc = Document()
+        doc.add_paragraph("Nessun dato sensibile in questo paragrafo.")
+        doc.save(docx_path)
+
+        result = anonymize_loaded_document(
+            load_document(docx_path),
+            self.engine,
+            mode="maximum",
+            extra_values=frozenset({("IDENTITY_DOCUMENT", "NONPRESENTE1")}),
+        )
+
+        self.assertEqual(result.findings, [])
+        out_docx = self.base / result.filename
+        out_docx.write_bytes(result.data)
+        self.assertEqual(
+            Document(out_docx).paragraphs[0].text, "Nessun dato sensibile in questo paragrafo."
+        )
+
+    @staticmethod
+    def _merged_charbox_at(text_page, page_text: str, start: int, length: int) -> tuple[float, float, float, float]:
+        boxes = [
+            text_page.get_charbox(index)
+            for index in range(start, start + length)
+            if not page_text[index].isspace()
+        ]
+        return (
+            min(box[0] for box in boxes),
+            min(box[1] for box in boxes),
+            max(box[2] for box in boxes),
+            max(box[3] for box in boxes),
+        )
 
     def test_txt_reversible_mode_returns_mapping_for_local_restore(self) -> None:
         txt_path = self.base / "reversibile.txt"

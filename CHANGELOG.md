@@ -2,6 +2,11 @@
 
 Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
+## [In sviluppo]
+
+### Corretto
+- Selezioni manuali non redatte su DOCX e PDF: un dato aggiunto con "Aggiungi selezione" compariva nel pannello come "sarà anonimizzato" ma restava visibile nel documento esportato, perché la pipeline DOCX/PDF ri-analizza il testo per parte (nodi XML o pagine) e non teneva conto delle selezioni manuali. Ora ogni occorrenza letterale del valore selezionato viene redatta ovunque compaia nel documento, sia in modalità normale sia reversibile. Il bottone "Aggiungi selezione" è quindi ora disponibile anche su DOCX e PDF (resta escluso solo il formato legacy .doc).
+
 ## [0.5.0]
 
 ### Aggiunto

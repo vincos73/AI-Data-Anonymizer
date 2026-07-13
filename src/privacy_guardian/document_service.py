@@ -127,6 +127,7 @@ def anonymize_loaded_document(
     reversible_entries: Iterable[ReversibleMapEntry] | None = None,
     findings: list[Finding] | None = None,
     excluded_values: frozenset[tuple[str, str]] | None = None,
+    extra_values: frozenset[tuple[str, str]] | None = None,
 ) -> AnonymizedDocument:
     if mode == "reversible" and document.extension == ".pdf":
         raise ValueError(
@@ -137,7 +138,9 @@ def anonymize_loaded_document(
     # Il filtro posizionale dei findings pre-calcolati è affidabile solo qui (testo estratto):
     # .docx e .pdf ri-analizzano internamente il testo per parte (nodi XML o pagine), dove
     # l'esclusione avviene per valore esatto tramite excluded_values, in modo fail-closed:
-    # un valore che non corrisponde esattamente resta comunque anonimizzato.
+    # un valore che non corrisponde esattamente resta comunque anonimizzato. Le selezioni
+    # manuali (extra_values) seguono la stessa logica per valore, in senso opposto: vengono
+    # aggiunte come finding ovunque il valore compaia alla lettera in quella parte.
     findings = findings if findings is not None else engine.analyze(document.text, mode)
     findings = _filter_excluded_findings(document.text, findings, excluded_values)
     reversible_session = ReversibleAnonymizer(reversible_entries) if mode == "reversible" else None
@@ -152,14 +155,24 @@ def anonymize_loaded_document(
         data = anonymized_text.encode("utf-8")
     elif document.extension == ".doc":
         data = _anonymize_legacy_doc(
-            document.path, engine, mode, reversible_session=reversible_session, excluded_values=excluded_values
+            document.path,
+            engine,
+            mode,
+            reversible_session=reversible_session,
+            excluded_values=excluded_values,
+            extra_values=extra_values,
         )
     elif document.extension == ".docx":
         data = _anonymize_docx(
-            document.path, engine, mode, reversible_session=reversible_session, excluded_values=excluded_values
+            document.path,
+            engine,
+            mode,
+            reversible_session=reversible_session,
+            excluded_values=excluded_values,
+            extra_values=extra_values,
         )
     else:
-        data = _anonymize_pdf(document.path, engine, mode, excluded_values=excluded_values)
+        data = _anonymize_pdf(document.path, engine, mode, excluded_values=excluded_values, extra_values=extra_values)
 
     return AnonymizedDocument(
         filename=output_name,
@@ -187,6 +200,35 @@ def _filter_excluded_findings(
         for finding in findings
         if (finding.entity_type, text[finding.start : finding.end]) not in excluded_values
     ]
+
+
+def _add_extra_value_findings(
+    text: str,
+    findings: list[Finding],
+    extra_values: frozenset[tuple[str, str]] | None,
+) -> list[Finding]:
+    """Aggiunge finding per ogni occorrenza letterale dei valori inclusi manualmente.
+
+    Confronto esatto e case-sensitive, come per le esclusioni; un'occorrenza che si
+    sovrappone a un finding già presente viene saltata per non duplicare la redazione."""
+    if not extra_values:
+        return findings
+    result = list(findings)
+    occupied = [(finding.start, finding.end) for finding in findings]
+    for entity_type, value in extra_values:
+        if not value:
+            continue
+        start = 0
+        while True:
+            idx = text.find(value, start)
+            if idx == -1:
+                break
+            end = idx + len(value)
+            if not any(idx < occupied_end and occupied_start < end for occupied_start, occupied_end in occupied):
+                result.append(Finding(entity_type, idx, end, 1.0, source="manual"))
+                occupied.append((idx, end))
+            start = idx + 1
+    return result
 
 
 def excluded_value_pairs(
@@ -234,9 +276,15 @@ def _anonymize_docx(
     *,
     reversible_session: ReversibleAnonymizer | None = None,
     excluded_values: frozenset[tuple[str, str]] | None = None,
+    extra_values: frozenset[tuple[str, str]] | None = None,
 ) -> bytes:
     return _sanitize_docx_package(
-        path.read_bytes(), engine, mode, reversible_session=reversible_session, excluded_values=excluded_values
+        path.read_bytes(),
+        engine,
+        mode,
+        reversible_session=reversible_session,
+        excluded_values=excluded_values,
+        extra_values=extra_values,
     )
 
 
@@ -252,12 +300,18 @@ def _anonymize_legacy_doc(
     *,
     reversible_session: ReversibleAnonymizer | None = None,
     excluded_values: frozenset[tuple[str, str]] | None = None,
+    extra_values: frozenset[tuple[str, str]] | None = None,
 ) -> bytes:
     with tempfile.TemporaryDirectory() as tmpdir:
         converted_path = Path(tmpdir) / f"{path.stem}.docx"
         _run_textutil("-convert", "docx", "-output", str(converted_path), str(path))
         return _anonymize_docx(
-            converted_path, engine, mode, reversible_session=reversible_session, excluded_values=excluded_values
+            converted_path,
+            engine,
+            mode,
+            reversible_session=reversible_session,
+            excluded_values=excluded_values,
+            extra_values=extra_values,
         )
 
 
@@ -267,6 +321,7 @@ def _anonymize_pdf(
     mode: AnonymizationMode,
     *,
     excluded_values: frozenset[tuple[str, str]] | None = None,
+    extra_values: frozenset[tuple[str, str]] | None = None,
 ) -> bytes:
     from pypdf import PdfReader
     import pypdfium2 as pdfium
@@ -294,6 +349,7 @@ def _anonymize_pdf(
             page_text = text_page.get_text_range()
             if page_text.strip():
                 findings = _filter_excluded_findings(page_text, engine.analyze(page_text, mode), excluded_values)
+                findings = _add_extra_value_findings(page_text, findings, extra_values)
                 redaction_rects = _pdf_redaction_rects(text_page, page_text, findings, page_index)
                 _draw_pdf_redactions(image, (width, height), redaction_rects)
 
@@ -305,6 +361,7 @@ def _anonymize_pdf(
                     raise OcrUnavailableError(_ocr_unavailable_message(str(page_index + 1)))
                 ocr_text = _ocr_image(image)
                 findings = _filter_excluded_findings(ocr_text.text, engine.analyze(ocr_text.text, mode), excluded_values)
+                findings = _add_extra_value_findings(ocr_text.text, findings, extra_values)
                 _draw_ocr_redactions(image, ocr_text.words, findings)
             elif not page_text.strip():
                 if _tesseract_available():
@@ -312,6 +369,7 @@ def _anonymize_pdf(
                     findings = _filter_excluded_findings(
                         ocr_text.text, engine.analyze(ocr_text.text, mode), excluded_values
                     )
+                    findings = _add_extra_value_findings(ocr_text.text, findings, extra_values)
                     _draw_ocr_redactions(image, ocr_text.words, findings)
                 else:
                     raise OcrUnavailableError(_ocr_unavailable_message(str(page_index + 1)))
@@ -463,6 +521,7 @@ def _sanitize_docx_package(
     *,
     reversible_session: ReversibleAnonymizer | None = None,
     excluded_values: frozenset[tuple[str, str]] | None = None,
+    extra_values: frozenset[tuple[str, str]] | None = None,
 ) -> bytes:
     source_buffer = BytesIO(data)
     output = BytesIO()
@@ -478,6 +537,7 @@ def _sanitize_docx_package(
                     mode,
                     reversible_session=reversible_session,
                     excluded_values=excluded_values,
+                    extra_values=extra_values,
                 )
             target.writestr(item, payload)
 
@@ -492,6 +552,7 @@ def _sanitize_docx_part(
     *,
     reversible_session: ReversibleAnonymizer | None = None,
     excluded_values: frozenset[tuple[str, str]] | None = None,
+    extra_values: frozenset[tuple[str, str]] | None = None,
 ) -> bytes:
     if _is_docx_metadata_part(name):
         # Lo scrub dei metadati non è filtrabile: i dati personali lì non passano dal pannello.
@@ -504,6 +565,7 @@ def _sanitize_docx_part(
             use_table_context=_is_docx_primary_story_part(name),
             reversible_session=reversible_session,
             excluded_values=excluded_values,
+            extra_values=extra_values,
         )
     return data
 
@@ -560,6 +622,7 @@ def _anonymize_ooxml_text(
     use_table_context: bool,
     reversible_session: ReversibleAnonymizer | None,
     excluded_values: frozenset[tuple[str, str]] | None = None,
+    extra_values: frozenset[tuple[str, str]] | None = None,
 ) -> bytes:
     try:
         root = ET.fromstring(data)
@@ -573,14 +636,24 @@ def _anonymize_ooxml_text(
         for table_row in _iter_elements_by_local_name(root, "tr"):
             nodes = list(_iter_text_nodes(table_row))
             _anonymize_text_nodes(
-                nodes, engine, mode, reversible_session=reversible_session, excluded_values=excluded_values
+                nodes,
+                engine,
+                mode,
+                reversible_session=reversible_session,
+                excluded_values=excluded_values,
+                extra_values=extra_values,
             )
             processed_nodes.update(id(node) for node in nodes)
 
     for container in _iter_text_containers(root):
         nodes = [node for node in _iter_text_nodes(container) if id(node) not in processed_nodes]
         _anonymize_text_nodes(
-            nodes, engine, mode, reversible_session=reversible_session, excluded_values=excluded_values
+            nodes,
+            engine,
+            mode,
+            reversible_session=reversible_session,
+            excluded_values=excluded_values,
+            extra_values=extra_values,
         )
         processed_nodes.update(id(node) for node in nodes)
 
@@ -635,6 +708,7 @@ def _anonymize_text_nodes(
     *,
     reversible_session: ReversibleAnonymizer | None = None,
     excluded_values: frozenset[tuple[str, str]] | None = None,
+    extra_values: frozenset[tuple[str, str]] | None = None,
 ) -> None:
     if not nodes:
         return
@@ -647,8 +721,10 @@ def _anonymize_text_nodes(
         reversible_session.reserve_placeholders(text)
 
     # Il filtro va applicato PRIMA di assegnare i segnaposti reversibili: un valore
-    # escluso non deve mai entrare nella mappa reversibile.
+    # escluso non deve mai entrare nella mappa reversibile. Le selezioni manuali (extra_values)
+    # vanno invece aggiunte prima dei segnaposti, in modo da entrare correttamente nella mappa.
     findings = _filter_excluded_findings(text, engine.analyze(text, mode), excluded_values)
+    findings = _add_extra_value_findings(text, findings, extra_values)
     if not findings:
         return
 
