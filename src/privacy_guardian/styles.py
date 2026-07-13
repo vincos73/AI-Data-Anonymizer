@@ -514,6 +514,18 @@ QLineEdit#FindingsSearch:focus {
     border: 1px solid #4FB8E7;
 }
 
+QLineEdit#CommandField {
+    background: #0D1218;
+    color: #E8EDF2;
+    border: 1px solid #232D38;
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-family: "SF Mono", "Consolas", "Menlo", monospace;
+    font-size: 12.5px;
+    selection-background-color: #4FB8E7;
+    selection-color: #0D1218;
+}
+
 QFrame#UnsupportedNotice {
     background: #241F10;
     border: 1px solid #6B5A2B;
