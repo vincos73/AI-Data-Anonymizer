@@ -2,6 +2,15 @@
 
 Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
+## [In sviluppo]
+
+### Corretto
+- Selezioni manuali non redatte su DOCX e PDF: un dato aggiunto con "Aggiungi selezione" compariva nel pannello come "sarà anonimizzato" ma restava visibile nel documento esportato, perché la pipeline DOCX/PDF ri-analizza il testo per parte (nodi XML o pagine) e non teneva conto delle selezioni manuali. Ora ogni occorrenza letterale del valore selezionato viene redatta ovunque compaia nel documento, sia in modalità normale sia reversibile. Il bottone "Aggiungi selezione" è quindi ora disponibile anche su DOCX e PDF (resta escluso solo il formato legacy .doc).
+
+### Aggiunto
+- Riconoscimento del codice fiscale preceduto dall'etichetta "C.F." o "codice fiscale" anche quando i 16 caratteri sono separati da spazi (es. "C.F. RSS MRA 80A01 H501U"), anche se il checksum formale non è valido: la presenza dell'etichetta è considerata un contesto sufficientemente forte.
+- Riconoscimento di enti/amministrazioni territoriali legati a un luogo: "amministrazione provinciale/comunale/regionale", prefettura, questura, procura (della Repubblica), tribunale e camera di commercio, ad esempio "amministrazione provinciale di Potenza" o "Prefettura di Matera".
+
 ## [0.5.0]
 
 ### Aggiunto

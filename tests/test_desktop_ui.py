@@ -19,7 +19,7 @@ try:
     from PySide6.QtWidgets import QApplication, QDialog
 
     from privacy_guardian.app import MainWindow
-    from privacy_guardian.document_service import LoadedDocument, OcrUnavailableError
+    from privacy_guardian.document_service import AnonymizedDocument, LoadedDocument, OcrUnavailableError
     from privacy_guardian.findings_panel import ROLE_IS_GROUP
     from privacy_guardian.models import Finding
 
@@ -208,7 +208,9 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         self.assertEqual(len(self.window._checked_findings()), 0)
         self.assertIn("35 esclusi", group_item.text())
 
-    def test_extract_document_as_text_reenables_manual_add(self) -> None:
+    def test_extract_document_as_text_switches_docx_to_occurrence_selection(self) -> None:
+        """Su .docx la selezione manuale è già attiva (extra_values); estrarre come testo
+        toglie solo la modalità di esclusione per valore, passando a quella per occorrenza."""
         loaded = LoadedDocument(
             path=Path("relazione.docx"),
             text="Mario Rossi lavora presso Acme S.p.A.",
@@ -216,7 +218,7 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         )
         self.window.loaded_document = loaded
         self.window.input_text.setPlainText(loaded.text)
-        self.assertFalse(self.window._manual_add_supported())
+        self.assertTrue(self.window._manual_add_supported())
         self.assertTrue(self.window._selection_filter_supported())
         self.assertTrue(self.window._value_level_selection_active())
 
@@ -225,6 +227,23 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         self.assertIsNone(self.window.loaded_document)
         self.assertTrue(self.window._manual_add_supported())
         self.assertFalse(self.window._value_level_selection_active())
+
+    def test_extract_document_as_text_reenables_manual_add_for_doc(self) -> None:
+        """Il formato .doc legacy resta l'unico senza selezione manuale né esclusioni:
+        estrarre come testo la sblocca."""
+        loaded = LoadedDocument(
+            path=Path("relazione.doc"),
+            text="Mario Rossi lavora presso Acme S.p.A.",
+            extension=".doc",
+        )
+        self.window.loaded_document = loaded
+        self.window.input_text.setPlainText(loaded.text)
+        self.assertFalse(self.window._manual_add_supported())
+
+        self.window._extract_document_as_text()
+
+        self.assertIsNone(self.window.loaded_document)
+        self.assertTrue(self.window._manual_add_supported())
 
     def _load_fake_document_with_findings(
         self, extension: str, text: str, findings: list[Finding]
@@ -260,8 +279,9 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         first_item = panel._index_to_item[0]
         self.assertTrue(first_item.flags() & Qt.ItemIsUserCheckable)
         self.assertEqual(self.window.primary_button.text(), "Anonimizza 3 dati")
-        self.assertFalse(panel.notice_frame.isHidden())
-        self.assertIn("puoi escludere i dati rilevati con le caselle", panel.notice_label.text())
+        # Il .docx supporta sia le esclusioni sia le selezioni manuali: l'avviso (riservato
+        # ai formati non supportati come .doc) resta nascosto.
+        self.assertTrue(panel.notice_frame.isHidden())
 
         first_item.setCheckState(Qt.Unchecked)
 
@@ -285,6 +305,72 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
 
         self.assertEqual(panel.included_mask(), [False, True])
         self.assertEqual(len(self.window._checked_findings()), 1)
+
+    def test_anonymize_passes_extra_values_for_checked_manual_finding_on_pdf(self) -> None:
+        text = "Documento numero ABC9988 rilasciato oggi."
+        manual_start = text.index("ABC9988")
+        manual_end = manual_start + len("ABC9988")
+        findings = [Finding("IDENTITY_DOCUMENT", manual_start, manual_end, 1.0, source="manual")]
+        self._load_fake_document_with_findings(".pdf", text, findings)
+
+        captured: dict = {}
+
+        def fake_anonymize(document, engine, mode, **kwargs):
+            captured.update(kwargs)
+            return AnonymizedDocument(filename="documento_anonimizzato.pdf", data=b"%PDF-1.4", text=text, findings=[])
+
+        with mock.patch("privacy_guardian.app.anonymize_loaded_document", side_effect=fake_anonymize):
+            self.window.anonymize_text()
+
+        self.assertEqual(captured.get("extra_values"), frozenset({("IDENTITY_DOCUMENT", "ABC9988")}))
+
+    def test_anonymize_passes_extra_values_for_checked_manual_finding_on_docx(self) -> None:
+        text = "Documento numero ABC9988 rilasciato oggi."
+        manual_start = text.index("ABC9988")
+        manual_end = manual_start + len("ABC9988")
+        findings = [Finding("IDENTITY_DOCUMENT", manual_start, manual_end, 1.0, source="manual")]
+        self._load_fake_document_with_findings(".docx", text, findings)
+
+        captured: dict = {}
+
+        def fake_anonymize(document, engine, mode, **kwargs):
+            captured.update(kwargs)
+            return AnonymizedDocument(filename="documento_anonimizzato.docx", data=b"PK", text=text, findings=[])
+
+        with mock.patch("privacy_guardian.app.anonymize_loaded_document", side_effect=fake_anonymize):
+            self.window.anonymize_text()
+
+        self.assertEqual(captured.get("extra_values"), frozenset({("IDENTITY_DOCUMENT", "ABC9988")}))
+
+    def test_anonymize_omits_extra_values_when_manual_finding_unchecked(self) -> None:
+        text = "Documento numero ABC9988 rilasciato oggi."
+        manual_start = text.index("ABC9988")
+        manual_end = manual_start + len("ABC9988")
+        findings = [Finding("IDENTITY_DOCUMENT", manual_start, manual_end, 1.0, source="manual")]
+        self._load_fake_document_with_findings(".docx", text, findings)
+        self.window.findings_panel._index_to_item[0].setCheckState(Qt.Unchecked)
+
+        captured: dict = {}
+
+        def fake_anonymize(document, engine, mode, **kwargs):
+            captured.update(kwargs)
+            return AnonymizedDocument(filename="documento_anonimizzato.docx", data=b"PK", text=text, findings=[])
+
+        with mock.patch("privacy_guardian.app.anonymize_loaded_document", side_effect=fake_anonymize):
+            self.window.anonymize_text()
+
+        self.assertIsNone(captured.get("extra_values"))
+
+    def test_add_selection_button_enabled_for_pdf_and_docx(self) -> None:
+        for extension in (".pdf", ".docx"):
+            with self.subTest(extension=extension):
+                self.window.loaded_document = LoadedDocument(
+                    path=Path(f"documento{extension}"), text="Testo di prova", extension=extension
+                )
+                self.window.document_text_dirty = False
+                self.window.input_text.setPlainText("Testo di prova")
+                self.window._sync_action_state()
+                self.assertTrue(self.window.add_selection_button.isEnabled())
 
     def test_ocr_unavailable_error_opens_guided_dialog_instead_of_status_bar(self) -> None:
         calls: list[Path] = []

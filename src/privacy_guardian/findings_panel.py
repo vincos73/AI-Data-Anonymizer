@@ -244,10 +244,9 @@ class FindingsPanel(QFrame):
         self.notice_frame = QFrame()
         self.notice_frame.setObjectName("UnsupportedNotice")
         self.notice_label = QLabel(
-            "Su PDF e DOCX puoi escludere i dati rilevati con le caselle: l'esclusione vale per "
-            "tutte le occorrenze dello stesso valore. Per aggiungere selezioni manuali usa "
-            "Estrai come testo. Sui PDF scansionati (OCR) alcune esclusioni possono non "
-            "applicarsi: in quel caso il dato resta comunque anonimizzato."
+            "Il formato .doc non supporta l'esclusione dei dati rilevati né le selezioni "
+            "manuali: verrà anonimizzato tutto ciò che viene rilevato. Estrai come testo per "
+            "escludere singoli dati o aggiungere selezioni manuali."
         )
         self.notice_label.setObjectName("UnsupportedNoticeLabel")
         self.notice_label.setWordWrap(True)

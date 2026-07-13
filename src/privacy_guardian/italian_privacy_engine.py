@@ -43,6 +43,14 @@ class ItalianPrivacyRecognizer:
         r"\b[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]\b",
         re.IGNORECASE,
     )
+    # Codice fiscale etichettato e (eventualmente) spaziato: l'etichetta è un contesto forte,
+    # quindi qui non si richiede la validità formale del checksum come per CODICE_FISCALE.
+    # Solo l'etichetta è case-insensitive; il valore deve essere in maiuscolo, come da requisito.
+    LABELED_CODICE_FISCALE = re.compile(
+        r"(?i:c\.?\s*f\.?|cod(?:ice)?\.?\s*fisc(?:ale)?\.?)"
+        r"[\s:.\-]*"
+        r"(?P<cf>[A-Z0-9](?:\s*[A-Z0-9]){15})\b"
+    )
     PARTITA_IVA = re.compile(r"\b(?:IT[\s-]?)?([0-9]{11})\b", re.IGNORECASE)
     IBAN = re.compile(r"\b[A-Z]{2}[\s-]*[0-9]{2}(?:[\s-]*[A-Z0-9]){11,30}\b", re.IGNORECASE)
     PHONE_NUMBER = re.compile(
@@ -164,7 +172,9 @@ class ItalianPrivacyRecognizer:
     DICTIONARY_PERSON_SCORE = 0.72
     TERRITORIAL_BODY = re.compile(
         rf"\b(?i:provincia|regione|comune|citt[aà]\s+metropolitana|municipio|unione\s+dei\s+comuni|"
-        rf"comunit[aà]\s+montana)\s+(?:(?:di|del|della|dei|degli|delle)\s+)?"
+        rf"comunit[aà]\s+montana|amministrazione\s+(?:provinciale|comunale|regionale)|"
+        rf"prefettura|questura|procura(?:\s+della\s+repubblica)?|tribunale|camera\s+di\s+commercio)"
+        rf"\s+(?:(?:di|del|della|dei|degli|delle)\s+)?"
         rf"{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{0,4}}"
     )
     PERSON_STOPWORDS = {
@@ -203,6 +213,7 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._regex_findings(text, "PHONE_NUMBER", self.PHONE_NUMBER, 0.94))
         findings.extend(self._international_phone_findings(text))
         findings.extend(self._codice_fiscale_findings(text))
+        findings.extend(self._labeled_codice_fiscale_findings(text))
         findings.extend(self._partita_iva_findings(text))
         findings.extend(self._iban_findings(text))
         findings.extend(self._sdi_code_findings(text))
@@ -262,6 +273,15 @@ class ItalianPrivacyRecognizer:
             Finding("CODICE_FISCALE", match.start(), match.end(), 0.96)
             for match in self.CODICE_FISCALE.finditer(text)
             if self._valid_codice_fiscale(match.group(0).upper())
+        ]
+
+    def _labeled_codice_fiscale_findings(self, text: str) -> list[Finding]:
+        """Codice fiscale preceduto dall'etichetta "C.F."/"codice fiscale", eventualmente
+        spaziato. L'etichetta è un contesto forte: a differenza di _codice_fiscale_findings,
+        il checksum non viene verificato, perché il dato va comunque trattato come CF."""
+        return [
+            Finding("CODICE_FISCALE", match.start("cf"), match.end("cf"), 0.9)
+            for match in self.LABELED_CODICE_FISCALE.finditer(text)
         ]
 
     def _partita_iva_findings(self, text: str) -> list[Finding]:
