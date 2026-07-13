@@ -1,0 +1,143 @@
+name: release-v0.5.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/release-v0.5.0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: v0.5.0
+  RELEASE_TITLE: OMISSIS v0.5.0
+
+jobs:
+  prepare-release:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create tag if missing
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --tags origin "refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Tag ${RELEASE_TAG} already exists"
+          else
+            git tag -a "${RELEASE_TAG}" -m "${RELEASE_TITLE}"
+            git push origin "refs/tags/${RELEASE_TAG}"
+          fi
+
+      - name: Write release notes
+        run: |
+          cat > release-notes.md <<'TXT'
+          ## OMISSIS v0.5.0
+
+          ### Sicurezza
+          - Corretto il riconoscimento degli indirizzi con CAP a 5 cifre: "Via Garibaldi 45, 00185 Roma" veniva rilevato solo fino a "0018", lasciando "5 Roma" in chiaro dopo l'anonimizzazione.
+          - Aggiunto il riconoscimento dei nomi di persona anche senza titoli o contesto (es. "la pratica di Mario Rossi"), grazie a un dizionario locale di oltre 1200 nomi propri italiani integrato nell'app: prima questi nomi passavano inosservati.
+
+          ### Novita
+          - Esclusione dei dati rilevati anche su documenti DOCX e PDF: le caselle del pannello "Dati rilevati" ora funzionano con un documento caricato, mantenendo il formato in uscita.
+          - Guida all'installazione di Tesseract OCR con istruzioni specifiche per macOS, Windows e Linux, invece di un semplice avviso in fondo alla finestra.
+
+          ### Corretto
+          - Testo del comando illeggibile (bianco su bianco) nella finestra di dialogo per l'installazione di Tesseract OCR.
+          - Build macOS: la firma ad-hoc dell'app poteva risultare incoerente dopo l'impostazione della versione, interrompendo la build prima del DMG.
+
+          ### Download
+          - macOS Apple Silicon: scarica `OMISSIS-macOS-Apple-Silicon.dmg`.
+          - Windows: scarica `OMISSIS-Windows.zip`.
+
+          ### Nota privacy
+          OMISSIS lavora in locale: i documenti non vengono inviati a servizi esterni dall'applicazione.
+          TXT
+
+      - name: Create release if missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Release ${RELEASE_TAG} already exists"
+          else
+            gh release create "${RELEASE_TAG}" \
+              --title "${RELEASE_TITLE}" \
+              --notes-file release-notes.md \
+              --latest
+          fi
+
+  build-macos:
+    name: Build macOS package
+    needs: prepare-release
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Import Apple Developer ID certificate
+        env:
+          APPLE_DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          BUILD_KEYCHAIN_PASSWORD: ${{ secrets.BUILD_KEYCHAIN_PASSWORD }}
+        run: |
+          if [ -z "$APPLE_DEVELOPER_ID_CERTIFICATE_BASE64" ] || [ -z "$APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD" ]; then
+            echo "Apple Developer ID certificate secrets not configured: macOS build will not be notarized."
+            exit 0
+          fi
+          KEYCHAIN_PASSWORD="${BUILD_KEYCHAIN_PASSWORD:-temporary-build-keychain-password}"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          echo "$APPLE_DEVELOPER_ID_CERTIFICATE_BASE64" | base64 --decode > developer-id.p12
+          security import developer-id.p12 \
+            -k build.keychain \
+            -P "$APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+
+      - name: Build macOS app
+        env:
+          APPLE_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: ./scripts/build_macos_app.sh
+
+      - name: Upload macOS package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${RELEASE_TAG}" \
+            "dist/OMISSIS-macOS-Apple-Silicon.dmg" \
+            --clobber
+
+  build-windows:
+    name: Build Windows package
+    needs: prepare-release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build Windows app
+        shell: pwsh
+        run: .\scripts\build_windows_app.ps1
+
+      - name: Upload Windows package
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload $env:RELEASE_TAG `
+            "dist/OMISSIS-Windows.zip" `
+            --clobber
