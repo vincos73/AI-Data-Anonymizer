@@ -270,6 +270,43 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn("<EMAIL>", anonymized)
         self.assertIn("<TELEFONO>", anonymized)
 
+    def test_detects_labeled_spaced_codice_fiscale(self) -> None:
+        text = "C.F. RSS MRA 80A01 H501U"
+        findings = self.findings_for(text)
+        self.assertIn(("CODICE_FISCALE", "RSS MRA 80A01 H501U"), findings)
+
+        anonymized = self.engine.anonymize(text)
+        self.assertNotIn("RSS MRA 80A01 H501U", anonymized)
+        self.assertIn("<CODICE_FISCALE>", anonymized)
+
+    def test_labeled_contiguous_codice_fiscale_still_detected(self) -> None:
+        findings = self.findings_for("CF: RSSMRA80A01H501U")
+        self.assertIn(("CODICE_FISCALE", "RSSMRA80A01H501U"), findings)
+
+    def test_labeled_codice_fiscale_detected_even_with_invalid_checksum(self) -> None:
+        # Struttura plausibile a 16 caratteri ma checksum errato: l'etichetta è un
+        # contesto abbastanza forte da trattarlo comunque come codice fiscale.
+        text = "codice fiscale RSSMRA80A01H501Z"
+        self.assertFalse(self.engine._recognizer._valid_codice_fiscale("RSSMRA80A01H501Z"))
+        findings = self.findings_for(text)
+        self.assertIn(("CODICE_FISCALE", "RSSMRA80A01H501Z"), findings)
+
+    def test_labeled_codice_fiscale_requires_uppercase_value(self) -> None:
+        # Il requisito è esplicito: dopo l'etichetta il valore deve essere in maiuscolo,
+        # anche se l'etichetta stessa tollera varianti di maiuscole/minuscole. Il pattern
+        # etichettato/spaziato (con checksum valido) non deve scattare su un valore minuscolo;
+        # il caso contiguo minuscolo resta comunque coperto dal riconoscitore CF classico
+        # (case-insensitive con validazione del checksum), che è un percorso indipendente.
+        recognizer = self.engine._recognizer
+        self.assertEqual(recognizer._labeled_codice_fiscale_findings("cf rssmra80a01h501u"), [])
+        self.assertEqual(recognizer._labeled_codice_fiscale_findings("cf rss mra 80a01 h501u"), [])
+
+    def test_labeled_codice_fiscale_does_not_overmatch_short_candidates(self) -> None:
+        self.assertFalse(any(entity_type == "CODICE_FISCALE" for entity_type, _ in self.findings_for("CF ABC")))
+        self.assertFalse(
+            any(entity_type == "CODICE_FISCALE" for entity_type, _ in self.findings_for("C.F.R. Milano"))
+        )
+
     def test_detects_foreign_ibans_with_checksum(self) -> None:
         text = "Bonifico su IBAN DE89 3704 0044 0532 0130 00 e FR1420041010050500013M02606 entro oggi."
         findings = self.findings_for(text)
