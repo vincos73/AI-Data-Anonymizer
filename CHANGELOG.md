@@ -4,6 +4,11 @@ Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
 ## [In sviluppo]
 
+## [0.5.2]
+
+### Corretto
+- Selezione manuale estesa a tutte le occorrenze: aggiungendo una selezione (es. "Potenza") su un testo incollato veniva redatta solo l'occorrenza evidenziata, mentre le altre uguali restavano in chiaro. Ora una selezione manuale viene applicata a ogni occorrenza letterale del valore nel testo, in modo coerente con quanto già avveniva su DOCX e PDF.
+
 ## [0.5.1]
 
 ### Corretto

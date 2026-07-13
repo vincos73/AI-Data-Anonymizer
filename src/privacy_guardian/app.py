@@ -54,6 +54,7 @@ from privacy_guardian.document_service import (
     AnonymizedDocument,
     LoadedDocument,
     OcrUnavailableError,
+    add_extra_value_findings,
     anonymize_loaded_document,
     excluded_value_pairs,
     load_document,
@@ -1200,16 +1201,22 @@ class MainWindow(QMainWindow):
         if not self._findings_ready_for_filtering() and not self._run_analysis():
             return
 
-        finding = Finding(entity_by_label[label], start, end, 1.0, source="manual")
-        self.findings = self.engine._recognizer.dedupe(self.findings + [finding])
+        source_text = self.input_text.toPlainText()
+        entity_type = entity_by_label[label]
+        value = source_text[start:end]
+        # Espandi la selezione a ogni occorrenza letterale del valore: una selezione
+        # manuale (es. "Potenza") va redatta ovunque compaia, non solo dove è stata
+        # evidenziata. Stessa logica del percorso documento (add_extra_value_findings).
+        expanded = add_extra_value_findings(source_text, self.findings, frozenset({(entity_type, value)}))
+        self.findings = self.engine._recognizer.dedupe(expanded)
         self.findings_stale = False
-        self._findings_source_text = self.input_text.toPlainText()
+        self._findings_source_text = source_text
         self._findings_mode = self._selected_mode()
         self._fill_table()
         self._highlight_findings()
         self._update_report()
         self._sync_action_state()
-        self.statusBar().showMessage(f"Aggiunto manualmente: {entity_label(finding.entity_type)}.", 4000)
+        self.statusBar().showMessage(f"Aggiunto manualmente: {entity_label(entity_type)}.", 4000)
 
     def _fill_table(self) -> None:
         source_text = self.input_text.toPlainText()

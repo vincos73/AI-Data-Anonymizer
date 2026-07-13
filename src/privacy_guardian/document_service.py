@@ -202,15 +202,17 @@ def _filter_excluded_findings(
     ]
 
 
-def _add_extra_value_findings(
+def add_extra_value_findings(
     text: str,
     findings: list[Finding],
     extra_values: frozenset[tuple[str, str]] | None,
 ) -> list[Finding]:
-    """Aggiunge finding per ogni occorrenza letterale dei valori inclusi manualmente.
+    """Aggiunge un finding per ogni occorrenza letterale dei valori inclusi manualmente.
 
     Confronto esatto e case-sensitive, come per le esclusioni; un'occorrenza che si
-    sovrappone a un finding già presente viene saltata per non duplicare la redazione."""
+    sovrappone a un finding già presente viene saltata per non duplicare la redazione.
+    Usata sia dalla pipeline documenti sia dalla selezione manuale nel percorso testo,
+    così una selezione (es. "Potenza") viene redatta in tutte le sue occorrenze."""
     if not extra_values:
         return findings
     result = list(findings)
@@ -349,7 +351,7 @@ def _anonymize_pdf(
             page_text = text_page.get_text_range()
             if page_text.strip():
                 findings = _filter_excluded_findings(page_text, engine.analyze(page_text, mode), excluded_values)
-                findings = _add_extra_value_findings(page_text, findings, extra_values)
+                findings = add_extra_value_findings(page_text, findings, extra_values)
                 redaction_rects = _pdf_redaction_rects(text_page, page_text, findings, page_index)
                 _draw_pdf_redactions(image, (width, height), redaction_rects)
 
@@ -361,7 +363,7 @@ def _anonymize_pdf(
                     raise OcrUnavailableError(_ocr_unavailable_message(str(page_index + 1)))
                 ocr_text = _ocr_image(image)
                 findings = _filter_excluded_findings(ocr_text.text, engine.analyze(ocr_text.text, mode), excluded_values)
-                findings = _add_extra_value_findings(ocr_text.text, findings, extra_values)
+                findings = add_extra_value_findings(ocr_text.text, findings, extra_values)
                 _draw_ocr_redactions(image, ocr_text.words, findings)
             elif not page_text.strip():
                 if _tesseract_available():
@@ -369,7 +371,7 @@ def _anonymize_pdf(
                     findings = _filter_excluded_findings(
                         ocr_text.text, engine.analyze(ocr_text.text, mode), excluded_values
                     )
-                    findings = _add_extra_value_findings(ocr_text.text, findings, extra_values)
+                    findings = add_extra_value_findings(ocr_text.text, findings, extra_values)
                     _draw_ocr_redactions(image, ocr_text.words, findings)
                 else:
                     raise OcrUnavailableError(_ocr_unavailable_message(str(page_index + 1)))
@@ -724,7 +726,7 @@ def _anonymize_text_nodes(
     # escluso non deve mai entrare nella mappa reversibile. Le selezioni manuali (extra_values)
     # vanno invece aggiunte prima dei segnaposti, in modo da entrare correttamente nella mappa.
     findings = _filter_excluded_findings(text, engine.analyze(text, mode), excluded_values)
-    findings = _add_extra_value_findings(text, findings, extra_values)
+    findings = add_extra_value_findings(text, findings, extra_values)
     if not findings:
         return
 

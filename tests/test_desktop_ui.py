@@ -372,6 +372,32 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
                 self.window._sync_action_state()
                 self.assertTrue(self.window.add_selection_button.isEnabled())
 
+    def test_manual_selection_expands_to_every_occurrence_in_plain_text(self) -> None:
+        from PySide6.QtGui import QTextCursor
+
+        from privacy_guardian.app import QInputDialog
+
+        text = "La sede di Potenza e la filiale di Potenza sono chiuse."
+        self.window.input_text.setPlainText(text)
+        first = text.index("Potenza")
+        cursor = self.window.input_text.textCursor()
+        cursor.setPosition(first)
+        cursor.setPosition(first + len("Potenza"), QTextCursor.KeepAnchor)
+        self.window.input_text.setTextCursor(cursor)
+
+        with mock.patch.object(QInputDialog, "exec", return_value=QInputDialog.Accepted), mock.patch.object(
+            QInputDialog, "textValue", return_value="ente territoriale"
+        ):
+            self.window.add_manual_finding()
+
+        potenza_findings = [
+            f for f in self.window.findings if text[f.start : f.end] == "Potenza" and f.source == "manual"
+        ]
+        self.assertEqual(len(potenza_findings), 2)
+
+        self.window.anonymize_text()
+        self.assertNotIn("Potenza", self.window.output_text.toPlainText())
+
     def test_ocr_unavailable_error_opens_guided_dialog_instead_of_status_bar(self) -> None:
         calls: list[Path] = []
         self.window._show_ocr_setup_dialog = lambda path: calls.append(path)

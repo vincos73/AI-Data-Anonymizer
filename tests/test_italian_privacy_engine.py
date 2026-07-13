@@ -799,13 +799,13 @@ class ExcludedValuePairsTest(unittest.TestCase):
 
 
 class AddExtraValueFindingsTest(unittest.TestCase):
-    """_add_extra_value_findings aggiunge un finding per ogni occorrenza letterale di un
+    """add_extra_value_findings aggiunge un finding per ogni occorrenza letterale di un
     valore selezionato manualmente, senza duplicare quelle già coperte."""
 
     def test_adds_a_finding_for_every_occurrence(self) -> None:
         value = "ABC9988"
         text = f"Documento {value} rilasciato, copia {value} allegata."
-        result = document_service._add_extra_value_findings(text, [], frozenset({("IDENTITY_DOCUMENT", value)}))
+        result = document_service.add_extra_value_findings(text, [], frozenset({("IDENTITY_DOCUMENT", value)}))
 
         self.assertEqual(len(result), 2)
         for finding in result:
@@ -818,25 +818,25 @@ class AddExtraValueFindingsTest(unittest.TestCase):
         text = f"Contatto: {email}"
         existing = Finding("EMAIL_ADDRESS", text.index(email), text.index(email) + len(email), 0.98)
 
-        result = document_service._add_extra_value_findings(text, [existing], frozenset({("EMAIL_ADDRESS", email)}))
+        result = document_service.add_extra_value_findings(text, [existing], frozenset({("EMAIL_ADDRESS", email)}))
 
         self.assertEqual(result, [existing])
 
     def test_value_not_present_is_a_no_op(self) -> None:
         text = "Nessun dato sensibile qui."
-        result = document_service._add_extra_value_findings(text, [], frozenset({("PERSON", "Mario Rossi")}))
+        result = document_service.add_extra_value_findings(text, [], frozenset({("PERSON", "Mario Rossi")}))
         self.assertEqual(result, [])
 
     def test_case_sensitive_exact_match(self) -> None:
         text = "valore ABC9988 e abc9988 minuscolo"
-        result = document_service._add_extra_value_findings(text, [], frozenset({("IDENTITY_DOCUMENT", "ABC9988")}))
+        result = document_service.add_extra_value_findings(text, [], frozenset({("IDENTITY_DOCUMENT", "ABC9988")}))
         self.assertEqual(len(result), 1)
         self.assertEqual(text[result[0].start : result[0].end], "ABC9988")
 
     def test_no_extra_values_returns_findings_unchanged(self) -> None:
         findings = [Finding("EMAIL_ADDRESS", 0, 5, 0.9)]
-        self.assertEqual(document_service._add_extra_value_findings("hello", findings, None), findings)
-        self.assertEqual(document_service._add_extra_value_findings("hello", findings, frozenset()), findings)
+        self.assertEqual(document_service.add_extra_value_findings("hello", findings, None), findings)
+        self.assertEqual(document_service.add_extra_value_findings("hello", findings, frozenset()), findings)
 
 
 class DocumentAnonymizationTest(unittest.TestCase):
