@@ -101,14 +101,20 @@ if ! /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $APP_VERSION" "dist/OMISSI
   /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $APP_VERSION" "dist/OMISSIS.app/Contents/Info.plist"
 fi
 
+# Attributi estesi residui (resource fork, quarantine) sui file appena scritti da
+# PyInstaller possono far fallire "codesign --deep" in modo intermittente, lasciando
+# una firma incoerente con l'Info.plist appena modificato sopra: li rimuoviamo prima
+# di firmare, per entrambi i rami.
+xattr -cr "dist/OMISSIS.app"
+
 if [ -n "$SIGN_IDENTITY" ]; then
   echo "Firma Developer ID dell'app macOS..."
   codesign --force --deep --options runtime --timestamp --sign "$SIGN_IDENTITY" "dist/OMISSIS.app"
-  codesign --verify --deep --strict --verbose=2 "dist/OMISSIS.app"
 else
   echo "APPLE_DEVELOPER_ID_APPLICATION non impostato: creo una firma ad-hoc non notarizzabile."
   codesign --force --deep --sign - "dist/OMISSIS.app"
 fi
+codesign --verify --deep --strict --verbose=2 "dist/OMISSIS.app"
 
 if command -v dmgbuild >/dev/null 2>&1; then
   dmgbuild -s scripts/dmg_settings.py "OMISSIS" "dist/OMISSIS.dmg"

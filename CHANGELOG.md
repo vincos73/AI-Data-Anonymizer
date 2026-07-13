@@ -2,7 +2,7 @@
 
 Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
-## [In sviluppo]
+## [0.5.0]
 
 ### Aggiunto
 - Riconoscimento dei nomi di persona anche senza titoli o contesto: frasi comuni come "la pratica di Mario Rossi" o "Mario Rossi ha richiesto..." ora vengono rilevate grazie a un dizionario locale di oltre 1200 nomi propri italiani, integrato nell'app. Funziona anche nelle build desktop (macOS/Windows) senza componenti aggiuntivi da installare, colmando il buco di sicurezza per cui questi nomi passavano inosservati quando non preceduti da un titolo (sig., dott., ...) o seguiti da un indizio come "nato a" o "codice fiscale".
@@ -11,6 +11,8 @@ Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
 ### Corretto
 - Indirizzi con CAP a 5 cifre: "Via Garibaldi 45, 00185 Roma" veniva rilevato solo fino a "0018", lasciando "5 Roma" in chiaro dopo l'anonimizzazione.
+- Testo del comando illeggibile (bianco su bianco) nella finestra di dialogo per l'installazione di Tesseract OCR.
+- Build macOS: la firma ad-hoc dell'app poteva risultare incoerente con l'Info.plist dopo l'impostazione della versione, lasciando la build senza DMG in modo silenzioso; ora lo script verifica sempre la firma e rimuove gli attributi estesi residui prima di firmare.
 
 ## [0.4.0] - Redesign Dark Pro
 
