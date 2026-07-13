@@ -172,7 +172,9 @@ class ItalianPrivacyRecognizer:
     DICTIONARY_PERSON_SCORE = 0.72
     TERRITORIAL_BODY = re.compile(
         rf"\b(?i:provincia|regione|comune|citt[aà]\s+metropolitana|municipio|unione\s+dei\s+comuni|"
-        rf"comunit[aà]\s+montana)\s+(?:(?:di|del|della|dei|degli|delle)\s+)?"
+        rf"comunit[aà]\s+montana|amministrazione\s+(?:provinciale|comunale|regionale)|"
+        rf"prefettura|questura|procura(?:\s+della\s+repubblica)?|tribunale|camera\s+di\s+commercio)"
+        rf"\s+(?:(?:di|del|della|dei|degli|delle)\s+)?"
         rf"{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{0,4}}"
     )
     PERSON_STOPWORDS = {

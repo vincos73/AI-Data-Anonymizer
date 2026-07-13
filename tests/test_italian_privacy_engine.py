@@ -218,6 +218,30 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn(("TERRITORIAL_BODY", "regione Basilicata"), findings)
         self.assertIn(("TERRITORIAL_BODY", "Comune di Roma"), findings)
 
+    def test_detects_qualified_administration_with_place(self) -> None:
+        findings = self.findings_for("amministrazione provinciale di Potenza")
+        self.assertIn(("TERRITORIAL_BODY", "amministrazione provinciale di Potenza"), findings)
+
+        anonymized = self.engine.anonymize("amministrazione provinciale di Potenza")
+        self.assertNotIn("Potenza", anonymized)
+
+    def test_detects_capitalized_qualified_administration_with_place(self) -> None:
+        findings = self.findings_for("Amministrazione Provinciale di Potenza")
+        self.assertIn(("TERRITORIAL_BODY", "Amministrazione Provinciale di Potenza"), findings)
+
+    def test_unqualified_administration_is_not_a_territorial_body(self) -> None:
+        # "amministrazione del personale" non è un ente territoriale: senza il
+        # qualificatore provinciale/comunale/regionale non deve scattare il falso positivo.
+        findings = self.findings_for("amministrazione del personale")
+        self.assertFalse(any(entity_type == "TERRITORIAL_BODY" for entity_type, _ in findings))
+
+    def test_detects_prefettura_and_questura_with_place(self) -> None:
+        findings = self.findings_for("Prefettura di Matera")
+        self.assertIn(("TERRITORIAL_BODY", "Prefettura di Matera"), findings)
+
+        findings = self.findings_for("Questura di Bari")
+        self.assertIn(("TERRITORIAL_BODY", "Questura di Bari"), findings)
+
     def test_detects_addresses_without_house_number(self) -> None:
         findings = self.findings_for("Residente in Via Appia e domiciliato in Viale Europa 10.")
         self.assertIn(("ADDRESS", "Via Appia"), findings)
