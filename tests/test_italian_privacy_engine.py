@@ -95,7 +95,13 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         findings = self.findings_for("Bonifico intestato a Mario Rossi.")
         self.assertIn(("PERSON", "Mario Rossi"), findings)
 
-        self.assertEqual(self.findings_for("Mario Rossi andrà domani a Milano."), [])
+        # Un nome e cognome capitalizzati senza alcun contesto sono comunque un dato
+        # personale reale: da quando esiste il dizionario di nomi italiani (vedi
+        # DictionaryPersonTest) "Mario Rossi" viene rilevato anche qui, colmando il
+        # gap per cui frasi comuni come questa restavano invisibili all'anonimizzatore.
+        findings = self.findings_for("Mario Rossi andrà domani a Milano.")
+        self.assertIn(("PERSON", "Mario Rossi"), findings)
+        self.assertNotIn(("PERSON", "Milano"), findings)
 
     def test_does_not_anonymize_dates(self) -> None:
         text = "Il sottoscritto Mario Rossi nato il 10/01/1980 e residente dal 5 maggio 2020."
@@ -435,11 +441,16 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
 
         from privacy_guardian.ner_recognizer import NerPersonRecognizer
 
-        text = "Mario Rossi ha inviato la relazione a Giulia Verdi."
+        # Nomi stranieri, non presenti nel dizionario locale di nomi italiani
+        # (first_names.py): questo isola davvero il contributo del NER opzionale,
+        # che non dipende dal dizionario. Con nomi italiani comuni come "Mario
+        # Rossi" il dizionario locale li rileva ora da solo (score più alto),
+        # vedi DictionaryPersonTest.
+        text = "Wolfgang Keller ha inviato la relazione a Elin Andersson."
 
         def fake_nlp(value: str):
             ents = []
-            for name in ("Mario Rossi", "Giulia Verdi"):
+            for name in ("Wolfgang Keller", "Elin Andersson"):
                 start = value.find(name)
                 if start >= 0:
                     ents.append(
@@ -454,12 +465,12 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
             (finding.entity_type, text[finding.start : finding.end], finding.source)
             for finding in engine.analyze(text, "maximum")
         ]
-        self.assertIn(("PERSON", "Mario Rossi", "ner_local"), findings)
-        self.assertIn(("PERSON", "Giulia Verdi", "ner_local"), findings)
+        self.assertIn(("PERSON", "Wolfgang Keller", "ner_local"), findings)
+        self.assertIn(("PERSON", "Elin Andersson", "ner_local"), findings)
 
         anonymized = engine.anonymize(text, mode="maximum")
-        self.assertNotIn("Mario Rossi", anonymized)
-        self.assertNotIn("Giulia Verdi", anonymized)
+        self.assertNotIn("Wolfgang Keller", anonymized)
+        self.assertNotIn("Elin Andersson", anonymized)
         self.assertEqual(source_label("ner_local"), "NER locale (spaCy)")
 
     def test_detects_pec_as_dedicated_category(self) -> None:
@@ -608,6 +619,90 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertEqual(entity_placeholder("PEC_ADDRESS"), "<PEC>")
         self.assertEqual(entity_placeholder("PROTOCOL_CASE_NUMBER"), "<PROTOCOLLO_PRATICA>")
         self.assertEqual(source_label("italian_rules"), "Regole italiane locali")
+
+
+class DictionaryPersonTest(unittest.TestCase):
+    """Riconoscimento di nomi di persona senza titoli né contesto forte, tramite il
+    dizionario locale di nomi italiani (src/privacy_guardian/assets/nomi_italiani.txt)."""
+
+    def setUp(self) -> None:
+        self.engine = PrivacyEngine()
+
+    def findings_for(self, text: str) -> list[tuple[str, str]]:
+        return [(finding.entity_type, text[finding.start : finding.end]) for finding in self.engine.analyze(text)]
+
+    def test_detects_person_in_common_phrase_without_titles(self) -> None:
+        text = "Vi scrivo in merito alla pratica di Mario Rossi, aperta il mese scorso."
+        findings = self.findings_for(text)
+        self.assertIn(("PERSON", "Mario Rossi"), findings)
+
+        anonymized = self.engine.anonymize(text)
+        self.assertNotIn("Mario Rossi", anonymized)
+
+    def test_detects_person_at_start_of_sentence(self) -> None:
+        findings = self.findings_for("Mario Rossi ha richiesto copia del contratto.")
+        self.assertIn(("PERSON", "Mario Rossi"), findings)
+
+    def test_detects_person_after_generic_verb(self) -> None:
+        findings = self.findings_for("Ho parlato con Giulia Bianchi riguardo al preventivo.")
+        self.assertIn(("PERSON", "Giulia Bianchi"), findings)
+
+    def test_propagates_coreference_from_dictionary_match(self) -> None:
+        text = "La pratica di Mario Rossi è aperta. Rossi ha chiesto copia."
+        findings = [
+            (finding.entity_type, text[finding.start : finding.end], finding.source)
+            for finding in self.engine.analyze(text)
+        ]
+        self.assertIn(("PERSON", "Mario Rossi", "name_dictionary"), findings)
+        self.assertIn(("PERSON", "Rossi", "coreference"), findings)
+        self.assertEqual(sum(1 for entity, _, _ in findings if entity == "PERSON"), 2)
+
+    def test_detects_person_preceded_by_capitalized_non_name_word(self) -> None:
+        # Una maiuscola non-nome prima del nome ("Repubblica", "Milano") non deve
+        # nascondere la persona: la scansione è ancorata al nome di battesimo.
+        for text in (
+            "Il Presidente della Repubblica Sergio Mattarella ha firmato.",
+            "Da Milano Sergio Mattarella è partito ieri.",
+        ):
+            findings = self.findings_for(text)
+            self.assertIn(("PERSON", "Sergio Mattarella"), findings, text)
+
+    def test_street_named_after_a_person_is_not_flagged_as_person(self) -> None:
+        text = "L'ufficio si trova in via Mario Rossi 12, 00185 Roma."
+        findings = self.findings_for(text)
+
+        self.assertNotIn(("PERSON", "Mario Rossi"), findings)
+        self.assertFalse(any(entity_type == "PERSON" for entity_type, _ in findings))
+
+    def test_lowercase_name_is_not_matched(self) -> None:
+        self.assertEqual(self.findings_for("la pratica di mario rossi"), [])
+
+    def test_capitalized_non_name_word_is_not_matched(self) -> None:
+        # "Milano" non è un nome di battesimo: solo "Comune di Milano Marittima"
+        # come TERRITORIAL_BODY, nessun PERSON.
+        findings = self.findings_for("Il Comune di Milano Marittima")
+        self.assertFalse(any(entity_type == "PERSON" for entity_type, _ in findings))
+
+    def test_stopword_prefix_is_still_handled_as_before(self) -> None:
+        # "Cliente Rossi": "Cliente" non è un nome nel dizionario e "Rossi" da solo
+        # non forma un candidato di due parole, quindi nessuna regressione.
+        self.assertEqual(self.findings_for("Cliente Rossi ha firmato."), [])
+
+    def test_dictionary_loads_and_contains_expected_names(self) -> None:
+        from privacy_guardian.first_names import is_italian_first_name, load_italian_first_names
+
+        names = load_italian_first_names()
+        self.assertIsInstance(names, frozenset)
+        self.assertGreater(len(names), 0)
+        for expected in ("mario", "giulia", "francesca"):
+            self.assertIn(expected, names)
+        for unexpected in ("milano", "roma", "via"):
+            self.assertNotIn(unexpected, names)
+
+        self.assertTrue(is_italian_first_name("Mario"))
+        self.assertTrue(is_italian_first_name("GIULIA,"))
+        self.assertFalse(is_italian_first_name("Milano"))
+        self.assertFalse(is_italian_first_name(""))
 
 
 class ExcludedValuePairsTest(unittest.TestCase):
