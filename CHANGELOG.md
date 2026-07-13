@@ -5,6 +5,7 @@ Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 ## [In sviluppo]
 
 ### Aggiunto
+- Riconoscimento dei nomi di persona anche senza titoli o contesto: frasi comuni come "la pratica di Mario Rossi" o "Mario Rossi ha richiesto..." ora vengono rilevate grazie a un dizionario locale di oltre 1200 nomi propri italiani, integrato nell'app. Funziona anche nelle build desktop (macOS/Windows) senza componenti aggiuntivi da installare, colmando il buco di sicurezza per cui questi nomi passavano inosservati quando non preceduti da un titolo (sig., dott., ...) o seguiti da un indizio come "nato a" o "codice fiscale".
 - Esclusione dei dati rilevati anche su documenti DOCX e PDF: le caselle del pannello "Dati rilevati" ora funzionano con un documento caricato, mantenendo il formato in uscita (DOCX resta formattato, PDF resta redatto). Su questi formati l'esclusione vale per tutte le occorrenze dello stesso valore; sui PDF scansionati (OCR) un'esclusione non riconosciuta lascia comunque il dato anonimizzato, per sicurezza.
 - Guida all'installazione di Tesseract OCR: quando un PDF contiene immagini e serve l'OCR locale per controllarle in sicurezza, l'app non mostra più solo un avviso in fondo alla finestra ma apre una finestra di dialogo con istruzioni specifiche per macOS (comando Homebrew copiabile), Windows (link alla pagina di download ufficiale) e Linux (comando apt copiabile), più un pulsante "Ho installato, riprova" che ricarica subito il documento.
 

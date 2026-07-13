@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from privacy_guardian.first_names import is_italian_first_name
 from privacy_guardian.models import AnonymizationMode, Finding
 from privacy_guardian.reporting import entity_placeholder
 
@@ -149,6 +150,18 @@ class ItalianPrivacyRecognizer:
         r"(?=\s*,?\s+(?i:nato|nata|residente|domiciliato|domiciliata|codice\s+fiscale|"
         r"c\.?\s*f\.?|email|e-mail|pec|tel\.?|telefono|cell\.?|cellulare)\b)"
     )
+    # Candidati "nome proprio" senza contesto forte: la scansione parte da ogni parola
+    # capitalizzata che sia un nome di battesimo italiano noto (dizionario locale, vedi
+    # first_names.py) e prova a estendere da lì. Ancorarsi al nome — invece che a una
+    # generica sequenza di maiuscole — evita che una maiuscola precedente non-nome
+    # ("Repubblica Sergio Mattarella") consumi il candidato e nasconda la persona.
+    CAPITAL_NAME_TOKEN = re.compile(rf"\b{CAPITAL_NAME_WORD}\b")
+    DICTIONARY_PERSON_FROM_NAME = re.compile(rf"{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}}\b")
+    # Le strade italiane intitolate a persone ("via Mario Rossi") non devono diventare
+    # PERSON: se il candidato è preceduto a breve distanza da un toponimo stradale,
+    # viene scartato (il dedupe con ADDRESS copre già il caso con civico).
+    STREET_PRECEDING_GUARD = re.compile(rf"{STREET_KEYWORD}\s*$", re.IGNORECASE)
+    DICTIONARY_PERSON_SCORE = 0.72
     TERRITORIAL_BODY = re.compile(
         rf"\b(?i:provincia|regione|comune|citt[aà]\s+metropolitana|municipio|unione\s+dei\s+comuni|"
         rf"comunit[aà]\s+montana)\s+(?:(?:di|del|della|dei|degli|delle)\s+)?"
@@ -204,6 +217,7 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._organization_findings(text))
         findings.extend(self._territorial_body_findings(text))
         findings.extend(self._person_findings(text))
+        findings.extend(self._dictionary_person_findings(text))
         if mode in {"maximum", "reversible"}:
             findings.extend(self._regex_findings(text, "DATE", self.DATE, 0.82))
         return self.dedupe(findings)
@@ -392,6 +406,37 @@ class ItalianPrivacyRecognizer:
                 name = text[start:end].strip()
                 if self._looks_like_person_name(name):
                     findings.append(Finding("PERSON", start, end, 0.84))
+        return findings
+
+    def _dictionary_person_findings(self, text: str) -> list[Finding]:
+        """Rileva persone senza titoli né contesto forte tramite il dizionario di nomi.
+
+        A differenza di PERSON/PERSON_TRAILING_CONTEXT (che richiedono un titolo o
+        un indizio testuale immediatamente prima/dopo il nome), questo riconoscitore
+        si basa solo sulla prima parola del candidato: se è un nome di battesimo
+        italiano noto e l'intero candidato "sembra" un nome di persona, viene
+        segnalato con uno score più basso (0.72) e source="name_dictionary".
+        """
+        findings: list[Finding] = []
+        last_end = -1
+        for token in self.CAPITAL_NAME_TOKEN.finditer(text):
+            if token.start() < last_end:
+                continue
+            if not is_italian_first_name(token.group(0)):
+                continue
+            match = self.DICTIONARY_PERSON_FROM_NAME.match(text, token.start())
+            if match is None:
+                continue
+            candidate = match.group(0)
+            if not self._looks_like_person_name(candidate):
+                continue
+            preceding = text[max(0, match.start() - 16) : match.start()]
+            if self.STREET_PRECEDING_GUARD.search(preceding):
+                continue
+            findings.append(
+                Finding("PERSON", match.start(), match.end(), self.DICTIONARY_PERSON_SCORE, source="name_dictionary")
+            )
+            last_end = match.end()
         return findings
 
     def _looks_like_person_name(self, name: str) -> bool:

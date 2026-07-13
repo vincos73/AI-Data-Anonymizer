@@ -55,6 +55,7 @@ MODE_NOTES = {
 }
 SOURCE_LABELS = {
     "italian_rules": "Regole italiane locali",
+    "name_dictionary": "Dizionario nomi italiani",
     "ner_local": "NER locale (spaCy)",
     "coreference": "Propagazione nome",
     "manual": "Aggiunto manualmente",
