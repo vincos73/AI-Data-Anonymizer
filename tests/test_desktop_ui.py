@@ -10,15 +10,16 @@ from __future__ import annotations
 import os
 import unittest
 from pathlib import Path
+from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
     from PySide6.QtCore import Qt
-    from PySide6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication, QDialog
 
     from privacy_guardian.app import MainWindow
-    from privacy_guardian.document_service import LoadedDocument
+    from privacy_guardian.document_service import LoadedDocument, OcrUnavailableError
     from privacy_guardian.findings_panel import ROLE_IS_GROUP
     from privacy_guardian.models import Finding
 
@@ -284,6 +285,53 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
 
         self.assertEqual(panel.included_mask(), [False, True])
         self.assertEqual(len(self.window._checked_findings()), 1)
+
+    def test_ocr_unavailable_error_opens_guided_dialog_instead_of_status_bar(self) -> None:
+        calls: list[Path] = []
+        self.window._show_ocr_setup_dialog = lambda path: calls.append(path)
+
+        with mock.patch(
+            "privacy_guardian.app.load_document",
+            side_effect=OcrUnavailableError("Il PDF contiene immagini. Installa Tesseract OCR."),
+        ):
+            self.window._load_document_from_path("scansione.pdf")
+
+        self.assertEqual(calls, [Path("scansione.pdf")])
+        self.assertIsNone(self.window.loaded_document)
+
+    def test_ocr_dialog_accept_retries_loading_the_same_path(self) -> None:
+        calls: list[Path] = []
+        self.window._load_document_from_path = lambda path: calls.append(Path(path))
+
+        with mock.patch.object(QDialog, "exec", return_value=QDialog.Accepted):
+            self.window._show_ocr_setup_dialog(Path("scansione.pdf"))
+
+        self.assertEqual(calls, [Path("scansione.pdf")])
+
+    def test_ocr_dialog_reject_does_not_retry_loading(self) -> None:
+        calls: list[Path] = []
+        self.window._load_document_from_path = lambda path: calls.append(Path(path))
+
+        with mock.patch.object(QDialog, "exec", return_value=QDialog.Rejected):
+            self.window._show_ocr_setup_dialog(Path("scansione.pdf"))
+
+        self.assertEqual(calls, [])
+
+    def test_ocr_dialog_builds_without_error_on_every_platform(self) -> None:
+        for system in ("Darwin", "Windows", "Linux"):
+            with mock.patch("privacy_guardian.app.platform.system", return_value=system), \
+                    mock.patch.object(QDialog, "exec", return_value=QDialog.Rejected):
+                self.window._show_ocr_setup_dialog(Path("scansione.pdf"))
+
+    def test_tesseract_install_command_is_platform_specific(self) -> None:
+        self.assertEqual(
+            self.window._tesseract_install_command("Darwin"),
+            "brew install tesseract tesseract-lang",
+        )
+        self.assertEqual(
+            self.window._tesseract_install_command("Linux"),
+            "sudo apt install tesseract-ocr tesseract-ocr-ita",
+        )
 
 
 if __name__ == "__main__":

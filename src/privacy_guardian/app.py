@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import platform
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QSignalBlocker, QSize, Qt
+from PySide6.QtCore import QEvent, QSignalBlocker, QSize, Qt, QUrl
 from PySide6.QtGui import (
     QAction,
     QColor,
+    QDesktopServices,
     QDragEnterEvent,
     QDropEvent,
     QFontDatabase,
@@ -51,6 +53,7 @@ from privacy_guardian.document_service import (
     LEGACY_DOC_SUPPORTED,
     AnonymizedDocument,
     LoadedDocument,
+    OcrUnavailableError,
     anonymize_loaded_document,
     excluded_value_pairs,
     load_document,
@@ -73,6 +76,7 @@ from privacy_guardian.styles import APP_STYLE
 
 PROJECT_REPO_URL = "https://github.com/vincos73/AI-Data-Anonymizer"
 PROJECT_RELEASES_URL = f"{PROJECT_REPO_URL}/releases"
+TESSERACT_WINDOWS_DOWNLOAD_URL = "https://github.com/UB-Mannheim/tesseract/wiki"
 PROJECT_SECURITY_URL = f"{PROJECT_REPO_URL}/blob/main/SICUREZZA.md"
 
 
@@ -719,6 +723,9 @@ class MainWindow(QMainWindow):
     def _load_document_from_path(self, filename: str | Path) -> None:
         try:
             self.loaded_document = load_document(filename)
+        except OcrUnavailableError:
+            self._show_ocr_setup_dialog(Path(filename))
+            return
         except Exception as exc:
             self.statusBar().showMessage(self._friendly_error_message(exc), 9000)
             return
@@ -790,6 +797,106 @@ class MainWindow(QMainWindow):
             )
         self._sync_action_state()
 
+    def _tesseract_install_command(self, system: str) -> str:
+        if system == "Darwin":
+            return "brew install tesseract tesseract-lang"
+        return "sudo apt install tesseract-ocr tesseract-ocr-ita"
+
+    def _show_ocr_setup_dialog(self, path: Path) -> None:
+        system = platform.system()
+        dialog = QDialog(self)
+        dialog.setObjectName("InfoDialog")
+        dialog.setWindowTitle("Serve OCR locale per leggere questo PDF")
+        dialog.setModal(True)
+        dialog.setMinimumWidth(460)
+
+        heading = QLabel("Questo PDF contiene immagini")
+        heading.setObjectName("AboutDetails")
+        heading.setStyleSheet("font-weight: 700; font-size: 15px;")
+
+        explanation = QLabel(
+            "Un'immagine nel documento (una scansione, un timbro, un logo) potrebbe contenere dati "
+            "personali. Per controllarla in sicurezza OMISSIS usa Tesseract, un motore OCR che gira "
+            "interamente sul tuo computer: nessun contenuto lascia il dispositivo."
+        )
+        explanation.setObjectName("AboutDetails")
+        explanation.setWordWrap(True)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(24, 22, 24, 18)
+        layout.setSpacing(14)
+        layout.addWidget(heading)
+        layout.addWidget(explanation)
+
+        if system == "Windows":
+            instructions = QLabel(
+                "1. Scarica l'installer di Tesseract per Windows dalla pagina ufficiale UB Mannheim.<br>"
+                "2. Esegui l'installer (impostazioni predefinite vanno bene; includi la lingua italiana "
+                "se richiesto).<br>"
+                "3. Riavvia OMISSIS e riprova a caricare il PDF."
+            )
+            instructions.setObjectName("AboutDetails")
+            instructions.setTextFormat(Qt.RichText)
+            instructions.setWordWrap(True)
+            layout.addWidget(instructions)
+
+            download_button = QPushButton("Apri pagina di download")
+            download_button.setObjectName("SecondaryButton")
+            download_button.clicked.connect(
+                lambda: QDesktopServices.openUrl(QUrl(TESSERACT_WINDOWS_DOWNLOAD_URL))
+            )
+            layout.addWidget(download_button)
+        else:
+            command = self._tesseract_install_command(system)
+            step_label = (
+                "1. Apri il Terminale e incolla questo comando:"
+                if system == "Darwin"
+                else "1. Apri un terminale e incolla questo comando:"
+            )
+            instructions = QLabel(step_label)
+            instructions.setObjectName("AboutDetails")
+            instructions.setWordWrap(True)
+            layout.addWidget(instructions)
+
+            command_field = QLineEdit(command)
+            command_field.setObjectName("CommandField")
+            command_field.setReadOnly(True)
+            layout.addWidget(command_field)
+
+            copy_button = QPushButton("Copia comando")
+            copy_button.setObjectName("SecondaryButton")
+
+            def _copy_command() -> None:
+                QApplication.clipboard().setText(command)
+                copy_button.setText("Copiato ✓")
+
+            copy_button.clicked.connect(_copy_command)
+            layout.addWidget(copy_button)
+
+            final_step = QLabel("2. Riavvia OMISSIS e riprova a caricare il PDF.")
+            final_step.setObjectName("AboutDetails")
+            final_step.setWordWrap(True)
+            layout.addWidget(final_step)
+
+        button_row = QHBoxLayout()
+        close_button = QPushButton("Chiudi")
+        close_button.setObjectName("SecondaryButton")
+        close_button.clicked.connect(dialog.reject)
+
+        retry_button = QPushButton("Ho installato, riprova")
+        retry_button.setObjectName("PrimaryButton")
+        retry_button.clicked.connect(dialog.accept)
+
+        button_row.addWidget(close_button)
+        button_row.addStretch(1)
+        button_row.addWidget(retry_button)
+        layout.addLayout(button_row)
+
+        dialog.setLayout(layout)
+        dialog.setStyleSheet(APP_STYLE)
+        if dialog.exec() == QDialog.Accepted:
+            self._load_document_from_path(path)
+
     def analyze_text(self) -> None:
         if not self._run_analysis():
             return
@@ -843,6 +950,12 @@ class MainWindow(QMainWindow):
                     findings=filtered_findings,
                     excluded_values=excluded_values,
                 )
+            except OcrUnavailableError:
+                self.anonymized_document = None
+                self.output_text.clear()
+                self._sync_action_state()
+                self._show_ocr_setup_dialog(self.loaded_document.path)
+                return
             except Exception as exc:
                 self.anonymized_document = None
                 self.output_text.clear()

@@ -44,6 +44,10 @@ for prefix, uri in OOXML_NAMESPACES.items():
     ET.register_namespace(prefix, uri)
 
 
+class OcrUnavailableError(ValueError):
+    """Raised when a PDF needs local OCR but Tesseract is not installed."""
+
+
 @dataclass(frozen=True)
 class LoadedDocument:
     path: Path
@@ -298,7 +302,7 @@ def _anonymize_pdf(
             page_has_images = _pdf_page_has_images(reader.pages[page_index])
             if page_has_images:
                 if not _tesseract_available():
-                    raise ValueError(_ocr_unavailable_message(str(page_index + 1)))
+                    raise OcrUnavailableError(_ocr_unavailable_message(str(page_index + 1)))
                 ocr_text = _ocr_image(image)
                 findings = _filter_excluded_findings(ocr_text.text, engine.analyze(ocr_text.text, mode), excluded_values)
                 _draw_ocr_redactions(image, ocr_text.words, findings)
@@ -310,7 +314,7 @@ def _anonymize_pdf(
                     )
                     _draw_ocr_redactions(image, ocr_text.words, findings)
                 else:
-                    raise ValueError(_ocr_unavailable_message(str(page_index + 1)))
+                    raise OcrUnavailableError(_ocr_unavailable_message(str(page_index + 1)))
 
             redacted_pdf.setPageSize((width, height))
             redacted_pdf.drawImage(ImageReader(image), 0, 0, width=width, height=height)
@@ -736,7 +740,7 @@ def _read_pdf(path: Path) -> PdfTextResult:
                 "OCR locale completato, ma non ho trovato testo affidabile nelle pagine "
                 f"{pages_label}. Controlla la qualità della scansione e riprova."
             )
-        raise ValueError(_ocr_unavailable_message(pages_label))
+        raise OcrUnavailableError(_ocr_unavailable_message(pages_label))
 
     if not pages:
         raise ValueError(
@@ -760,7 +764,7 @@ def _ocr_pdfium_page(page) -> OcrPageText:
 def _ocr_image(image) -> OcrPageText:
     command = _tesseract_command()
     if command is None:
-        raise ValueError(_ocr_unavailable_message(""))
+        raise OcrUnavailableError(_ocr_unavailable_message(""))
 
     # mkstemp + reopen by descriptor: NamedTemporaryFile cannot be reopened by name on Windows.
     descriptor, image_path = tempfile.mkstemp(suffix=".png")
