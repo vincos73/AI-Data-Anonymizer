@@ -91,7 +91,7 @@ function renderFindings(findings) {
       finding.label || finding.entity_type,
       finding.preview,
       `${finding.start}-${finding.end}`,
-      Number(finding.score).toFixed(2),
+      reliabilityLabel(Number(finding.score)),
       finding.source_label || finding.source,
     ];
 
@@ -103,6 +103,12 @@ function renderFindings(findings) {
 
     findingsBody.appendChild(row);
   }
+}
+
+function reliabilityLabel(score) {
+  if (score >= 0.9) return "Alta";
+  if (score >= 0.8) return "Buona";
+  return "Da verificare";
 }
 
 function renderReport(report) {

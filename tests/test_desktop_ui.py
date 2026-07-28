@@ -7,16 +7,28 @@ skip cleanly if PySide6 or a usable Qt platform plugin isn't available.
 
 from __future__ import annotations
 
+import atexit
 import os
+import tempfile
+import time
 import unittest
 from pathlib import Path
+from threading import Event
 from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+os.environ.setdefault("OMISSIS_SYNC_JOBS", "1")
+_ACTIVITY_TEST_DIR = tempfile.TemporaryDirectory(prefix="omissis-desktop-tests-")
+atexit.register(_ACTIVITY_TEST_DIR.cleanup)
+os.environ["OMISSIS_ACTIVITY_LOG_PATH"] = str(Path(_ACTIVITY_TEST_DIR.name) / "activity-log.jsonl")
+os.environ["OMISSIS_ACTIVITY_SETTINGS_PATH"] = str(
+    Path(_ACTIVITY_TEST_DIR.name) / "activity-settings.json"
+)
 
 try:
     from PySide6.QtCore import Qt
-    from PySide6.QtWidgets import QApplication, QDialog
+    from PySide6.QtGui import QCloseEvent, QKeySequence, QPalette
+    from PySide6.QtWidgets import QApplication, QDialog, QLabel, QMessageBox
 
     from privacy_guardian.app import MainWindow
     from privacy_guardian.document_service import AnonymizedDocument, LoadedDocument, OcrUnavailableError
@@ -62,6 +74,233 @@ class DesktopMainWindowTests(unittest.TestCase):
         self.window.input_text.setPlainText("Mario Rossi, telefono 333 1234567.")
         self.assertEqual(self.window.primary_button.text(), "Analizza dati")
         self.assertTrue(self.window.primary_button.isEnabled())
+
+    def test_toolbar_adapts_and_main_actions_have_shortcuts(self) -> None:
+        self.window.show()
+        self.window.resize(960, 640)
+        QApplication.processEvents()
+        self.assertTrue(self.window.document_toolbar._compact)
+        self.window.resize(1400, 760)
+        QApplication.processEvents()
+        self.assertFalse(self.window.document_toolbar._compact)
+        self.assertEqual(self.window.open_action.shortcut(), QKeySequence.Open)
+        self.assertEqual(self.window.save_output_action.shortcut(), QKeySequence.Save)
+        self.assertEqual(self.window.focus_search_action.shortcut(), QKeySequence.Find)
+
+    def test_accessible_names_explain_the_main_controls(self) -> None:
+        self.assertEqual(self.window.input_text.accessibleName(), "Testo originale")
+        self.assertEqual(self.window.output_text.accessibleName(), "Testo anonimizzato")
+        self.assertIn("saranno anonimizzate", self.window.findings_panel.tree.accessibleDescription())
+
+    def test_message_box_text_has_contrast_on_native_light_surface(self) -> None:
+        dialog = QMessageBox(self.window)
+        dialog.setText("Questa azione eliminerebbe del lavoro non salvato.")
+        dialog.setInformativeText("Verrà eliminato il risultato anonimizzato.")
+        dialog.show()
+        QApplication.processEvents()
+
+        main_label = dialog.findChild(QLabel, "qt_msgbox_label")
+        informative_label = dialog.findChild(QLabel, "qt_msgbox_informativelabel")
+        self.assertIsNotNone(main_label)
+        self.assertIsNotNone(informative_label)
+        self.assertEqual(main_label.palette().color(QPalette.WindowText).name(), "#12181f")
+        self.assertEqual(informative_label.palette().color(QPalette.WindowText).name(), "#2f3d4b")
+        self.assertEqual(dialog.palette().color(QPalette.Window).name(), "#f4f6f8")
+        dialog.close()
+
+    def test_zero_findings_is_a_completed_analysis(self) -> None:
+        self.window.input_text.setPlainText("Testo privo di dati riconoscibili.")
+        with mock.patch.object(self.window.engine, "analyze", return_value=[]):
+            self.window.analyze_text()
+
+        self.assertFalse(self.window.findings_stale)
+        self.assertEqual(self.window.primary_button.text(), "Anonimizza 0 dati")
+
+
+@unittest.skipIf(_QT_IMPORT_ERROR is not None, f"PySide6/Qt not usable in this environment: {_QT_IMPORT_ERROR}")
+class OutputSafetyTests(unittest.TestCase):
+    def setUp(self) -> None:
+        _make_app()
+        self.window = MainWindow()
+
+    def tearDown(self) -> None:
+        self.window.close()
+        self.window.deleteLater()
+
+    def _prepare_output(self, *, exclude_email: bool = False) -> None:
+        text = "Mario Rossi scrive a mario.rossi@example.com."
+        person_end = len("Mario Rossi")
+        email_start = text.index("mario.rossi@example.com")
+        findings = [
+            Finding("PERSON", 0, person_end, 0.95),
+            Finding("EMAIL_ADDRESS", email_start, email_start + len("mario.rossi@example.com"), 0.98),
+        ]
+        self.window.input_text.setPlainText(text)
+        self.window.findings = findings
+        self.window.findings_stale = False
+        self.window._findings_source_text = text
+        self.window._findings_mode = self.window._selected_mode()
+        self.window._fill_table()
+        if exclude_email:
+            self.window.findings_panel._index_to_item[1].setCheckState(Qt.Unchecked)
+        self.window.anonymize_text()
+
+    def test_generated_output_shows_visible_final_report(self) -> None:
+        self._prepare_output(exclude_email=True)
+
+        self.assertIsNotNone(self.window._output_provenance)
+        self.assertFalse(self.window.report_label.isHidden())
+        self.assertIn("Verifica finale", self.window.report_label.text())
+        self.assertIn("Modalità Massima protezione", self.window.report_label.text())
+        self.assertIn("Anonimizzato 1 dato su 2", self.window.report_label.text())
+        self.assertIn("Esclusi 1", self.window.report_label.text())
+        self.assertTrue(self.window.copy_button.isEnabled())
+        self.assertTrue(self.window.save_button.isEnabled())
+
+    def test_mode_change_makes_existing_output_unusable(self) -> None:
+        self._prepare_output()
+
+        self.window.mode_radios["standard"].setChecked(True)
+
+        self.assertTrue(self.window._managed_output_is_stale())
+        self.assertFalse(self.window.copy_button.isEnabled())
+        self.assertFalse(self.window.save_button.isEnabled())
+        self.assertFalse(self.window.output_text.isEnabled())
+        self.assertEqual(self.window.primary_button.text(), "Rianalizza dati")
+        self.assertIn("Risultato da rigenerare", self.window.report_label.text())
+
+    def test_source_change_makes_existing_output_unusable(self) -> None:
+        self._prepare_output()
+
+        self.window.input_text.setPlainText(self.window.input_text.toPlainText() + " Nuovo contenuto.")
+
+        self.assertTrue(self.window._managed_output_is_stale())
+        self.assertFalse(self.window.copy_button.isEnabled())
+        self.assertFalse(self.window.save_button.isEnabled())
+        self.assertIn("testo sorgente", self.window.report_label.text())
+
+    def test_selection_change_requires_regeneration(self) -> None:
+        self._prepare_output()
+
+        self.window.findings_panel._index_to_item[0].setCheckState(Qt.Unchecked)
+
+        self.assertTrue(self.window._managed_output_is_stale())
+        self.assertEqual(self.window.primary_button.text(), "Rigenera 1 dato")
+        self.assertFalse(self.window.copy_button.isEnabled())
+        self.assertFalse(self.window.save_button.isEnabled())
+
+    def test_stale_output_is_guarded_even_if_actions_are_called_directly(self) -> None:
+        self._prepare_output()
+        self.window.mode_radios["standard"].setChecked(True)
+
+        self.window.copy_output()
+        self.assertIn("Rigeneralo prima di copiarlo", self.window.statusBar().currentMessage())
+
+        with mock.patch("privacy_guardian.app.QFileDialog.getSaveFileName") as save_dialog:
+            self.window.save_output()
+
+        save_dialog.assert_not_called()
+        self.assertIn("Rigeneralo prima di salvarlo", self.window.statusBar().currentMessage())
+
+    def test_reversible_report_warns_until_map_is_saved(self) -> None:
+        self.window.mode_radios["reversible"].setChecked(True)
+        self._prepare_output()
+
+        self.assertTrue(self.window.reversible_mapping)
+        self.assertFalse(self.window._reversible_map_saved)
+        self.assertIn("Mappa reversibile ancora da salvare", self.window.report_label.text())
+        self.assertEqual(self.window.map_status_label.objectName(), "MapStatusWarning")
+
+        with mock.patch(
+            "privacy_guardian.app.QFileDialog.getSaveFileName",
+            return_value=("/tmp/test-output.omissis-map", ""),
+        ), mock.patch.object(self.window, "_ask_passphrase", return_value="password locale"), mock.patch(
+            "privacy_guardian.app.write_encrypted_mapping"
+        ):
+            self.window.save_reversible_map()
+
+        self.assertTrue(self.window._reversible_map_saved)
+        self.assertIn("Mappa reversibile salvata", self.window.report_label.text())
+        self.assertEqual(self.window.map_status_label.objectName(), "MapStatusReady")
+
+    def test_failed_regeneration_preserves_previous_output(self) -> None:
+        self._prepare_output()
+        previous_output = self.window.output_text.toPlainText()
+        self.window.findings_panel._index_to_item[0].setCheckState(Qt.Unchecked)
+
+        with mock.patch(
+            "privacy_guardian.app.anonymize_workflow",
+            side_effect=RuntimeError("errore sintetico"),
+        ):
+            self.window.anonymize_text()
+
+        self.assertEqual(self.window.output_text.toPlainText(), previous_output)
+        self.assertTrue(self.window._managed_output_is_stale())
+        self.assertIn("errore sintetico", self.window.statusBar().currentMessage())
+
+    def test_async_cancellation_preserves_previous_output(self) -> None:
+        self._prepare_output()
+        previous_output = self.window.output_text.toPlainText()
+        self.window.findings_panel._index_to_item[0].setCheckState(Qt.Unchecked)
+        self.window._run_jobs_synchronously = False
+        started = Event()
+        release = Event()
+
+        def slow_workflow(engine, request, context):
+            started.set()
+            release.wait(timeout=3)
+            context.check_cancelled()
+            raise AssertionError("Il job cancellato non deve produrre un risultato.")
+
+        with mock.patch("privacy_guardian.app.anonymize_workflow", side_effect=slow_workflow):
+            self.window.anonymize_text()
+            self.assertTrue(started.wait(timeout=2))
+            self.assertIsNotNone(self.window._active_job)
+            self.assertFalse(self.window.job_frame.isHidden())
+            self.window.cancel_active_job()
+            release.set()
+
+            deadline = time.monotonic() + 3
+            while self.window._active_job is not None and time.monotonic() < deadline:
+                QApplication.processEvents()
+                time.sleep(0.01)
+
+        self.assertIsNone(self.window._active_job)
+        self.assertEqual(self.window.output_text.toPlainText(), previous_output)
+        self.assertTrue(self.window._managed_output_is_stale())
+        self.assertIn("annullata", self.window.statusBar().currentMessage().lower())
+
+    def test_clear_can_be_cancelled_when_work_is_unsaved(self) -> None:
+        self._prepare_output()
+        original_output = self.window.output_text.toPlainText()
+
+        with mock.patch.object(self.window, "_confirm_discard_work", return_value=False):
+            self.window.clear_all()
+
+        self.assertEqual(self.window.output_text.toPlainText(), original_output)
+        self.assertIsNotNone(self.window._output_provenance)
+
+    def test_loading_can_be_cancelled_before_current_work_is_replaced(self) -> None:
+        self.window.input_text.setPlainText("Testo incollato non salvato.")
+
+        with mock.patch.object(self.window, "_confirm_discard_work", return_value=False), mock.patch(
+            "privacy_guardian.app.load_document"
+        ) as load_mock:
+            self.window._load_document_from_path("nuovo-documento.txt")
+
+        load_mock.assert_not_called()
+        self.assertEqual(self.window.input_text.toPlainText(), "Testo incollato non salvato.")
+
+    def test_close_event_respects_discard_cancellation(self) -> None:
+        self.window.input_text.setPlainText("Testo incollato non salvato.")
+        event = QCloseEvent()
+
+        with mock.patch.object(self.window, "isVisible", return_value=True), mock.patch.object(
+            self.window, "_confirm_discard_work", return_value=False
+        ):
+            self.window.closeEvent(event)
+
+        self.assertFalse(event.isAccepted())
 
 
 @unittest.skipIf(_QT_IMPORT_ERROR is not None, f"PySide6/Qt not usable in this environment: {_QT_IMPORT_ERROR}")
@@ -134,6 +373,16 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         self.assertEqual(panel._model.rowCount(), 1)
         panel.search_edit.clear()
         self.assertEqual(panel._model.rowCount(), 3)
+
+    def test_review_labels_explain_action_and_reliability(self) -> None:
+        text = "Mario Rossi"
+        self._set_synthetic_findings(text, [Finding("PERSON", 0, 11, 0.95)])
+        panel = self.window.findings_panel
+
+        self.assertEqual(panel._model.headerData(0, Qt.Horizontal), "Anonimizza")
+        self.assertEqual(panel._model.headerData(2, Qt.Horizontal), "Affidabilità")
+        self.assertEqual(panel._model.item(0, 2).text(), "Alta")
+        self.assertIn("Spuntato", panel.selection_help_label.text())
 
     def test_clicking_a_row_moves_editor_cursor_to_finding_start(self) -> None:
         text = "Mario Rossi, email mario.rossi@example.com, tel 333 1234567."
@@ -245,6 +494,48 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         self.assertIsNone(self.window.loaded_document)
         self.assertTrue(self.window._manual_add_supported())
 
+    def test_extract_pdf_as_text_normalizes_and_reanalyzes(self) -> None:
+        loaded = LoadedDocument(
+            path=Path("atto.pdf"),
+            text="Università degli Studi della Basili-\ncata\n\nMario Ros-\nsi",
+            extension=".pdf",
+        )
+        self.window.loaded_document = loaded
+        self.window.input_text.setPlainText(loaded.text)
+
+        self.window._extract_document_as_text()
+
+        converted = self.window.input_text.toPlainText()
+        self.assertIsNone(self.window.loaded_document)
+        self.assertEqual(
+            converted,
+            "Università degli Studi della Basilicata\n\nMario Rossi",
+        )
+        values = [
+            (finding.entity_type, converted[finding.start : finding.end])
+            for finding in self.window.findings
+        ]
+        self.assertIn(
+            ("ORGANIZATION", "Università degli Studi della Basilicata"),
+            values,
+        )
+        self.assertIn(("PERSON", "Mario Rossi"), values)
+        self.assertIn("PDF convertito in testo", self.window.document_label.text())
+        self.assertTrue(self.window.findings_panel.notice_frame.isHidden())
+
+    def test_pdf_notice_offers_text_conversion(self) -> None:
+        self._load_fake_document_with_findings(
+            ".pdf",
+            "Mario Rossi",
+            [Finding("PERSON", 0, 11, 0.9)],
+        )
+
+        self.assertFalse(self.window.findings_panel.notice_frame.isHidden())
+        self.assertEqual(
+            self.window.findings_panel.notice_button.text(),
+            "Converti PDF in testo →",
+        )
+
     def _load_fake_document_with_findings(
         self, extension: str, text: str, findings: list[Finding]
     ) -> None:
@@ -319,7 +610,7 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
             captured.update(kwargs)
             return AnonymizedDocument(filename="documento_anonimizzato.pdf", data=b"%PDF-1.4", text=text, findings=[])
 
-        with mock.patch("privacy_guardian.app.anonymize_loaded_document", side_effect=fake_anonymize):
+        with mock.patch("privacy_guardian.desktop_workflows.anonymize_loaded_document", side_effect=fake_anonymize):
             self.window.anonymize_text()
 
         self.assertEqual(captured.get("extra_values"), frozenset({("IDENTITY_DOCUMENT", "ABC9988")}))
@@ -337,7 +628,7 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
             captured.update(kwargs)
             return AnonymizedDocument(filename="documento_anonimizzato.docx", data=b"PK", text=text, findings=[])
 
-        with mock.patch("privacy_guardian.app.anonymize_loaded_document", side_effect=fake_anonymize):
+        with mock.patch("privacy_guardian.desktop_workflows.anonymize_loaded_document", side_effect=fake_anonymize):
             self.window.anonymize_text()
 
         self.assertEqual(captured.get("extra_values"), frozenset({("IDENTITY_DOCUMENT", "ABC9988")}))
@@ -356,7 +647,7 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
             captured.update(kwargs)
             return AnonymizedDocument(filename="documento_anonimizzato.docx", data=b"PK", text=text, findings=[])
 
-        with mock.patch("privacy_guardian.app.anonymize_loaded_document", side_effect=fake_anonymize):
+        with mock.patch("privacy_guardian.desktop_workflows.anonymize_loaded_document", side_effect=fake_anonymize):
             self.window.anonymize_text()
 
         self.assertIsNone(captured.get("extra_values"))

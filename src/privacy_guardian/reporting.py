@@ -7,6 +7,7 @@ from privacy_guardian.models import AnonymizationMode, Finding
 
 ENTITY_LABELS = {
     "ADDRESS": ("indirizzo", "indirizzi"),
+    "CATASTO": ("dato catastale", "dati catastali"),
     "CODICE_FISCALE": ("codice fiscale", "codici fiscali"),
     "CREDIT_CARD": ("carta di pagamento", "carte di pagamento"),
     "DATE": ("data", "date"),
@@ -14,11 +15,13 @@ ENTITY_LABELS = {
     "IBAN": ("IBAN", "IBAN"),
     "HEALTH_CARD": ("tessera sanitaria", "tessere sanitarie"),
     "IDENTITY_DOCUMENT": ("documento d'identità", "documenti d'identità"),
+    "LOCATION": ("località", "località"),
     "ORGANIZATION": ("organizzazione", "organizzazioni"),
     "PARTITA_IVA": ("partita IVA", "partite IVA"),
     "PEC_ADDRESS": ("PEC", "PEC"),
     "PERSON": ("persona", "persone"),
     "PHONE_NUMBER": ("telefono", "telefoni"),
+    "POSTAL_CODE": ("CAP", "CAP"),
     "PROTOCOL_CASE_NUMBER": ("numero protocollo/pratica", "numeri protocollo/pratica"),
     "SDI_CODE": ("codice SDI", "codici SDI"),
     "TERRITORIAL_BODY": ("ente territoriale", "enti territoriali"),
@@ -26,6 +29,7 @@ ENTITY_LABELS = {
 }
 ENTITY_PLACEHOLDERS = {
     "ADDRESS": "INDIRIZZO",
+    "CATASTO": "DATO_CATASTALE",
     "CODICE_FISCALE": "CODICE_FISCALE",
     "CREDIT_CARD": "CARTA_PAGAMENTO",
     "DATE": "DATA",
@@ -33,11 +37,13 @@ ENTITY_PLACEHOLDERS = {
     "HEALTH_CARD": "TESSERA_SANITARIA",
     "IBAN": "IBAN",
     "IDENTITY_DOCUMENT": "DOCUMENTO_IDENTITA",
+    "LOCATION": "LOCALITA",
     "ORGANIZATION": "ORGANIZZAZIONE",
     "PARTITA_IVA": "PARTITA_IVA",
     "PEC_ADDRESS": "PEC",
     "PERSON": "PERSONA",
     "PHONE_NUMBER": "TELEFONO",
+    "POSTAL_CODE": "CAP",
     "PROTOCOL_CASE_NUMBER": "PROTOCOLLO_PRATICA",
     "SDI_CODE": "CODICE_SDI",
     "TERRITORIAL_BODY": "ENTE_TERRITORIALE",
@@ -55,8 +61,10 @@ MODE_NOTES = {
 }
 SOURCE_LABELS = {
     "italian_rules": "Regole italiane locali",
+    "location_dictionary": "Elenco località italiane (ISTAT)",
     "name_dictionary": "Dizionario nomi italiani",
     "ner_local": "NER locale (spaCy)",
+    "surname_first_rule": "Cognome e nome in elenchi",
     "coreference": "Propagazione nome",
     "manual": "Aggiunto manualmente",
 }

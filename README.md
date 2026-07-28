@@ -10,12 +10,12 @@ La web app esiste solo come opzione avanzata per sviluppatori, demo locali o ins
 
 ## Scarica App Desktop
 
-Ultima versione: **v0.4.0**
+Versione del codice: **v0.6.2**. Le build già pubblicate possono avere un numero precedente: usa la pagina Releases e controlla il numero mostrato nell'app.
 
 | Sistema | Download |
 | --- | --- |
-| Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Scarica DMG per macOS](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.4.0/OMISSIS-macOS-Apple-Silicon.dmg) |
-| Windows | [Scarica ZIP per Windows](https://github.com/vincos73/AI-Data-Anonymizer/releases/download/v0.4.0/OMISSIS-Windows.zip) |
+| Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Apri l'ultima release](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) e scarica `OMISSIS-macOS-Apple-Silicon.dmg` |
+| Windows | [Apri l'ultima release](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) e scarica `OMISSIS-Windows.zip` |
 
 Tutti i file sono disponibili nella pagina [Releases](https://github.com/vincos73/AI-Data-Anonymizer/releases).
 
@@ -46,7 +46,7 @@ Su Windows i vecchi file `.doc` non sono supportati direttamente: convertili pri
 
 1. Apri l'app.
 2. Carica un documento, trascinalo nella finestra o incolla un testo.
-3. Clicca **Analizza** per vedere quali dati sono stati riconosciuti.
+3. Clicca **Analizza dati** per vedere quali dati sono stati riconosciuti.
 4. Scegli la modalità di protezione.
 5. Clicca **Anonimizza**.
 6. Leggi il report finale con modalità usata, numero di dati riconosciuti e avvisi di controllo.
@@ -55,17 +55,23 @@ Su Windows i vecchi file `.doc` non sono supportati direttamente: convertili pri
 9. Controlla il risultato prima di condividerlo.
 10. Salva o copia il testo anonimizzato.
 
+Caricamento, OCR, analisi e anonimizzazione mostrano l'avanzamento e possono essere annullati. Un'operazione interrotta o fallita non sostituisce il risultato precedente. La conversione di un PDF in testo avvia automaticamente una nuova analisi sul testo normalizzato.
+
+Scorciatoie principali: `Cmd/Ctrl+O` carica un documento, `Cmd/Ctrl+Invio` esegue il passaggio corrente, `Cmd/Ctrl+F` cerca nei dati rilevati e `Cmd/Ctrl+S` salva il risultato.
+
 ## Modalità di Protezione
 
 ### Standard
 
-La modalità Standard mantiene più leggibile il testo. Per persone, organizzazioni, indirizzi ed enti territoriali conserva le iniziali.
+La modalità Standard mantiene più leggibile il testo. Per persone, organizzazioni e indirizzi conserva le iniziali. Negli enti territoriali e accademici mantiene in chiaro la funzione istituzionale e abbrevia soltanto il nome identificativo, così il contesto degli attori dell'atto resta comprensibile.
 
 Esempio:
 
 ```text
 Mario Rossi -> M. R.
 Alfa Beta S.r.l. -> A. B. S. r. l.
+Provincia di Potenza -> Provincia di P.
+Università degli Studi della Basilicata -> Università degli Studi della B.
 ```
 
 In modalità Standard le date non vengono anonimizzate.
@@ -120,23 +126,25 @@ OMISSIS riconosce, con regole conservative:
 - documenti d'identità, passaporti e patenti quando indicati con contesto esplicito;
 - targhe veicolo quando indicate con contesto esplicito;
 - numeri di protocollo, pratica, fascicolo o istanza quando indicati con contesto esplicito;
+- riferimenti catastali come foglio, particella, mappale, subalterno, sezione e categoria catastale;
 - indirizzi italiani con segnali forti come via, viale, piazza, corso, anche scritti in minuscolo quando è presente il numero civico;
-- CAP seguito da nome di località (es. `00185 Roma`);
+- CAP indicato esplicitamente (es. `CAP 85100`) o seguito dal nome di una località (es. `00185 Roma`);
+- regioni, province e comuni italiani, usando l'elenco locale ISTAT aggiornato al 21 febbraio 2026 e segnali contestuali per limitare i falsi positivi;
 - nomi di persone con contesto forte, per esempio nascita, residenza o intestatario di pagamento;
 - aziende con forme giuridiche come `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperative e simili;
 - enti territoriali come `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`;
 - date comuni in modalità Massima protezione e Reversibile.
 
-### Nomi senza contesto: NER locale opzionale
+### Nomi e località senza contesto: NER locale opzionale
 
-Di base i nomi di persona vengono riconosciuti solo con contesto forte, per mantenere alta la precisione. Se vuoi riconoscere anche i nomi senza contesto (per esempio `Mario Rossi ha inviato la relazione`), puoi installare il riconoscimento NER locale basato su spaCy:
+Di base nomi e località vengono riconosciuti con regole italiane, un dizionario di nomi e l'elenco locale ISTAT dei comuni, delle province e delle regioni. Se vuoi riconoscere anche nomi e località senza contesto, incluse località estere, puoi installare il riconoscimento NER locale basato su spaCy:
 
 ```bash
 pip install "ai-data-anonymizer[ner]"
 python -m spacy download it_core_news_lg
 ```
 
-Il modello gira interamente sul tuo computer: nessun dato viene inviato a servizi esterni. Quando è attivo, lo stato del motore mostra `NER locale attivo` e i nomi trovati dal modello compaiono nella tabella con origine `NER locale (spaCy)`. Per disattivarlo senza disinstallare, imposta la variabile d'ambiente `OMISSIS_NER=0`.
+Il modello gira interamente sul tuo computer: nessun dato viene inviato a servizi esterni. Quando è attivo, lo stato del motore mostra `NER locale attivo` e i nomi o le località trovati dal modello compaiono nella tabella con origine `NER locale (spaCy)`. Le località italiane riconosciute dall'elenco integrato mostrano invece l'origine `Elenco località italiane (ISTAT)`. Per disattivare spaCy senza disinstallarlo, imposta la variabile d'ambiente `OMISSIS_NER=0`.
 
 ## Formati Supportati
 
@@ -144,7 +152,7 @@ Il modello gira interamente sul tuo computer: nessun dato viene inviato a serviz
 | --- | --- |
 | `.txt`, `.md`, `.csv` | Legge e salva file di testo anonimizzati |
 | `.docx` | Legge e salva documenti Word mantenendo struttura, stili, tabelle e immagini quando possibile |
-| `.pdf` | Estrae il testo per analisi e salva un PDF rasterizzato con oscuramenti permanenti; gestisce anche pagine miste testo/immagini usando OCR locale Tesseract quando disponibile |
+| `.pdf` | Può salvare un PDF rasterizzato con oscuramenti permanenti oppure convertirlo in testo ricomponendo righe e sillabazioni per migliorare l'analisi e l'uso con un LLM; gestisce anche pagine miste testo/immagini usando OCR locale Tesseract quando disponibile |
 | `.doc` | Supportato solo su macOS, convertito in `.docx` prima dell'anonimizzazione |
 
 I PDF scansionati o composti solo da immagini richiedono OCR. OMISSIS può usare **Tesseract OCR locale** quando è installato sul computer; non chiama servizi OCR esterni. Se Tesseract non è disponibile o non trova testo affidabile, l'app blocca il PDF, così l'utente non scambia un file non letto per un documento già sicuro. Il PDF anonimizzato viene ricostruito come immagini di pagina redatte: questo evita di lasciare il testo originale sotto gli oscuramenti, ma il testo del PDF finale non sarà copiabile o ricercabile.
@@ -155,9 +163,9 @@ La versione desktop lavora localmente sul computer. Non invia testo o file a Ope
 
 Per i dettagli operativi leggi la pagina [Sicurezza e privacy](SICUREZZA.md).
 
-L'app desktop mantiene un registro attività locale consultabile dal menu **Strumenti > Registro attività**. Il registro salva solo metadati: data e ora, operazione, modalità, conteggi per categoria, estensione, dimensione e hash SHA-256 dei file quando disponibili. Non salva testo originale, testo anonimizzato, valori trovati o percorso completo dei file.
+L'app desktop mantiene un registro attività locale consultabile dal menu **Strumenti > Registro attività**. Il registro salva solo metadati: data e ora, operazione, modalità, conteggi per categoria, estensione, dimensione e hash SHA-256 dei file quando disponibili. Non salva testo originale, testo anonimizzato, valori trovati o percorso completo dei file. Dalla stessa finestra puoi disattivarlo, scegliere quante operazioni conservare o cancellarlo.
 
-La modalità Reversibile crea una mappa locale cifrata con password. Questa mappa è l'unico posto in cui OMISSIS conserva la corrispondenza tra segnaposto e valori reali, e viene salvata solo quando lo chiedi esplicitamente.
+La modalità Reversibile crea una mappa locale cifrata con password. Questa mappa è l'unico posto in cui OMISSIS conserva la corrispondenza tra segnaposto e valori reali, e viene salvata solo quando lo chiedi esplicitamente. Risultati, mappe e impostazioni locali vengono sostituiti solo dopo una scrittura completa; sui sistemi compatibili i file sensibili sono accessibili soltanto all'utente.
 
 La web app non è necessaria per l'uso normale. Se la avvii in locale su `127.0.0.1`, resta sul tuo computer come un'interfaccia browser. Se invece la pubblichi su un server, il testo inviato alla web app arriva a quel server: per documenti sensibili usala solo su infrastruttura sotto il tuo controllo e con HTTPS.
 
@@ -253,6 +261,8 @@ Build macOS:
 ./scripts/build_macos_app.sh
 ```
 
+La build produce il DMG quando macOS consente la creazione del volume. In ambienti isolati dove `hdiutil` non può montarlo, conserva la `.app` firmata e crea automaticamente uno ZIP versionato installabile.
+
 ### Firma e notarizzazione macOS
 
 Per distribuire OMISSIS senza il blocco Gatekeeper, serve un account Apple Developer Program e un certificato **Developer ID Application**.
@@ -277,14 +287,14 @@ Build Windows da PowerShell:
 
 ## Stato del Progetto
 
-Questa è una release open source iniziale. Contributi utili:
+OMISSIS è un progetto open source in evoluzione. Contributi utili:
 
 - ridurre falsi positivi e falsi negativi italiani;
 - migliorare la preservazione della formattazione;
 - migliorare OCR locale per PDF scansionati e immagini;
 - raffinare la modalità reversibile e la ricostruzione dei testi generati dall'IA;
 - aggiungere nuovi riconoscitori con test accurati;
-- migliorare packaging Windows, firma delle app e automazione delle release.
+- migliorare firma e notarizzazione delle build pubblicate.
 
 ## Licenza
 

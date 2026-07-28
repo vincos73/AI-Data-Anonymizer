@@ -3,6 +3,7 @@ set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_DIR"
+export PYINSTALLER_CONFIG_DIR="${PYINSTALLER_CONFIG_DIR:-$PROJECT_DIR/.pyinstaller-cache}"
 
 PYTHON_BIN=""
 for candidate in python3.13 python3.12 python3.11 python3.10 python3; do
@@ -61,8 +62,10 @@ then
 fi
 
 source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e ".[build]"
+python -m pip install --no-build-isolation -e ".[build,ner]"
+if ! python -c "import it_core_news_lg" >/dev/null 2>&1; then
+  python -m spacy download it_core_news_lg
+fi
 APP_VERSION="$(python - <<'PY'
 from privacy_guardian import __version__
 print(__version__)
@@ -80,7 +83,13 @@ fi
 
 rm -rf build dist
 python scripts/create_app_icon.py
-iconutil -c icns assets/app_icon.iconset -o assets/app_icon.icns
+if ! iconutil -c icns assets/app_icon.iconset -o assets/app_icon.icns; then
+  if [ ! -s assets/app_icon.icns ]; then
+    echo "Non riesco a creare l'icona macOS e non e disponibile un file .icns valido."
+    exit 1
+  fi
+  echo "Iconset non accettato da iconutil: uso l'icona .icns gia disponibile."
+fi
 
 pyinstaller \
   --name "OMISSIS" \
@@ -94,6 +103,8 @@ pyinstaller \
   --collect-all pypdfium2 \
   --collect-all reportlab \
   --collect-all cryptography \
+  --collect-all spacy \
+  --collect-all it_core_news_lg \
   src/privacy_guardian/app.py
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION" "dist/OMISSIS.app/Contents/Info.plist"
@@ -116,8 +127,9 @@ else
 fi
 codesign --verify --deep --strict --verbose=2 "dist/OMISSIS.app"
 
-if command -v dmgbuild >/dev/null 2>&1; then
-  dmgbuild -s scripts/dmg_settings.py "OMISSIS" "dist/OMISSIS.dmg"
+DMG_CREATED=false
+if command -v dmgbuild >/dev/null 2>&1 && dmgbuild -s scripts/dmg_settings.py "OMISSIS" "dist/OMISSIS.dmg"; then
+  DMG_CREATED=true
 
   if [ -n "$SIGN_IDENTITY" ]; then
     echo "Firma del DMG macOS..."
@@ -138,6 +150,12 @@ if command -v dmgbuild >/dev/null 2>&1; then
   fi
 
   cp "dist/OMISSIS.dmg" "dist/OMISSIS-macOS-Apple-Silicon.dmg"
+else
+  echo "DMG non disponibile: creo uno ZIP installabile della app già firmata."
+  rm -f "dist/OMISSIS.dmg"
+  ditto -c -k --sequesterRsrc --keepParent \
+    "dist/OMISSIS.app" \
+    "dist/OMISSIS-macOS-Apple-Silicon-v${APP_VERSION}.zip"
 fi
 
 cat > "dist/LEGGIMI - OMISSIS.txt" <<'TXT'
@@ -171,4 +189,8 @@ Nota:
 Questa versione e stata creata per Mac Apple Silicon, cioe Mac con chip M1, M2, M3, M4 o successivi.
 TXT
 
-echo "Build completata in: $PROJECT_DIR/dist"
+if [ "$DMG_CREATED" = true ]; then
+  echo "Build completata: $PROJECT_DIR/dist/OMISSIS-macOS-Apple-Silicon.dmg"
+else
+  echo "Build completata: $PROJECT_DIR/dist/OMISSIS-macOS-Apple-Silicon-v${APP_VERSION}.zip"
+fi

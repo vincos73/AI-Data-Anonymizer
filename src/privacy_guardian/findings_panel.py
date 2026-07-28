@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QStyle,
     QStyledItemDelegate,
@@ -48,6 +49,14 @@ ROLE_IS_GROUP = Qt.UserRole + 2
 ROLE_ENTITY_TYPE = Qt.UserRole + 3
 ROLE_SCORE = Qt.UserRole + 4
 ROLE_INCLUDED = Qt.UserRole + 5
+
+
+def reliability_label(score: float) -> str:
+    if score >= 0.9:
+        return "Alta"
+    if score >= 0.8:
+        return "Buona"
+    return "Da verificare"
 
 
 class _FindingsDelegate(QStyledItemDelegate):
@@ -156,12 +165,12 @@ class _FindingsDelegate(QStyledItemDelegate):
             painter.drawRoundedRect(QRect(bar_x, bar_y, fill_w, bar_h), 2, 2)
 
         font = QFont(painter.font())
-        font.setFamily("IBM Plex Mono")
         font.setPixelSize(11)
+        font.setWeight(QFont.DemiBold)
         painter.setFont(font)
-        painter.setPen(QColor("#AABBCB"))
+        painter.setPen(fill_color)
         score_rect = QRect(bar_x + bar_w + 8, text_rect.top(), max(0, text_rect.width() - bar_w - 8), text_rect.height())
-        painter.drawText(score_rect, Qt.AlignVCenter | Qt.AlignLeft, f"{score:.2f}")
+        painter.drawText(score_rect, Qt.AlignVCenter | Qt.AlignLeft, reliability_label(score))
 
 
 class FindingsPanel(QFrame):
@@ -204,7 +213,10 @@ class FindingsPanel(QFrame):
         self.search_edit.setObjectName("FindingsSearch")
         self.search_edit.setPlaceholderText("Cerca valore…")
         self.search_edit.setClearButtonEnabled(True)
-        self.search_edit.setFixedWidth(220)
+        self.search_edit.setMinimumWidth(150)
+        self.search_edit.setMaximumWidth(220)
+        self.search_edit.setAccessibleName("Cerca nei dati rilevati")
+        self.search_edit.setAccessibleDescription("Filtra l'elenco in base al valore visualizzato.")
         self.search_edit.textChanged.connect(self._handle_search_changed)
 
         top_row = QHBoxLayout()
@@ -234,13 +246,31 @@ class FindingsPanel(QFrame):
         for button in self._pill_buttons.values():
             button.toggled.connect(self._handle_pill_toggled)
 
+        pill_widget = QWidget()
+        pill_widget.setLayout(pill_row)
+        pill_scroll = QScrollArea()
+        pill_scroll.setObjectName("FilterScroll")
+        pill_scroll.setWidget(pill_widget)
+        pill_scroll.setWidgetResizable(True)
+        pill_scroll.setFrameShape(QFrame.NoFrame)
+        pill_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        pill_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        pill_scroll.setFixedHeight(42)
+
+        self.selection_help_label = QLabel(
+            "Spuntato = sarà anonimizzato · Non spuntato = resterà visibile"
+        )
+        self.selection_help_label.setObjectName("SelectionHelp")
+        self.selection_help_label.setWordWrap(True)
+
         header_layout = QVBoxLayout()
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(8)
         header_layout.addLayout(top_row)
-        header_layout.addLayout(pill_row)
+        header_layout.addWidget(pill_scroll)
+        header_layout.addWidget(self.selection_help_label)
 
-        # ---- PDF/DOCX notice: value-level exclusions on, manual add requires extraction ----
+        # ---- Document conversion notice ----
         self.notice_frame = QFrame()
         self.notice_frame.setObjectName("UnsupportedNotice")
         self.notice_label = QLabel(
@@ -263,11 +293,19 @@ class FindingsPanel(QFrame):
 
         # ---- Tree ----
         self._model = QStandardItemModel(0, 4, self)
-        self._model.setHorizontalHeaderLabels(["Tipo", "Valore", "Confidenza", "Origine"])
+        self._model.setHorizontalHeaderLabels(["Anonimizza", "Valore", "Affidabilità", "Origine"])
         self._model.itemChanged.connect(self._on_item_changed)
 
         self.tree = QTreeView()
         self.tree.setObjectName("FindingsTree")
+        self.tree.setAccessibleName("Dati rilevati da anonimizzare")
+        self.tree.setAccessibleDescription(
+            "Le righe spuntate saranno anonimizzate. Premi Spazio per includere o escludere la riga selezionata."
+        )
+        self.tree.setToolTip(
+            "Spuntato = sarà anonimizzato. L'affidabilità descrive la regola di rilevamento, "
+            "non una probabilità statistica."
+        )
         self.tree.setModel(self._model)
         self.tree.setUniformRowHeights(True)
         self.tree.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -322,6 +360,19 @@ class FindingsPanel(QFrame):
         self._pill_buttons["Tutti"].blockSignals(pill_blocker)
         self._update_pill_labels()
         self._rebuild_model()
+        self.notice_frame.setVisible(False)
+        if not checkable:
+            self.selection_help_label.setText(
+                "Questo formato non consente esclusioni: tutti i dati rilevati saranno anonimizzati."
+            )
+        elif value_level:
+            self.selection_help_label.setText(
+                "Spuntato = sarà anonimizzato · Nei DOCX/PDF la scelta vale per tutte le occorrenze uguali"
+            )
+        else:
+            self.selection_help_label.setText(
+                "Spuntato = sarà anonimizzato · Non spuntato = resterà visibile"
+            )
 
     def included_mask(self) -> list[bool]:
         return list(self._included)
@@ -342,6 +393,10 @@ class FindingsPanel(QFrame):
         self._pill_buttons["Tutti"].blockSignals(pill_blocker)
         self._update_pill_labels()
         self._rebuild_model()
+        self.notice_frame.setVisible(False)
+        self.selection_help_label.setText(
+            "Spuntato = sarà anonimizzato · Non spuntato = resterà visibile"
+        )
 
     def select_finding(self, index: int) -> None:
         if index is None or not (0 <= index < len(self._findings)):
@@ -378,8 +433,21 @@ class FindingsPanel(QFrame):
     def selected_finding(self) -> int | None:
         return self._selected_index
 
-    def set_unsupported_notice(self, visible: bool) -> None:
-        self.notice_frame.setVisible(visible)
+    def set_document_notice(self, kind: str | None) -> None:
+        if kind == "pdf":
+            self.notice_label.setText(
+                "Per migliorare il riconoscimento e usare il documento con un LLM, converti "
+                "il PDF in testo: righe e parole spezzate verranno ricomposte e rianalizzate."
+            )
+            self.notice_button.setText("Converti PDF in testo →")
+        elif kind == "unsupported":
+            self.notice_label.setText(
+                "Il formato .doc non supporta l'esclusione dei dati rilevati né le selezioni "
+                "manuali: verrà anonimizzato tutto ciò che viene rilevato. Estrai come testo "
+                "per escludere singoli dati o aggiungere selezioni manuali."
+            )
+            self.notice_button.setText("Estrai come testo →")
+        self.notice_frame.setVisible(kind is not None)
 
     # ------------------------------------------------------------- internals
 
@@ -481,10 +549,14 @@ class FindingsPanel(QFrame):
         value_item.setData(entity_type, ROLE_ENTITY_TYPE)
 
         max_score = max(f.score for f in findings)
-        score_item = QStandardItem(f"{max_score:.2f}")
+        score_item = QStandardItem(reliability_label(max_score))
         score_item.setEditable(False)
         score_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
         score_item.setData(max_score, ROLE_SCORE)
+        score_item.setToolTip(
+            f"Affidabilità {reliability_label(max_score).lower()} della regola locale "
+            f"(indice tecnico {max_score:.2f}, non probabilità statistica)."
+        )
 
         sources = {f.source for f in findings}
         origin_text = source_label(next(iter(sources))) if len(sources) == 1 else "Multipli"

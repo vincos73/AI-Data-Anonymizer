@@ -22,7 +22,7 @@ Il progetto non include telemetria, session replay o tracciamenti di utilizzo.
 
 ## Registro attività locale
 
-OMISSIS mantiene un registro attività locale pensato per chi vuole documentare le operazioni fatte su un documento.
+OMISSIS mantiene un registro attività locale pensato per chi vuole documentare le operazioni fatte su un documento. Il registro è attivo per impostazione predefinita, ma può essere disattivato.
 
 Il registro salva solo metadati:
 
@@ -55,7 +55,7 @@ Su Windows viene salvato nella cartella dati applicazione dell'utente:
 %APPDATA%\OMISSIS\activity-log.jsonl
 ```
 
-Il registro resta sul dispositivo. Dall'app desktop puoi consultarlo ed esportarlo in CSV.
+Il registro resta sul dispositivo. Dall'app desktop puoi consultarlo, esportarlo in CSV, disattivarlo, scegliere quante operazioni conservare o cancellarlo. Il limite predefinito è di 1.000 operazioni. Registro, impostazioni ed esportazioni vengono scritti in modo atomico e, sui sistemi compatibili, con permessi riservati all'utente.
 
 ## Mappe reversibili
 
@@ -75,6 +75,8 @@ La mappa:
 - non viene scritta nel registro attività;
 - non viene inviata a server o API esterne;
 - contiene dati reali e quindi va trattata come un file sensibile.
+
+Il file viene sostituito solo dopo che la nuova mappa cifrata è stata scritta completamente; sui sistemi compatibili viene creato con permessi riservati all'utente.
 
 Se perdi la password o elimini la mappa, OMISSIS non può ricostruire automaticamente i valori reali.
 

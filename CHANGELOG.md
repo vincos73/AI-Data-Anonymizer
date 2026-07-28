@@ -4,6 +4,88 @@ Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
 ## [In sviluppo]
 
+## [0.6.2] - 2026-07-28
+
+### Aggiunto
+- Riconoscimento dei riferimenti catastali relativi a foglio, particella, mappale, subalterno, sezione e categoria catastale, comprese le abbreviazioni comuni.
+- L'anonimizzazione conserva le etichette catastali per mantenere comprensibile il contesto dell'atto e sostituisce soltanto codici e numeri con `<DATO_CATASTALE>`.
+- Le espressioni ambigue come un semplice “foglio 12” vengono riconosciute solo in presenza di contesto catastale o di altri componenti catastali vicini.
+
+## [0.6.1] - 2026-07-28
+
+### Corretto
+- Finestre di errore e conferma leggibili su macOS: i messaggi ora definiscono esplicitamente uno sfondo chiaro e testo scuro ad alto contrasto, evitando che il testo chiaro del tema principale venga mostrato sulla superficie chiara nativa.
+
+## [0.6.0] - 2026-07-28
+
+### Sicurezza
+- I risultati, i CSV del registro, le impostazioni locali e le mappe reversibili vengono scritti in modo atomico: un errore durante il salvataggio non sostituisce il file precedente con un contenuto parziale.
+- Le mappe reversibili e i file applicativi locali ricevono permessi riservati all'utente sui sistemi compatibili.
+- Il registro attività può essere disattivato, limitato nel numero di operazioni conservate e cancellato dall'interfaccia.
+
+### Architettura
+- Separati dall'interfaccia i job in background, i workflow di analisi/anonimizzazione, la provenienza dell'output e le primitive di persistenza.
+- Unificata la pipeline GitHub per tag: verifica l'allineamento della versione, costruisce macOS e Windows, genera i checksum SHA-256 e pubblica la release solo quando entrambi gli artefatti sono disponibili.
+- Aggiunti al CI test desktop reali con PySide6 su macOS, Windows e Linux.
+- La build macOS produce uno ZIP versionato della `.app` già firmata quando l'ambiente non consente a `hdiutil` di creare il DMG.
+
+## [0.5.9] - 2026-07-28
+
+### Migliorato
+- Le caselle della revisione dichiarano esplicitamente che una riga spuntata sarà anonimizzata e quando la scelta si applica a tutte le occorrenze uguali.
+- La colonna tecnica “Confidenza” è diventata “Affidabilità”, con giudizi leggibili e una spiegazione che chiarisce che non si tratta di probabilità statistiche.
+- Aggiunti nomi accessibili, ordine di tabulazione, focus visibile e scorciatoie per caricamento, salvataggio, ricerca ed esecuzione del passaggio corrente.
+- La barra degli strumenti si dispone su due righe nelle finestre più strette e i filtri possono scorrere orizzontalmente.
+- Lo stato della mappa reversibile è sempre visibile nella barra laterale.
+- Aumentato il contrasto dei testi secondari e ridotta la dimensione minima della finestra.
+
+## [0.5.8] - 2026-07-28
+
+### Aggiunto
+- Caricamento documenti, OCR, analisi e anonimizzazione vengono eseguiti fuori dal thread dell'interfaccia, con avanzamento per fase o pagina e comando di annullamento.
+- I job producono risultati immutabili che vengono applicati alla finestra solo dopo il completamento; annullamenti, errori o risultati riferiti a uno stato superato non modificano il lavoro precedente.
+
+### Migliorato
+- Durante un'operazione vengono temporaneamente bloccati testo, modalità e selezioni che potrebbero rendere incoerente il risultato.
+- Lettura e rasterizzazione PDF controllano l'annullamento tra una pagina e la successiva.
+
+## [0.5.7] - 2026-07-28
+
+### Sicurezza
+- Un risultato già generato viene ora marcato come obsoleto quando cambiano il testo sorgente, la modalità di protezione, le esclusioni o le selezioni manuali. L'anteprima resta visibile ma non può essere copiata o salvata finché non viene rianalizzata e rigenerata.
+- Caricamento, pulizia, conversione in testo, sostituzione della mappa e chiusura chiedono conferma quando eliminerebbero testo, selezioni, risultati o mappe reversibili non salvati.
+- Il registro attività associa salvataggi e anonimizzazioni alla modalità realmente usata per generare il risultato.
+
+### Aggiunto
+- Report finale visibile con modalità effettiva, dati anonimizzati ed esclusi, formato prodotto, uso dell'OCR, modifiche manuali e stato di salvataggio della mappa reversibile.
+- Provenienza locale dell'output basata su revisione e impronte non reversibili di sorgente e selezioni.
+
+## [0.5.6] - 2026-07-28
+
+### Corretto
+- Riconoscimento nei PDF di comuni come Rotondella e delle località minori presenti nel documento, come Parrutta.
+- Riconoscimento degli elenchi in forma “cognome nome”, per esempio “Cresci Nicola”, anche senza NER.
+- Le ragioni sociali estratte con spaziatura irregolare, come `GEO -S. S. r. l`, vengono rilevate per intero e in modalità Standard mantengono la forma giuridica (`G. S. r. l.`).
+
+## [0.5.5] - 2026-07-28
+
+### Migliorato
+- Rafforzati i filtri del NER locale per evitare che indirizzi, enti, email, righe isolate o testo attraversato da interruzioni di paragrafo vengano classificati come persone o località.
+- La rianalisi del testo estratto dai PDF combina NER, dizionari locali e regole specifiche per gli elenchi.
+
+## [0.5.4] - 2026-07-28
+
+### Aggiunto
+- Il comando “Converti PDF in testo” normalizza righe, sillabazioni e spaziature orientandole all'analisi e all'uso con un LLM.
+- Dopo la conversione viene avviata automaticamente una nuova analisi; il pulsante principale passa direttamente alla revisione/anonimizzazione.
+
+## [0.5.3] - 2026-07-28
+
+### Aggiunto
+- Elenco locale ISTAT di comuni, province e regioni italiane, con riconoscimento contestuale di località come Basilicata, Venosa e Potenza e protezioni per i termini ambigui.
+- Riconoscimento dei CAP esplicitamente etichettati o associati a una località; Standard usa il segnaposto `<CAP>` invece di conservarne le cifre.
+- Trattamento contestuale degli enti in modalità Standard: `Provincia di Potenza` diventa `Provincia di P.` e `Università degli Studi della Basilicata` diventa `Università degli Studi della B.`, mentre un Dipartimento non qualificato resta leggibile.
+
 ## [0.5.2]
 
 ### Corretto

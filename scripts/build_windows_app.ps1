@@ -3,6 +3,9 @@ $ErrorActionPreference = "Stop"
 
 $ProjectDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $ProjectDir
+if (-not $env:PYINSTALLER_CONFIG_DIR) {
+    $env:PYINSTALLER_CONFIG_DIR = Join-Path $ProjectDir ".pyinstaller-cache"
+}
 
 function Test-CompatiblePython {
     param([string]$Command, [string[]]$Arguments = @())
@@ -72,8 +75,11 @@ if (-not (Test-Path ".venv")) {
     }
 }
 
-& .\.venv\Scripts\python.exe -m pip install --upgrade pip
-& .\.venv\Scripts\python.exe -m pip install -e ".[windows-build]"
+& .\.venv\Scripts\python.exe -m pip install --no-build-isolation -e ".[windows-build,ner]"
+& .\.venv\Scripts\python.exe -c "import it_core_news_lg" 2>$null
+if ($LASTEXITCODE -ne 0) {
+    & .\.venv\Scripts\python.exe -m spacy download it_core_news_lg
+}
 
 if (Test-Path "build") {
     Remove-Item -Recurse -Force "build"
@@ -95,6 +101,8 @@ if (Test-Path "dist") {
     --collect-all pypdfium2 `
     --collect-all reportlab `
     --collect-all cryptography `
+    --collect-all spacy `
+    --collect-all it_core_news_lg `
     src\privacy_guardian\app.py
 
 Compress-Archive `
