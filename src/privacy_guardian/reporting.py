@@ -55,7 +55,10 @@ MODE_LABELS = {
     "reversible": "Reversibile",
 }
 MODE_NOTES = {
-    "standard": "Standard conserva iniziali e date: per testo da condividere con chatbot valuta Massima protezione.",
+    "standard": (
+        "Standard mantiene leggibili struttura e contesto, conservando iniziali e date. "
+        "Per documenti ad alto rischio valuta Massima protezione."
+    ),
     "maximum": "Massima protezione usa segnaposto completi e redige anche date comuni riconosciute.",
     "reversible": "Reversibile usa segnaposto numerati e permette di salvare una mappa locale cifrata.",
 }
@@ -124,7 +127,9 @@ def review_checklist(findings: list[Finding], mode: AnonymizationMode) -> list[s
     elif mode == "reversible":
         items.append("Reversibile è pensata per ChatGPT: salva la mappa cifrata e non condividerla con servizi esterni.")
     else:
-        items.append("Standard lascia visibili iniziali e date: passa a Massima protezione per testi da condividere con chatbot.")
+        items.append(
+            "Standard mantiene più contesto: controlla con attenzione iniziali, date e dettagli che potrebbero identificare persone."
+        )
 
     if findings:
         items.append("Controlla se nel testo restano nomi, luoghi o dettagli identificativi non evidenziati.")

@@ -261,6 +261,29 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
             "Provincia di P., regione B. e Comune di R.",
         )
 
+    def test_institution_and_cadastral_values_stop_before_the_next_label(self) -> None:
+        text = (
+            "Opera per la Provincia di Potenza. CAP 85029. "
+            "Catasto: foglio 12, particella 345, subalterno 6. "
+            "Email: nicola.cresci@example.com"
+        )
+        findings = self.engine.analyze(text, "maximum")
+        values = [
+            (finding.entity_type, text[finding.start : finding.end])
+            for finding in findings
+        ]
+
+        self.assertIn(("TERRITORIAL_BODY", "Provincia di Potenza"), values)
+        self.assertNotIn(("TERRITORIAL_BODY", "Provincia di Potenza. CAP"), values)
+        self.assertIn(("POSTAL_CODE", "85029"), values)
+        self.assertIn(("CATASTO", "6"), values)
+        self.assertNotIn(("CATASTO", "6. Email"), values)
+        self.assertIn(("EMAIL_ADDRESS", "nicola.cresci@example.com"), values)
+
+        anonymized = self.engine.anonymize(text, findings, "maximum")
+        self.assertIn("<ENTE_TERRITORIALE>. CAP <CAP>.", anonymized)
+        self.assertIn("subalterno <DATO_CATASTALE>. Email: <EMAIL>", anonymized)
+
     def test_detects_italian_locations_with_local_istat_dictionary(self) -> None:
         text = "Mario Rossi vive a Potenza, in Basilicata, ed è nato a Venosa."
         findings = self.engine.analyze(text, "maximum")
@@ -1020,11 +1043,11 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
     def test_standard_report_warns_about_initials_and_dates(self) -> None:
         report = report_text([], "standard")
 
-        self.assertIn("Standard conserva iniziali e date", report)
+        self.assertIn("Standard mantiene leggibili struttura e contesto", report)
         self.assertIn("0 dati riconosciuti", report)
 
         payload = report_payload([], "standard")
-        self.assertIn("Standard lascia visibili iniziali e date", payload["checklist"][0])
+        self.assertIn("Standard mantiene più contesto", payload["checklist"][0])
 
     def test_reversible_report_explains_local_map(self) -> None:
         payload = report_payload([], "reversible")
@@ -2084,6 +2107,11 @@ class DocumentAnonymizationTest(unittest.TestCase):
 
 
 class WebAppTest(unittest.TestCase):
+    def test_text_payload_defaults_to_standard_mode(self) -> None:
+        payload = TextPayload(text="Mario Rossi vive a Venosa.")
+
+        self.assertEqual(payload.mode, "standard")
+
     def test_health_reports_ner_active_flag(self) -> None:
         payload = asyncio.run(health_endpoint())
 

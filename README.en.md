@@ -6,7 +6,7 @@ The main product is the desktop app: install it, open a document, anonymize it l
 
 The web app exists only as an advanced option for developers, local demos, or self-hosted deployments on infrastructure you control.
 
-Current source version: **v0.6.2**. Published builds may temporarily have an earlier version; use the repository [Releases page](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) and check the version shown in the app.
+Current source version: **v0.6.5**. Published builds may temporarily have an earlier version; use the repository [Releases page](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) and check the version shown in the app.
 
 ## What It Does
 
@@ -38,7 +38,7 @@ Detected data includes:
 - Italian addresses with strong address signals, including lowercase ones when a house number is present
 - explicitly labelled Italian postal codes, and postal codes followed by a city
 - Italian regions, provinces, and municipalities using the bundled ISTAT list updated on 21 February 2026, with contextual safeguards for ambiguous names
-- people names with strong context, including birth/residence and payment-recipient contexts; an optional local spaCy NER (`pip install "ai-data-anonymizer[ner]"` plus an Italian model, fully offline) also catches people and locations without context, including foreign locations
+- people names with strong context, including birth/residence and payment-recipient contexts; desktop builds include the fully local `it_core_news_sm` spaCy model to catch additional people and locations without context, including foreign locations
 - company names with legal forms such as `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperatives and similar
 - territorial bodies such as `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`
 - common date formats in maximum-protection and reversible modes
@@ -82,22 +82,34 @@ For `.docx` files, the app anonymizes visible document text and also sanitizes c
 
 Download a release artifact from the repository Releases page when available.
 
+Published desktop builds include the lightweight Italian spaCy model `it_core_news_sm`, so local NER works without an additional installation. Source installations can add it with:
+
+```bash
+pip install "ai-data-anonymizer[ner]"
+python -m spacy download it_core_news_sm
+```
+
+Manually installed `it_core_news_md` and `it_core_news_lg` models are supported too. Run `python scripts/benchmark_ner_models.py` to compare the small and large models on OMISSIS's synthetic regression cases.
+
+In the v0.6.3 synthetic benchmark, both the small and large models detect all 25 expected entities in the core Italian and administrative cases, without the checked false positives. The large model remains better on some international names with diacritics or multiple components and can be installed manually when those documents are prevalent. This benchmark lowers regression risk but does not replace human review before sharing a document.
+
 Typical workflow:
 
 1. Open the app.
 2. Load a supported document, drag it into the window, or paste text.
-3. Analyze the content.
-4. Anonymize it.
-5. Review the final report with the selected mode, detected data count, and safety warnings.
-6. If you need an audit trail, open **Strumenti > Registro attività**.
-7. If you use reversible mode, save the local encrypted map from **Strumenti > Salva mappa reversibile**.
-8. Save the anonymized result.
+3. Choose the protection mode and analyze the content.
+4. Review every detected value. Checked means “will be anonymized”; unchecked means “will remain visible”. Search, filter, or add a missing selection manually.
+5. Confirm the selection and generate the anonymized result.
+6. Review the structured final report with counts, mode, format, save state, and safety warnings.
+7. Read the result before sharing it, then save or copy it.
+8. If you need an audit trail, open **Strumenti > Registro attività**.
+9. If you use reversible mode, save the local encrypted map from **Strumenti > Salva mappa reversibile**.
 
-The desktop app defaults to maximum-protection mode, which is the recommended choice before sharing content with ChatGPT or other AI tools.
+The desktop and web apps default to Standard mode to preserve more of the document structure, roles, and context. Choose maximum protection for high-risk documents or when redacting as many identifying details as possible matters more than readability.
 
 Document loading, OCR, analysis, and anonymization show progress and can be cancelled. A cancelled or failed operation preserves the previous result. Converting a PDF to normalized text automatically starts a fresh analysis.
 
-Main shortcuts: `Cmd/Ctrl+O` loads a document, `Cmd/Ctrl+Enter` runs the current step, `Cmd/Ctrl+F` searches detected data, and `Cmd/Ctrl+S` saves the result.
+Main shortcuts: `Cmd/Ctrl+O` loads a document, `Cmd/Ctrl+Enter` runs the current step, `Cmd/Ctrl+F` searches detected data, `Space` includes or excludes the selected row, and `Cmd/Ctrl+S` saves the result. The full review guide is available from the Help menu.
 
 Reversible mode is available for pasted text, `.txt`, and `.docx` in the desktop app. Use maximum protection for `.md`, `.csv`, and PDF files because those outputs are not reversible.
 

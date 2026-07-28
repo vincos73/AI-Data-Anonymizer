@@ -18,11 +18,19 @@ function Test-CompatiblePython {
     }
 }
 
+function Invoke-NativeChecked {
+    param([string]$Command, [string[]]$Arguments = @())
+    & $Command @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "Comando non riuscito ($LASTEXITCODE): $Command $($Arguments -join ' ')"
+    }
+}
+
 $PythonCommand = $null
 $PythonArgs = @()
 
 if (Get-Command py -ErrorAction SilentlyContinue) {
-    foreach ($minor in @("13", "12", "11", "10")) {
+    foreach ($minor in @("12", "13", "11", "10")) {
         if (Test-CompatiblePython -Command "py" -Arguments @("-3.$minor")) {
             $PythonCommand = "py"
             $PythonArgs = @("-3.$minor")
@@ -32,7 +40,7 @@ if (Get-Command py -ErrorAction SilentlyContinue) {
 }
 
 if (-not $PythonCommand) {
-    foreach ($candidate in @("python3.13", "python3.12", "python3.11", "python3.10", "python")) {
+    foreach ($candidate in @("python3.12", "python3.13", "python3.11", "python3.10", "python")) {
         if ((Get-Command $candidate -ErrorAction SilentlyContinue) -and (Test-CompatiblePython -Command $candidate)) {
             $PythonCommand = $candidate
             break
@@ -75,10 +83,17 @@ if (-not (Test-Path ".venv")) {
     }
 }
 
-& .\.venv\Scripts\python.exe -m pip install --no-build-isolation -e ".[windows-build,ner]"
-& .\.venv\Scripts\python.exe -c "import it_core_news_lg" 2>$null
+Invoke-NativeChecked -Command ".\.venv\Scripts\python.exe" -Arguments @(
+    "-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"
+)
+Invoke-NativeChecked -Command ".\.venv\Scripts\python.exe" -Arguments @(
+    "-m", "pip", "install", "--no-build-isolation", "-e", ".[windows-build,ner]"
+)
+& .\.venv\Scripts\python.exe -c "import it_core_news_sm" 2>$null
 if ($LASTEXITCODE -ne 0) {
-    & .\.venv\Scripts\python.exe -m spacy download it_core_news_lg
+    Invoke-NativeChecked -Command ".\.venv\Scripts\python.exe" -Arguments @(
+        "-m", "spacy", "download", "it_core_news_sm"
+    )
 }
 
 if (Test-Path "build") {
@@ -88,7 +103,9 @@ if (Test-Path "dist") {
     Remove-Item -Recurse -Force "dist"
 }
 
-& .\.venv\Scripts\python.exe scripts\create_app_icon.py
+Invoke-NativeChecked -Command ".\.venv\Scripts\python.exe" -Arguments @(
+    "scripts\create_app_icon.py"
+)
 
 & .\.venv\Scripts\pyinstaller.exe `
     --name "OMISSIS" `
@@ -102,8 +119,11 @@ if (Test-Path "dist") {
     --collect-all reportlab `
     --collect-all cryptography `
     --collect-all spacy `
-    --collect-all it_core_news_lg `
+    --collect-all it_core_news_sm `
     src\privacy_guardian\app.py
+if ($LASTEXITCODE -ne 0) {
+    throw "PyInstaller non è riuscito a creare la build Windows ($LASTEXITCODE)."
+}
 
 Compress-Archive `
     -Path "dist\OMISSIS" `

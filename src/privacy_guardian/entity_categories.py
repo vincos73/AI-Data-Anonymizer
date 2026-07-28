@@ -22,12 +22,12 @@ ENTITY_CATEGORIES: dict[str, str] = {
     "VEHICLE_PLATE": "Documenti",
     "PROTOCOL_CASE_NUMBER": "Documenti",
     "CATASTO": "Documenti",
-    "ADDRESS": "Indirizzi",
-    "LOCATION": "Indirizzi",
-    "POSTAL_CODE": "Indirizzi",
+    "ADDRESS": "Luoghi",
+    "LOCATION": "Luoghi",
+    "POSTAL_CODE": "Luoghi",
     "DATE": "Date",
-    "ORGANIZATION": "Altro",
-    "TERRITORIAL_BODY": "Altro",
+    "ORGANIZATION": "Enti",
+    "TERRITORIAL_BODY": "Enti",
 }
 
 CATEGORY_COLORS: dict[str, str] = {
@@ -35,8 +35,9 @@ CATEGORY_COLORS: dict[str, str] = {
     "Contatti": "#4CC38A",
     "Finanziari": "#EE8866",
     "Documenti": "#E57373",
-    "Indirizzi": "#A78BFA",
+    "Luoghi": "#A78BFA",
     "Date": "#D9A13B",
+    "Enti": "#8899AA",
     "Altro": "#8899AA",
 }
 
@@ -46,10 +47,20 @@ CHECKSUM_TYPES: frozenset[str] = frozenset(
     {"IBAN", "CREDIT_CARD", "CODICE_FISCALE", "PARTITA_IVA", "HEALTH_CARD"}
 )
 
-# The findings panel's filter pills only expose these six buckets. Categories not
-# listed here (Indirizzi, Date) fall back to "Altro" for filtering purposes, but
-# keep their own CATEGORY_COLORS for badges/highlights.
-FILTER_CATEGORIES: tuple[str, ...] = ("Tutti", "Persone", "Contatti", "Finanziari", "Documenti", "Altro")
+# Every meaningful category has its own filter. The panel hides zero-count pills,
+# so the review stays compact without collapsing places, dates, or institutions
+# into an opaque "Altro" bucket.
+FILTER_CATEGORIES: tuple[str, ...] = (
+    "Tutti",
+    "Persone",
+    "Contatti",
+    "Finanziari",
+    "Documenti",
+    "Luoghi",
+    "Date",
+    "Enti",
+    "Altro",
+)
 
 
 def entity_category(entity_type: str) -> str:
@@ -61,6 +72,6 @@ def entity_color(entity_type: str) -> str:
 
 
 def filter_category(entity_type: str) -> str:
-    """Category bucket used by the filter pills (Indirizzi/Date collapse into Altro)."""
+    """Category bucket used by the dynamic filter pills."""
     category = entity_category(entity_type)
     return category if category in FILTER_CATEGORIES else "Altro"

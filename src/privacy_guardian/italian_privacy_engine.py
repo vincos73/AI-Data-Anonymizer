@@ -12,10 +12,14 @@ from privacy_guardian.reporting import entity_placeholder
 
 LETTER = r"A-Za-zÀ-ÖØ-öø-ÿ"
 CAPITAL_WORD = rf"[A-ZÀ-ÖØ-Þ][{LETTER}'’.-]+"
+INSTITUTION_NAME_WORD = (
+    rf"(?:[A-ZÀ-ÖØ-Þ]\.|[A-ZÀ-ÖØ-Þ][{LETTER}'’]*"
+    rf"(?:-[A-ZÀ-ÖØ-Þ]?[{LETTER}'’]+)*)"
+)
 STREET_KEYWORD = r"(?:Via|Viale|Piazza|Piazzale|Corso|Largo|Vicolo|Strada|Contrada|Località|Localita|Frazione)"
 CAPITAL_NAME_WORD = rf"(?!{STREET_KEYWORD}\b){CAPITAL_WORD}"
 UPPER_NAME_WORD = r"[A-ZÀ-ÖØ-Þ]{2,}(?:['’.-][A-ZÀ-ÖØ-Þ]{1,})*"
-ACADEMIC_NAME_WORD = rf"(?!(?i:Universit[aà]|Dipartimento)\b){CAPITAL_WORD}"
+ACADEMIC_NAME_WORD = rf"(?!(?i:Universit[aà]|Dipartimento)\b){INSTITUTION_NAME_WORD}"
 LOWER_ADDRESS_WORD = r"[a-zà-öø-ÿ]{2,}"
 ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ0-9][{LETTER}0-9&'’.-]*|[A-Z0-9&]{{2,}}|&)"
 PREFIX_ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ][{LETTER}&'’-]*|[A-Z0-9&]{{2,}}|&)"
@@ -110,7 +114,8 @@ class ItalianPrivacyRecognizer:
         r"categoria\s+catastale|cat\.?\s*cat\.?"
         r"))(?!\w)"
         r"\s*(?i:n\.?|num\.?|nr\.?|numero)?\s*[:#=-]?\s*"
-        r"(?P<catasto>[A-Z0-9]{1,8}(?:\s*[./-]\s*[A-Z0-9]{1,8}){0,2})(?!\w)",
+        r"(?P<catasto>[A-Z0-9]{1,8}"
+        r"(?:\s*[/\-]\s*[A-Z0-9]{1,8}|\.\d{1,8}){0,2})(?!\w)",
         re.IGNORECASE,
     )
     CATASTAL_DOMAIN_CONTEXT = re.compile(
@@ -237,7 +242,7 @@ class ItalianPrivacyRecognizer:
         rf"amministrazione\s+(?:provinciale|comunale|regionale)|prefettura|questura|"
         rf"procura(?:\s+della\s+repubblica)?|tribunale|camera\s+di\s+commercio))"
         rf"(?P<link>\s+(?:(?i:di|del|della|dei|degli|delle)\s+)?)"
-        rf"(?P<name>{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{0,4}})"
+        rf"(?P<name>{INSTITUTION_NAME_WORD}(?:\s+{INSTITUTION_NAME_WORD}){{0,4}})"
     )
     ACADEMIC_ORGANIZATION = re.compile(
         rf"\b(?P<descriptor>(?i:universit[aà](?:[ \t]+degli[ \t]+studi)?|dipartimento))"

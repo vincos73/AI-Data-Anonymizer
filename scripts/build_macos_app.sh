@@ -6,7 +6,7 @@ cd "$PROJECT_DIR"
 export PYINSTALLER_CONFIG_DIR="${PYINSTALLER_CONFIG_DIR:-$PROJECT_DIR/.pyinstaller-cache}"
 
 PYTHON_BIN=""
-for candidate in python3.13 python3.12 python3.11 python3.10 python3; do
+for candidate in python3.12 python3.13 python3.11 python3.10 python3; do
   if command -v "$candidate" >/dev/null 2>&1; then
     if "$candidate" - <<'PY' >/dev/null 2>&1
 import sys
@@ -62,9 +62,10 @@ then
 fi
 
 source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
 python -m pip install --no-build-isolation -e ".[build,ner]"
-if ! python -c "import it_core_news_lg" >/dev/null 2>&1; then
-  python -m spacy download it_core_news_lg
+if ! python -c "import it_core_news_sm" >/dev/null 2>&1; then
+  python -m spacy download it_core_news_sm
 fi
 APP_VERSION="$(python - <<'PY'
 from privacy_guardian import __version__
@@ -104,7 +105,7 @@ pyinstaller \
   --collect-all reportlab \
   --collect-all cryptography \
   --collect-all spacy \
-  --collect-all it_core_news_lg \
+  --collect-all it_core_news_sm \
   src/privacy_guardian/app.py
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION" "dist/OMISSIS.app/Contents/Info.plist"
@@ -163,8 +164,8 @@ OMISSIS
 
 Come installare su Mac:
 
-1. Apri "OMISSIS.dmg".
-2. Trascina "OMISSIS" nella cartella Applicazioni.
+1. Se hai scaricato un DMG, aprilo e trascina "OMISSIS" nella cartella Applicazioni.
+2. Se hai scaricato uno ZIP, estrailo e sposta "OMISSIS.app" nella cartella Applicazioni.
 3. Apri OMISSIS da Applicazioni.
 
 Come usarla:

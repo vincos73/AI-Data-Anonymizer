@@ -2,7 +2,7 @@
 
 **OMISSIS** aiuta a preparare una versione più sicura dei documenti prima di incollarli in ChatGPT, Claude, Gemini o altri strumenti di intelligenza artificiale.
 
-Il progetto è pensato soprattutto per utenti italiani e per un uso semplice: installi l'app desktop, carichi un documento, anonimizza tutto sul tuo computer. Il software non invia file o testo ad API esterne.
+Il progetto è pensato soprattutto per utenti italiani e per un uso semplice: installi l'app desktop, carichi un documento e sostituisci localmente i dati riconosciuti. Il software non invia file o testo ad API esterne.
 
 La web app esiste solo come opzione avanzata per sviluppatori, demo locali o installazioni self-hosted su infrastruttura controllata.
 
@@ -10,12 +10,12 @@ La web app esiste solo come opzione avanzata per sviluppatori, demo locali o ins
 
 ## Scarica App Desktop
 
-Versione del codice: **v0.6.2**. Le build già pubblicate possono avere un numero precedente: usa la pagina Releases e controlla il numero mostrato nell'app.
+Versione del codice: **v0.6.5**. Le build già pubblicate possono avere un numero precedente: usa la pagina Releases e controlla il numero mostrato nell'app.
 
 | Sistema | Download |
 | --- | --- |
-| Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Apri l'ultima release](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) e scarica `OMISSIS-macOS-Apple-Silicon.dmg` |
-| Windows | [Apri l'ultima release](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) e scarica `OMISSIS-Windows.zip` |
+| Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Apri l'ultima release](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) e scarica l'artefatto che inizia con `OMISSIS-macOS-Apple-Silicon` (`.dmg` o `.zip`) |
+| Windows | [Apri l'ultima release](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) e, quando presente, scarica `OMISSIS-Windows.zip` |
 
 Tutti i file sono disponibili nella pagina [Releases](https://github.com/vincos73/AI-Data-Anonymizer/releases).
 
@@ -23,10 +23,9 @@ Tutti i file sono disponibili nella pagina [Releases](https://github.com/vincos7
 
 ### Mac
 
-1. Scarica il file `.dmg`.
-2. Aprilo.
-3. Trascina **OMISSIS** nella cartella **Applicazioni**.
-4. Apri l'app da **Applicazioni**.
+1. Scarica il file `.dmg` oppure `.zip`.
+2. Se usi il DMG, aprilo e trascina **OMISSIS** nella cartella **Applicazioni**. Se usi lo ZIP, estrailo e sposta **OMISSIS.app** in **Applicazioni**.
+3. Apri l'app da **Applicazioni**.
 
 Le build pubblicate possono essere firmate e notarizzate quando il workflow GitHub è configurato con i secrets Apple Developer. Se scarichi una build non notarizzata e macOS mostra un avviso sullo sviluppatore non identificato:
 
@@ -46,18 +45,17 @@ Su Windows i vecchi file `.doc` non sono supportati direttamente: convertili pri
 
 1. Apri l'app.
 2. Carica un documento, trascinalo nella finestra o incolla un testo.
-3. Clicca **Analizza dati** per vedere quali dati sono stati riconosciuti.
-4. Scegli la modalità di protezione.
-5. Clicca **Anonimizza**.
-6. Leggi il report finale con modalità usata, numero di dati riconosciuti e avvisi di controllo.
-7. Se ti serve tracciare l'operazione, apri **Strumenti > Registro attività**.
-8. Se usi la modalità Reversibile, salva anche la mappa locale cifrata da **Strumenti > Salva mappa reversibile**.
-9. Controlla il risultato prima di condividerlo.
-10. Salva o copia il testo anonimizzato.
+3. Scegli la modalità di protezione e clicca **Analizza dati**.
+4. Rivedi i dati rilevati: spuntato significa “sarà anonimizzato”, non spuntato significa “resterà visibile”. Puoi cercare, filtrare o aggiungere manualmente ciò che manca.
+5. Clicca **Conferma selezione e anonimizza**. Il pulsante indica quanti dati verranno sostituiti.
+6. Leggi il report finale con conteggi, modalità, formato, stato di salvataggio e avvisi di controllo.
+7. Controlla il risultato prima di condividerlo, quindi salvalo o copialo.
+8. Se ti serve tracciare l'operazione, apri **Strumenti > Registro attività**.
+9. Se usi la modalità Reversibile, salva anche la mappa locale cifrata da **Strumenti > Salva mappa reversibile**.
 
 Caricamento, OCR, analisi e anonimizzazione mostrano l'avanzamento e possono essere annullati. Un'operazione interrotta o fallita non sostituisce il risultato precedente. La conversione di un PDF in testo avvia automaticamente una nuova analisi sul testo normalizzato.
 
-Scorciatoie principali: `Cmd/Ctrl+O` carica un documento, `Cmd/Ctrl+Invio` esegue il passaggio corrente, `Cmd/Ctrl+F` cerca nei dati rilevati e `Cmd/Ctrl+S` salva il risultato.
+Scorciatoie principali: `Cmd/Ctrl+O` carica un documento, `Cmd/Ctrl+Invio` esegue il passaggio corrente, `Cmd/Ctrl+F` cerca nei dati rilevati, `Spazio` include o esclude la riga selezionata e `Cmd/Ctrl+S` salva il risultato. La guida completa è disponibile in **Aiuto > Come rivedere i dati rilevati**.
 
 ## Modalità di Protezione
 
@@ -135,16 +133,26 @@ OMISSIS riconosce, con regole conservative:
 - enti territoriali come `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`;
 - date comuni in modalità Massima protezione e Reversibile.
 
-### Nomi e località senza contesto: NER locale opzionale
+### Nomi e località senza contesto: NER locale
 
-Di base nomi e località vengono riconosciuti con regole italiane, un dizionario di nomi e l'elenco locale ISTAT dei comuni, delle province e delle regioni. Se vuoi riconoscere anche nomi e località senza contesto, incluse località estere, puoi installare il riconoscimento NER locale basato su spaCy:
+Le build desktop includono già spaCy e il modello italiano leggero `it_core_news_sm`: il NER è quindi attivo senza installazioni aggiuntive.
+
+Se avvii OMISSIS dal codice sorgente, puoi installare il riconoscimento NER locale con:
 
 ```bash
 pip install "ai-data-anonymizer[ner]"
-python -m spacy download it_core_news_lg
+python -m spacy download it_core_news_sm
 ```
 
-Il modello gira interamente sul tuo computer: nessun dato viene inviato a servizi esterni. Quando è attivo, lo stato del motore mostra `NER locale attivo` e i nomi o le località trovati dal modello compaiono nella tabella con origine `NER locale (spaCy)`. Le località italiane riconosciute dall'elenco integrato mostrano invece l'origine `Elenco località italiane (ISTAT)`. Per disattivare spaCy senza disinstallarlo, imposta la variabile d'ambiente `OMISSIS_NER=0`.
+Il modello gira interamente sul tuo computer: nessun dato viene inviato a servizi esterni. Quando è attivo, la barra laterale mostra `Regole + NER` e i nomi o le località trovati dal modello compaiono nella tabella con origine `NER locale (spaCy)`. Le località italiane riconosciute dall'elenco integrato mostrano invece l'origine `Elenco località italiane (ISTAT)`. Per disattivare spaCy senza disinstallarlo, imposta la variabile d'ambiente `OMISSIS_NER=0`.
+
+Il motore supporta anche `it_core_news_md` e `it_core_news_lg` quando sono installati manualmente. Il confronto ripetibile tra i modelli è disponibile con:
+
+```bash
+python scripts/benchmark_ner_models.py
+```
+
+Nel benchmark sintetico della `v0.6.3`, il modello small e il large riconoscono entrambi tutti i 25 dati attesi nei casi centrali italiani e amministrativi, senza i falsi positivi controllati. Il large resta più efficace su alcuni nomi internazionali con diacritici o più componenti: se questi documenti sono prevalenti, può essere installato manualmente. Il benchmark riduce il rischio di regressioni, ma non sostituisce la revisione umana prima di condividere un documento.
 
 ## Formati Supportati
 
@@ -199,7 +207,7 @@ http://127.0.0.1:8080
 
 La web app permette di incollare testo oppure caricare documenti supportati e scaricare il file anonimizzato. Per impostazione predefinita accetta fino a **100.000 caratteri** per il testo estratto e **10 MB** per file.
 
-Anche la web app parte in **Massima protezione** e mostra una breve checklist finale per ricordare il controllo manuale prima della condivisione.
+Desktop e web app partono in modalità **Standard**, scelta per mantenere più leggibili struttura, ruoli e contesto del documento. Per atti ad alto rischio o quando la priorità è oscurare il maggior numero possibile di dettagli, seleziona **Massima protezione**. La checklist finale ricorda sempre il controllo manuale prima della condivisione.
 
 La modalità Reversibile e il ripristino tramite mappa cifrata sono disponibili solo nell'app desktop. La web app espone esclusivamente Standard e Massima protezione: questa scelta evita di inviare passphrase e mappe a un server. Una futura versione potrà aggiungere la cifratura interamente nel browser.
 
