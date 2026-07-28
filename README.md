@@ -88,7 +88,7 @@ mario@example.com -> <EMAIL>
 
 Usa questa modalità quando devi condividere testo con chatbot o servizi esterni e vuoi ridurre al minimo i dettagli identificativi.
 
-Nell'app desktop è la modalità predefinita e consigliata per l'uso con ChatGPT e altri strumenti di IA.
+Seleziona questa modalità per documenti ad alto rischio o quando oscurare il maggior numero possibile di dettagli è più importante della leggibilità.
 
 ### Reversibile
 
