@@ -3,6 +3,10 @@ from __future__ import annotations
 import re
 
 from privacy_guardian.first_names import is_italian_first_name
+from privacy_guardian.italian_locations import (
+    dictionary_location_findings,
+    labeled_locality_findings,
+)
 from privacy_guardian.models import AnonymizationMode, Finding
 from privacy_guardian.reporting import entity_placeholder
 
@@ -10,6 +14,8 @@ LETTER = r"A-Za-zÀ-ÖØ-öø-ÿ"
 CAPITAL_WORD = rf"[A-ZÀ-ÖØ-Þ][{LETTER}'’.-]+"
 STREET_KEYWORD = r"(?:Via|Viale|Piazza|Piazzale|Corso|Largo|Vicolo|Strada|Contrada|Località|Localita|Frazione)"
 CAPITAL_NAME_WORD = rf"(?!{STREET_KEYWORD}\b){CAPITAL_WORD}"
+UPPER_NAME_WORD = r"[A-ZÀ-ÖØ-Þ]{2,}(?:['’.-][A-ZÀ-ÖØ-Þ]{1,})*"
+ACADEMIC_NAME_WORD = rf"(?!(?i:Universit[aà]|Dipartimento)\b){CAPITAL_WORD}"
 LOWER_ADDRESS_WORD = r"[a-zà-öø-ÿ]{2,}"
 ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ0-9][{LETTER}0-9&'’.-]*|[A-Z0-9&]{{2,}}|&)"
 PREFIX_ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ][{LETTER}&'’-]*|[A-Z0-9&]{{2,}}|&)"
@@ -94,6 +100,23 @@ class ItalianPrivacyRecognizer:
         r"(?P<case>(?:[A-Z]{1,5}\s+)?[A-Z0-9]{2,}(?:\s*[./-]\s*[A-Z0-9]{1,10}){0,4})\b",
         re.IGNORECASE,
     )
+    CATASTAL_REFERENCE = re.compile(
+        r"(?<!\w)(?P<label>(?i:"
+        r"foglio(?:\s+catastale)?|fgl\.?|fg\.?|"
+        r"particell[ae](?:\s+catastal[ei])?|part\.?|p\.?\s*lla\.?|"
+        r"mappal[ei](?:\s+catastal[ei])?|mapp\.?|"
+        r"subaltern[oi]|sub\.?|"
+        r"sezione(?:\s+urbana)?|sez\.?|"
+        r"categoria\s+catastale|cat\.?\s*cat\.?"
+        r"))(?!\w)"
+        r"\s*(?i:n\.?|num\.?|nr\.?|numero)?\s*[:#=-]?\s*"
+        r"(?P<catasto>[A-Z0-9]{1,8}(?:\s*[./-]\s*[A-Z0-9]{1,8}){0,2})(?!\w)",
+        re.IGNORECASE,
+    )
+    CATASTAL_DOMAIN_CONTEXT = re.compile(
+        r"(?i:catast|n\.?\s*c\.?\s*e\.?\s*u\.?|n\.?\s*c\.?\s*t\.?|"
+        r"immobil|unit[aà]\s+immobiliar|terren|fabbricat)"
+    )
     DATE = re.compile(
         r"(?<!\d)(?:[0-3]?\d)[/\-.](?:0?\d|1[0-2])[/\-.](?:\d{2}|\d{4})(?!\d)"
         r"|(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)"
@@ -133,6 +156,11 @@ class ItalianPrivacyRecognizer:
         r"(?:(?i:s\.?\s*r\.?\s*l\.?|s\.?\s*p\.?\s*a\.?|s\.?\s*n\.?\s*c\.?|s\.?\s*a\.?\s*s\.?|"
         r"soc\.?\s*coop\.?|cooperativa|onlus|aps|ets|s\.?\s*s\.?)\b)?",
     )
+    SEPARATED_COMPANY_SUFFIX = re.compile(
+        rf"\b(?P<name>{ORG_WORD}(?:[ \t]+{ORG_WORD}){{0,5}})"
+        r"[ \t]*-[ \t]*(?:S\.[ \t]*)?"
+        r"(?P<suffix>(?i:s\.[ \t]*r\.[ \t]*l\.?))"
+    )
     PERSON = re.compile(
         rf"\b(?:(?:il|la)\s+)?"
         r"(?i:sig\.?ra|sig\.?|signora|signor|dott\.?ssa|dott\.?|avv\.?|ing\.?|geom\.?|rag\.?|"
@@ -144,6 +172,11 @@ class ItalianPrivacyRecognizer:
     CREDIT_CARD = re.compile(r"(?<![\w-])(?!0)\d(?:[ -]?\d){12,18}(?![\w-])")
     POSTAL_CODE_CITY = re.compile(
         r"\b(?P<cap>\d{5})\s+(?P<city>[A-ZÀ-Ù][a-zà-ù]+(?:\s+[A-ZÀ-Ù][a-zà-ù]+){0,3})\b"
+    )
+    LABELED_POSTAL_CODE = re.compile(
+        r"\b(?i:cap|c\.?\s*a\.?\s*p\.?|codice\s+postale|"
+        r"codice(?:\s+di)?\s+avviamento\s+postale)"
+        r"\s*(?:n\.?|numero)?\s*[:#;,\-=]?\s*(?P<cap>\d{5})(?!\d)"
     )
     MONTH_NAMES = {
         "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
@@ -165,17 +198,51 @@ class ItalianPrivacyRecognizer:
     # ("Repubblica Sergio Mattarella") consumi il candidato e nasconda la persona.
     CAPITAL_NAME_TOKEN = re.compile(rf"\b{CAPITAL_NAME_WORD}\b")
     DICTIONARY_PERSON_FROM_NAME = re.compile(rf"{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}}\b")
+    SURNAME_FIRST_PERSON = re.compile(
+        rf"\b(?P<surname>{UPPER_NAME_WORD}(?:[ \t]+{UPPER_NAME_WORD}){{0,2}})"
+        rf"[ \t]+(?P<given>{CAPITAL_NAME_WORD}(?:[ \t]+{CAPITAL_NAME_WORD}){{0,2}})\b"
+    )
+    ROSTER_SURNAME_FIRST_PERSON = re.compile(
+        rf"\b(?P<surname>{CAPITAL_NAME_WORD})[ \t]+(?P<given>{CAPITAL_NAME_WORD})\b"
+    )
+    SURNAME_FIRST_CONTEXT = re.compile(
+        r"(?:personale|dipendente|autista|conducente|operatore|agente|ispettore|"
+        r"responsabile|m\.?llo|np\.?|sc\.?|cl\.?)[^;\n]{0,48}$",
+        re.IGNORECASE,
+    )
+    SURNAME_FIRST_STOPWORDS = {
+        "Comune",
+        "Comuni",
+        "Provincia",
+        "Regione",
+        "Località",
+        "Frazione",
+        "San",
+        "Santa",
+        "Presidente",
+        "Sindaco",
+        "Comando",
+        "Corpo",
+        "Ufficio",
+        "Ditta",
+    }
     # Le strade italiane intitolate a persone ("via Mario Rossi") non devono diventare
     # PERSON: se il candidato è preceduto a breve distanza da un toponimo stradale,
     # viene scartato (il dedupe con ADDRESS copre già il caso con civico).
     STREET_PRECEDING_GUARD = re.compile(rf"{STREET_KEYWORD}\s*$", re.IGNORECASE)
     DICTIONARY_PERSON_SCORE = 0.72
     TERRITORIAL_BODY = re.compile(
-        rf"\b(?i:provincia|regione|comune|citt[aà]\s+metropolitana|municipio|unione\s+dei\s+comuni|"
-        rf"comunit[aà]\s+montana|amministrazione\s+(?:provinciale|comunale|regionale)|"
-        rf"prefettura|questura|procura(?:\s+della\s+repubblica)?|tribunale|camera\s+di\s+commercio)"
-        rf"\s+(?:(?:di|del|della|dei|degli|delle)\s+)?"
-        rf"{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{0,4}}"
+        rf"\b(?P<descriptor>(?i:provincia|regione|comune|citt[aà]\s+metropolitana|municipio|"
+        rf"unione\s+dei\s+comuni|comunit[aà]\s+montana|"
+        rf"amministrazione\s+(?:provinciale|comunale|regionale)|prefettura|questura|"
+        rf"procura(?:\s+della\s+repubblica)?|tribunale|camera\s+di\s+commercio))"
+        rf"(?P<link>\s+(?:(?i:di|del|della|dei|degli|delle)\s+)?)"
+        rf"(?P<name>{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{0,4}})"
+    )
+    ACADEMIC_ORGANIZATION = re.compile(
+        rf"\b(?P<descriptor>(?i:universit[aà](?:[ \t]+degli[ \t]+studi)?|dipartimento))"
+        rf"(?P<link>[ \t]+(?i:di|del|della|dei|degli|delle)[ \t]+)"
+        rf"(?P<name>{ACADEMIC_NAME_WORD}(?:[ \t]+{ACADEMIC_NAME_WORD}){{0,5}})"
     )
     PERSON_STOPWORDS = {
         "Premesso",
@@ -221,14 +288,19 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._identity_document_findings(text))
         findings.extend(self._vehicle_plate_findings(text))
         findings.extend(self._protocol_case_findings(text))
+        findings.extend(self._cadastral_findings(text))
         findings.extend(self._credit_card_findings(text))
-        findings.extend(self._regex_findings(text, "ADDRESS", self.ADDRESS, 0.86))
+        findings.extend(self._address_findings(text))
         findings.extend(self._lowercase_address_findings(text))
         findings.extend(self._postal_code_city_findings(text))
+        findings.extend(self._labeled_postal_code_findings(text))
         findings.extend(self._organization_findings(text))
         findings.extend(self._territorial_body_findings(text))
+        findings.extend(dictionary_location_findings(text))
+        findings.extend(labeled_locality_findings(text))
         findings.extend(self._person_findings(text))
         findings.extend(self._dictionary_person_findings(text))
+        findings.extend(self._surname_first_person_findings(text))
         if mode in {"maximum", "reversible"}:
             findings.extend(self._regex_findings(text, "DATE", self.DATE, 0.82))
         return self.dedupe(findings)
@@ -247,8 +319,15 @@ class ItalianPrivacyRecognizer:
             if finding.start < cursor:
                 continue
             chunks.append(text[cursor : finding.start])
-            chunks.append(self._replacement(text[finding.start : finding.end], finding.entity_type, mode))
+            replacement = self._replacement(
+                text[finding.start : finding.end],
+                finding.entity_type,
+                mode,
+            )
+            chunks.append(replacement)
             cursor = finding.end
+            if replacement.endswith(".") and cursor < len(text) and text[cursor] == ".":
+                cursor += 1
 
         chunks.append(text[cursor:])
         return "".join(chunks)
@@ -345,6 +424,12 @@ class ItalianPrivacyRecognizer:
             findings.append(Finding("ADDRESS", match.start(), match.end(), 0.8))
         return findings
 
+    def _labeled_postal_code_findings(self, text: str) -> list[Finding]:
+        return [
+            Finding("POSTAL_CODE", match.start("cap"), match.end("cap"), 0.94)
+            for match in self.LABELED_POSTAL_CODE.finditer(text)
+        ]
+
     def _international_phone_findings(self, text: str) -> list[Finding]:
         findings: list[Finding] = []
         for match in self.INTERNATIONAL_PHONE.finditer(text):
@@ -352,6 +437,23 @@ class ItalianPrivacyRecognizer:
             if 8 <= digits <= 15:
                 findings.append(Finding("PHONE_NUMBER", match.start(), match.end(), 0.92))
         return findings
+
+    def _address_findings(self, text: str) -> list[Finding]:
+        findings = self._regex_findings(text, "ADDRESS", self.ADDRESS, 0.86)
+        return [
+            finding
+            for finding in findings
+            if not (
+                re.match(
+                    r"(?i:localit[aà]|frazione)\b",
+                    text[finding.start : finding.end],
+                )
+                and not any(
+                    character.isdigit()
+                    for character in text[finding.start : finding.end]
+                )
+            )
+        ]
 
     def _lowercase_address_findings(self, text: str) -> list[Finding]:
         findings: list[Finding] = []
@@ -409,9 +511,72 @@ class ItalianPrivacyRecognizer:
             if self._valid_protocol_case_code(match.group("case"))
         ]
 
+    def _cadastral_findings(self, text: str) -> list[Finding]:
+        matches = list(self.CATASTAL_REFERENCE.finditer(text))
+        findings: list[Finding] = []
+
+        for match in matches:
+            strong_label = self._is_strong_cadastral_label(match.group("label"))
+            context_start = max(0, match.start() - 100)
+            context_end = min(len(text), match.end() + 100)
+            context = text[context_start:context_end]
+            has_domain_context = bool(self.CATASTAL_DOMAIN_CONTEXT.search(context))
+            has_nearby_component = any(
+                other is not match
+                and other.start() < context_end
+                and context_start < other.end()
+                and self._is_strong_cadastral_label(other.group("label"))
+                for other in matches
+            )
+
+            # "Foglio 2" and abbreviations such as "sez. A" are common outside
+            # cadastral records, so they need either explicit domain context or
+            # another cadastral component nearby.
+            if not (strong_label or has_domain_context or has_nearby_component):
+                continue
+
+            findings.append(
+                Finding("CATASTO", match.start("catasto"), match.end("catasto"), 0.9)
+            )
+
+        return findings
+
+    @staticmethod
+    def _is_strong_cadastral_label(label: str) -> bool:
+        normalized = re.sub(r"[\s.]", "", label).lower()
+        return (
+            normalized.startswith("particell")
+            or normalized == "plla"
+            or normalized.startswith("mappal")
+            or normalized == "mapp"
+            or normalized.startswith("subaltern")
+            or normalized == "sub"
+            or normalized.startswith("categoriacatastale")
+            or normalized == "catcat"
+        )
+
     def _organization_findings(self, text: str) -> list[Finding]:
+        separated = self._regex_findings(
+            text,
+            "ORGANIZATION",
+            self.SEPARATED_COMPANY_SUFFIX,
+            0.94,
+            trim_period=False,
+        )
         findings = self._regex_findings(text, "ORGANIZATION", self.COMPANY_SUFFIX, 0.9, trim_period=False)
         findings.extend(self._regex_findings(text, "ORGANIZATION", self.COMPANY_PREFIX, 0.88, trim_period=False))
+        findings = [
+            finding
+            for finding in findings
+            if not any(
+                finding.start < special.end and special.start < finding.end
+                for special in separated
+            )
+        ]
+        findings.extend(separated)
+        findings.extend(
+            self._regex_findings(text, "ORGANIZATION", self.ACADEMIC_ORGANIZATION, 0.9)
+        )
         return [finding for finding in findings if self._looks_like_organization(text[finding.start : finding.end])]
 
     def _territorial_body_findings(self, text: str) -> list[Finding]:
@@ -459,6 +624,50 @@ class ItalianPrivacyRecognizer:
             last_end = match.end()
         return findings
 
+    def _surname_first_person_findings(self, text: str) -> list[Finding]:
+        """Detect administrative rosters that write people as SURNAME Given-name."""
+        findings: list[Finding] = []
+        for pattern in (self.SURNAME_FIRST_PERSON, self.ROSTER_SURNAME_FIRST_PERSON):
+            for match in pattern.finditer(text):
+                surname = match.group("surname")
+                given_name = match.group("given").split()[0]
+                if not is_italian_first_name(given_name):
+                    continue
+                if surname in self.SURNAME_FIRST_STOPWORDS:
+                    continue
+                if (
+                    not surname.isupper()
+                    and not self._has_surname_first_context(text, match.start("surname"))
+                    and not self._is_standalone_person_field(
+                        text,
+                        match.start("surname"),
+                        match.end("given"),
+                    )
+                ):
+                    continue
+                findings.append(
+                    Finding(
+                        "PERSON",
+                        match.start("surname"),
+                        match.end("given"),
+                        0.8,
+                        source="surname_first_rule",
+                    )
+                )
+        return findings
+
+    def _has_surname_first_context(self, text: str, start: int) -> bool:
+        prefix = text[max(0, start - 80) : start]
+        return self.SURNAME_FIRST_CONTEXT.search(prefix) is not None
+
+    def _is_standalone_person_field(self, text: str, start: int, end: int) -> bool:
+        line_start = text.rfind("\n", 0, start) + 1
+        line_end = text.find("\n", end)
+        if line_end < 0:
+            line_end = len(text)
+        field = text[line_start:line_end].strip(" \t.;:()[]{}")
+        return field == text[start:end]
+
     def _looks_like_person_name(self, name: str) -> bool:
         words = name.split()
         if len(words) < 2 or any(word.strip(" .") in self.PERSON_STOPWORDS for word in words):
@@ -482,7 +691,16 @@ class ItalianPrivacyRecognizer:
                 continue
 
             candidates = {name}
-            surname = words[-1].strip(" .")
+            if finding.source == "surname_first_rule":
+                surname_words = []
+                for word in words:
+                    normalized_word = word.strip(" .'’")
+                    if not normalized_word.isupper():
+                        break
+                    surname_words.append(word.strip(" ."))
+                surname = " ".join(surname_words)
+            else:
+                surname = words[-1].strip(" .")
             if len(surname) >= 3 and surname[:1].isupper() and self._is_propagatable_surname(surname):
                 candidates.add(surname)
 
@@ -520,8 +738,11 @@ class ItalianPrivacyRecognizer:
             "IDENTITY_DOCUMENT": 7,
             "VEHICLE_PLATE": 7,
             "PROTOCOL_CASE_NUMBER": 7,
+            "CATASTO": 7,
+            "POSTAL_CODE": 7,
             "ORGANIZATION": 6,
             "TERRITORIAL_BODY": 6,
+            "LOCATION": 5,
             "PERSON": 5,
             "ADDRESS": 4,
             "DATE": 3,
@@ -547,6 +768,8 @@ class ItalianPrivacyRecognizer:
         normalized = re.sub(r"\s+", " ", value.strip()).lower()
         if normalized in {"società", "societa", "impresa", "azienda", "ditta", "cooperativa"}:
             return False
+        if self.ACADEMIC_ORGANIZATION.fullmatch(value):
+            return True
         has_suffix = bool(
             re.search(
                 r"\b(s\.?\s*r\.?\s*l\.?|s\.?\s*p\.?\s*a\.?|s\.?\s*n\.?\s*c\.?|s\.?\s*a\.?\s*s\.?|"
@@ -687,9 +910,31 @@ class ItalianPrivacyRecognizer:
     def _replacement(self, value: str, entity_type: str, mode: AnonymizationMode) -> str:
         if mode in {"maximum", "reversible"}:
             return entity_placeholder(entity_type)
-        if entity_type in {"PERSON", "ORGANIZATION", "TERRITORIAL_BODY", "ADDRESS"}:
+        if entity_type == "TERRITORIAL_BODY":
+            structured = self._structured_institution_initials(value, self.TERRITORIAL_BODY)
+            if structured is not None:
+                return structured
+        if entity_type == "ORGANIZATION":
+            company = self.SEPARATED_COMPANY_SUFFIX.fullmatch(value)
+            if company is not None:
+                suffix = "S. r. l." if value.endswith(".") else "S. r. l"
+                return f"{self._initials(company.group('name'))} {suffix}"
+            structured = self._structured_institution_initials(value, self.ACADEMIC_ORGANIZATION)
+            if structured is not None:
+                return structured
+        if entity_type in {"PERSON", "ORGANIZATION", "TERRITORIAL_BODY", "LOCATION", "ADDRESS"}:
             return self._initials(value)
         return entity_placeholder(entity_type)
+
+    def _structured_institution_initials(
+        self,
+        value: str,
+        pattern: re.Pattern[str],
+    ) -> str | None:
+        match = pattern.fullmatch(value)
+        if match is None:
+            return None
+        return f"{match.group('descriptor')}{match.group('link')}{self._initials(match.group('name'))}"
 
     def _initials(self, value: str) -> str:
         tokens = re.findall(r"[A-Za-zÀ-ÖØ-öø-ÿ0-9]+", value)

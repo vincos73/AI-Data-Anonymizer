@@ -3,13 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 import csv
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import unicodedata
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -26,6 +28,8 @@ PDF_REDACTION_PADDING = 1.75
 OCR_RENDER_SCALE = 2.0
 OCR_REDACTION_PADDING = 3
 DEFAULT_TESSERACT_LANG = "ita+eng"
+ProgressCallback = Callable[[int, str], None]
+CancelCheck = Callable[[], None]
 OOXML_NAMESPACES = {
     "cp": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
     "dc": "http://purl.org/dc/elements/1.1/",
@@ -96,10 +100,27 @@ class OcrPageText:
     words: list[OcrWord]
 
 
-def load_document(path: str | Path) -> LoadedDocument:
+def _report_progress(callback: ProgressCallback | None, value: int, message: str) -> None:
+    if callback is not None:
+        callback(max(0, min(100, value)), message)
+
+
+def _check_cancelled(cancel_check: CancelCheck | None) -> None:
+    if cancel_check is not None:
+        cancel_check()
+
+
+def load_document(
+    path: str | Path,
+    *,
+    progress_callback: ProgressCallback | None = None,
+    cancel_check: CancelCheck | None = None,
+) -> LoadedDocument:
     document_path = Path(path)
     extension = document_path.suffix.lower()
     ocr_pages: tuple[int, ...] = ()
+    _check_cancelled(cancel_check)
+    _report_progress(progress_callback, 5, "Apertura del documento")
 
     if extension not in SUPPORTED_EXTENSIONS:
         supported = ", ".join(sorted(SUPPORTED_EXTENSIONS))
@@ -112,11 +133,38 @@ def load_document(path: str | Path) -> LoadedDocument:
     elif extension == ".docx":
         text = _read_docx(document_path)
     else:
-        pdf_text = _read_pdf(document_path)
+        pdf_text = _read_pdf(
+            document_path,
+            progress_callback=progress_callback,
+            cancel_check=cancel_check,
+        )
         text = pdf_text.text
         ocr_pages = pdf_text.ocr_pages
 
+    _check_cancelled(cancel_check)
+    _report_progress(progress_callback, 100, "Documento pronto")
     return LoadedDocument(path=document_path, text=text, extension=extension, ocr_pages=ocr_pages)
+
+
+def normalize_pdf_text_for_llm(text: str) -> str:
+    """Recompose PDF/OCR fragments into readable text before LLM-oriented analysis."""
+    normalized = unicodedata.normalize("NFKC", text)
+    normalized = normalized.replace("\u00ad", "").replace("\r\n", "\n").replace("\r", "\n")
+    normalized = re.sub(
+        r"(?<=[A-Za-zÀ-ÖØ-öø-ÿ])-\s*\n\s*(?=[a-zà-öø-ÿ])",
+        "",
+        normalized,
+    )
+
+    paragraphs: list[str] = []
+    for block in re.split(r"\n\s*\n+", normalized):
+        lines = [re.sub(r"[ \t]+", " ", line).strip() for line in block.splitlines()]
+        paragraph = " ".join(line for line in lines if line)
+        paragraph = re.sub(r"\s+([,.;:!?])", r"\1", paragraph)
+        paragraph = re.sub(r"(?<=[’'])\s+(?=[A-Za-zÀ-ÖØ-öø-ÿ])", "", paragraph)
+        if paragraph:
+            paragraphs.append(paragraph)
+    return "\n\n".join(paragraphs)
 
 
 def anonymize_loaded_document(
@@ -128,7 +176,11 @@ def anonymize_loaded_document(
     findings: list[Finding] | None = None,
     excluded_values: frozenset[tuple[str, str]] | None = None,
     extra_values: frozenset[tuple[str, str]] | None = None,
+    progress_callback: ProgressCallback | None = None,
+    cancel_check: CancelCheck | None = None,
 ) -> AnonymizedDocument:
+    _check_cancelled(cancel_check)
+    _report_progress(progress_callback, 5, "Preparazione del documento")
     if mode == "reversible" and document.extension == ".pdf":
         raise ValueError(
             "La modalità reversibile non è disponibile per i PDF: usa Massima protezione per creare un PDF redatto "
@@ -142,6 +194,8 @@ def anonymize_loaded_document(
     # manuali (extra_values) seguono la stessa logica per valore, in senso opposto: vengono
     # aggiunte come finding ovunque il valore compaia alla lettera in quella parte.
     findings = findings if findings is not None else engine.analyze(document.text, mode)
+    _check_cancelled(cancel_check)
+    _report_progress(progress_callback, 25, "Dati sensibili analizzati")
     findings = _filter_excluded_findings(document.text, findings, excluded_values)
     reversible_session = ReversibleAnonymizer(reversible_entries) if mode == "reversible" else None
     anonymized_text = (
@@ -163,6 +217,7 @@ def anonymize_loaded_document(
             extra_values=extra_values,
         )
     elif document.extension == ".docx":
+        _report_progress(progress_callback, 45, "Anonimizzazione del documento Word")
         data = _anonymize_docx(
             document.path,
             engine,
@@ -172,8 +227,18 @@ def anonymize_loaded_document(
             extra_values=extra_values,
         )
     else:
-        data = _anonymize_pdf(document.path, engine, mode, excluded_values=excluded_values, extra_values=extra_values)
+        data = _anonymize_pdf(
+            document.path,
+            engine,
+            mode,
+            excluded_values=excluded_values,
+            extra_values=extra_values,
+            progress_callback=progress_callback,
+            cancel_check=cancel_check,
+        )
 
+    _check_cancelled(cancel_check)
+    _report_progress(progress_callback, 100, "Documento anonimizzato")
     return AnonymizedDocument(
         filename=output_name,
         data=data,
@@ -324,6 +389,8 @@ def _anonymize_pdf(
     *,
     excluded_values: frozenset[tuple[str, str]] | None = None,
     extra_values: frozenset[tuple[str, str]] | None = None,
+    progress_callback: ProgressCallback | None = None,
+    cancel_check: CancelCheck | None = None,
 ) -> bytes:
     from pypdf import PdfReader
     import pypdfium2 as pdfium
@@ -336,7 +403,14 @@ def _anonymize_pdf(
     redacted_pdf = canvas.Canvas(output)
 
     try:
-        for page_index in range(len(source_pdf)):
+        page_count = len(source_pdf)
+        for page_index in range(page_count):
+            _check_cancelled(cancel_check)
+            _report_progress(
+                progress_callback,
+                30 + int((page_index / max(1, page_count)) * 65),
+                f"Anonimizzazione PDF: pagina {page_index + 1} di {page_count}",
+            )
             page = source_pdf[page_index]
             width, height = page.get_size()
             text_page = page.get_textpage()
@@ -379,6 +453,7 @@ def _anonymize_pdf(
             redacted_pdf.setPageSize((width, height))
             redacted_pdf.drawImage(ImageReader(image), 0, 0, width=width, height=height)
             redacted_pdf.showPage()
+            _check_cancelled(cancel_check)
     finally:
         close = getattr(source_pdf, "close", None)
         if close:
@@ -772,7 +847,12 @@ def _local_name(name: str) -> str:
     return name
 
 
-def _read_pdf(path: Path) -> PdfTextResult:
+def _read_pdf(
+    path: Path,
+    *,
+    progress_callback: ProgressCallback | None = None,
+    cancel_check: CancelCheck | None = None,
+) -> PdfTextResult:
     from pypdf import PdfReader
 
     reader = PdfReader(path)
@@ -782,7 +862,14 @@ def _read_pdf(path: Path) -> PdfTextResult:
     pdfium_doc = None
 
     try:
+        page_count = len(reader.pages)
         for page_number, page in enumerate(reader.pages, start=1):
+            _check_cancelled(cancel_check)
+            _report_progress(
+                progress_callback,
+                10 + int(((page_number - 1) / max(1, page_count)) * 85),
+                f"Lettura PDF: pagina {page_number} di {page_count}",
+            )
             text = (page.extract_text() or "").strip()
             page_has_images = _pdf_page_has_images(page)
             if text:
@@ -806,6 +893,7 @@ def _read_pdf(path: Path) -> PdfTextResult:
                 ocr_pages.append(page_number)
             else:
                 unreadable_pages.append(page_number)
+            _check_cancelled(cancel_check)
     finally:
         close = getattr(pdfium_doc, "close", None)
         if close:

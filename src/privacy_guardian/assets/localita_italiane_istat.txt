@@ -1,0 +1,8274 @@
+# Fonte: ISTAT, Elenco dei comuni italiani
+# Aggiornamento: 21 febbraio 2026
+# https://www.istat.it/storage/codici-unita-amministrative/Elenco-comuni-italiani.xlsx
+comune	Abano Terme
+comune	Abbadia Cerreto
+comune	Abbadia Lariana
+comune	Abbadia San Salvatore
+comune	Abbasanta
+comune	Abbateggio
+comune	Abbiategrasso
+comune	Abetone Cutigliano
+comune	Abriola
+comune	Abtei
+comune	Acate
+comune	Accadia
+comune	Acceglio
+comune	Accettura
+comune	Acciano
+comune	Accumoli
+comune	Acerenza
+comune	Acerno
+comune	Acerra
+comune	Aci Bonaccorsi
+comune	Aci Castello
+comune	Aci Catena
+comune	Aci Sant'Antonio
+comune	Acireale
+comune	Acquafondata
+comune	Acquaformosa
+comune	Acquafredda
+comune	Acqualagna
+comune	Acquanegra Cremonese
+comune	Acquanegra sul Chiese
+comune	Acquapendente
+comune	Acquappesa
+comune	Acquaro
+comune	Acquasanta Terme
+comune	Acquasparta
+comune	Acquaviva Collecroce
+comune	Acquaviva d'Isernia
+comune	Acquaviva delle Fonti
+comune	Acquaviva Picena
+comune	Acquaviva Platani
+comune	Acquedolci
+comune	Acqui Terme
+comune	Acri
+comune	Acuto
+comune	Adelfia
+comune	Adrano
+comune	Adrara San Martino
+comune	Adrara San Rocco
+comune	Adria
+comune	Adro
+comune	Affi
+comune	Affile
+comune	Afragola
+comune	Africo
+comune	Agazzano
+comune	Agerola
+comune	Aggius
+comune	Agira
+comune	Agliana
+comune	Agliano Terme
+comune	Aglientu
+comune	Agliè
+comune	Agna
+comune	Agnadello
+comune	Agnana Calabra
+comune	Agnone
+comune	Agnosine
+comune	Agordo
+comune	Agosta
+comune	Agra
+comune	Agrate Brianza
+comune	Agrate Conturbia
+comune	Agrigento
+comune	Agropoli
+comune	Agugliano
+comune	Agugliaro
+comune	Ahrntal
+comune	Aicurzio
+comune	Aidomaggiore
+comune	Aidone
+comune	Aielli
+comune	Aiello Calabro
+comune	Aiello del Friuli
+comune	Aiello del Sabato
+comune	Aieta
+comune	Ailano
+comune	Ailoche
+comune	Airasca
+comune	Airola
+comune	Airole
+comune	Airuno
+comune	Aisone
+comune	Ala
+comune	Ala di Stura
+comune	Alagna
+comune	Alagna Valsesia
+comune	Alanno
+comune	Alassio
+comune	Alatri
+comune	Alba
+comune	Alba Adriatica
+comune	Albagiara
+comune	Albairate
+comune	Albanella
+comune	Albano di Lucania
+comune	Albano Laziale
+comune	Albano Sant'Alessandro
+comune	Albano Vercellese
+comune	Albaredo d'Adige
+comune	Albaredo per San Marco
+comune	Albareto
+comune	Albaretto della Torre
+comune	Albavilla
+comune	Albenga
+comune	Albera Ligure
+comune	Alberobello
+comune	Alberona
+comune	Albese con Cassano
+comune	Albettone
+comune	Albi
+comune	Albiano
+comune	Albiano d'Ivrea
+comune	Albiate
+comune	Albidona
+comune	Albignasego
+comune	Albinea
+comune	Albino
+comune	Albiolo
+comune	Albisola Superiore
+comune	Albissola Marina
+comune	Albizzate
+comune	Albonese
+comune	Albosaggia
+comune	Albugnano
+comune	Albuzzano
+comune	Alcamo
+comune	Alcara li Fusi
+comune	Aldein
+comune	Aldeno
+comune	Aldino
+comune	Aldino/Aldein
+comune	Ales
+comune	Alessandria
+comune	Alessandria del Carretto
+comune	Alessandria della Rocca
+comune	Alessano
+comune	Alezio
+comune	Alfano
+comune	Alfedena
+comune	Alfianello
+comune	Alfiano Natta
+comune	Alfonsine
+comune	Alghero
+comune	Algua
+comune	Algund
+comune	Alia
+comune	Aliano
+comune	Alice Bel Colle
+comune	Alice Castello
+comune	Alife
+comune	Alimena
+comune	Aliminusa
+comune	Allai
+comune	Alleghe
+comune	Allein
+comune	Allerona
+comune	Alliste
+comune	Allumiere
+comune	Alluvioni Piovera
+comune	Almenno San Bartolomeo
+comune	Almenno San Salvatore
+comune	Almese
+comune	Almè
+comune	Alonte
+comune	Alpago
+comune	Alpette
+comune	Alpignano
+comune	Alseno
+comune	Alserio
+comune	Alta Val Tidone
+comune	Alta Valle Intelvi
+comune	Altamura
+comune	Altare
+comune	Altavalle
+comune	Altavilla Irpina
+comune	Altavilla Milicia
+comune	Altavilla Monferrato
+comune	Altavilla Silentina
+comune	Altavilla Vicentina
+comune	Altidona
+comune	Altilia
+comune	Altino
+comune	Altissimo
+comune	Altivole
+comune	Alto
+comune	Alto Reno Terme
+comune	Alto Sermenza
+comune	Altofonte
+comune	Altomonte
+comune	Altopascio
+comune	Altopiano della Vigolana
+comune	Altrei
+comune	Alviano
+comune	Alvignano
+comune	Alvito
+comune	Alzano Lombardo
+comune	Alzano Scrivia
+comune	Alzate Brianza
+comune	Alà dei Sardi
+comune	Alì
+comune	Alì Terme
+comune	Amalfi
+comune	Amandola
+comune	Amantea
+comune	Amaro
+comune	Amaroni
+comune	Amaseno
+comune	Amato
+comune	Amatrice
+comune	Ambivere
+comune	Amblar-Don
+comune	Ameglia
+comune	Amelia
+comune	Amendolara
+comune	Ameno
+comune	Amorosi
+comune	Ampezzo
+comune	Anacapri
+comune	Anagni
+comune	Ancarano
+comune	Ancona
+comune	Andali
+comune	Andalo
+comune	Andalo Valtellino
+comune	Andezeno
+comune	Andora
+comune	Andorno Micca
+comune	Andrano
+comune	Andrate
+comune	Andreis
+comune	Andretta
+comune	Andria
+comune	Andrian
+comune	Andriano
+comune	Andriano/Andrian
+comune	Anela
+comune	Anfo
+comune	Angera
+comune	Anghiari
+comune	Angiari
+comune	Angolo Terme
+comune	Angri
+comune	Angrogna
+comune	Anguillara Sabazia
+comune	Anguillara Veneta
+comune	Annicco
+comune	Annone di Brianza
+comune	Annone Veneto
+comune	Anoia
+comune	Antegnate
+comune	Anterivo
+comune	Anterivo/Altrei
+comune	Antey-Saint-André
+comune	Anticoli Corrado
+comune	Antignano
+comune	Antillo
+comune	Antonimina
+comune	Antrodoco
+comune	Antrona Schieranco
+comune	Anversa degli Abruzzi
+comune	Anzano del Parco
+comune	Anzano di Puglia
+comune	Anzi
+comune	Anzio
+comune	Anzola d'Ossola
+comune	Anzola dell'Emilia
+comune	Aosta
+comune	Apecchio
+comune	Apice
+comune	Apiro
+comune	Apollosa
+comune	Appiano Gentile
+comune	Appiano sulla strada del vino
+comune	Appiano sulla strada del vino/Eppan an der Weinstraße
+comune	Appignano
+comune	Appignano del Tronto
+comune	Aprica
+comune	Apricale
+comune	Apricena
+comune	Aprigliano
+comune	Aprilia
+comune	Aquara
+comune	Aquila d'Arroscia
+comune	Aquileia
+comune	Aquilonia
+comune	Aquino
+comune	Aradeo
+comune	Aragona
+comune	Aramengo
+comune	Arba
+comune	Arborea
+comune	Arborio
+comune	Arbus
+comune	Arcade
+comune	Arce
+comune	Arcene
+comune	Arcevia
+comune	Archi
+comune	Arcidosso
+comune	Arcinazzo Romano
+comune	Arcisate
+comune	Arco
+comune	Arcola
+comune	Arcole
+comune	Arconate
+comune	Arcore
+comune	Arcugnano
+comune	Ardara
+comune	Ardauli
+comune	Ardea
+comune	Ardenno
+comune	Ardesio
+comune	Ardore
+comune	Arena
+comune	Arena Po
+comune	Arenzano
+comune	Arese
+comune	Arezzo
+comune	Argegno
+comune	Argelato
+comune	Argenta
+comune	Argentera
+comune	Arguello
+comune	Argusto
+comune	Ari
+comune	Ariano Irpino
+comune	Ariano nel Polesine
+comune	Ariccia
+comune	Arielli
+comune	Arienzo
+comune	Arignano
+comune	Aritzo
+comune	Arizzano
+comune	Arlena di Castro
+comune	Arluno
+comune	Armeno
+comune	Armento
+comune	Armo
+comune	Armungia
+comune	Arnad
+comune	Arnara
+comune	Arnasco
+comune	Arnesano
+comune	Arola
+comune	Arona
+comune	Arosio
+comune	Arpaia
+comune	Arpaise
+comune	Arpino
+comune	Arquata del Tronto
+comune	Arquata Scrivia
+comune	Arquà Petrarca
+comune	Arquà Polesine
+comune	Arre
+comune	Arrone
+comune	Arsago Seprio
+comune	Arsiero
+comune	Arsita
+comune	Arsiè
+comune	Arsoli
+comune	Arta Terme
+comune	Artegna
+comune	Artena
+comune	Artogne
+comune	Arvier
+comune	Arzachena
+comune	Arzago d'Adda
+comune	Arzana
+comune	Arzano
+comune	Arzergrande
+comune	Arzignano
+comune	Ascea
+comune	Asciano
+comune	Ascoli Piceno
+comune	Ascoli Satriano
+comune	Ascrea
+comune	Asiago
+comune	Asigliano Veneto
+comune	Asigliano Vercellese
+comune	Asola
+comune	Asolo
+comune	Assago
+comune	Assemini
+comune	Assisi
+comune	Asso
+comune	Assolo
+comune	Assoro
+comune	Asti
+comune	Asuni
+comune	Ateleta
+comune	Atella
+comune	Atena Lucana
+comune	Atessa
+comune	Atina
+comune	Atrani
+comune	Atri
+comune	Atripalda
+comune	Attigliano
+comune	Attimis
+comune	Atzara
+comune	Auer
+comune	Augusta
+comune	Auletta
+comune	Aulla
+comune	Aurano
+comune	Aurigo
+comune	Auronzo di Cadore
+comune	Ausonia
+comune	Austis
+comune	Avegno
+comune	Avelengo
+comune	Avelengo/Hafling
+comune	Avella
+comune	Avellino
+comune	Averara
+comune	Aversa
+comune	Avetrana
+comune	Avezzano
+comune	Aviano
+comune	Aviatico
+comune	Avigliana
+comune	Avigliano
+comune	Avigliano Umbro
+comune	Avio
+comune	Avise
+comune	Avola
+comune	Avolasca
+comune	Ayas
+comune	Aymavilles
+comune	Azeglio
+comune	Azzanello
+comune	Azzano d'Asti
+comune	Azzano Decimo
+comune	Azzano Mella
+comune	Azzano San Paolo
+comune	Azzate
+comune	Azzio
+comune	Azzone
+comune	Baceno
+comune	Bacoli
+comune	Badalucco
+comune	Badesi
+comune	Badia
+comune	Badia Calavena
+comune	Badia Pavese
+comune	Badia Polesine
+comune	Badia Tedalda
+comune	Badia/Abtei
+comune	Badolato
+comune	Bagaladi
+comune	Bagheria
+comune	Bagnacavallo
+comune	Bagnara Calabra
+comune	Bagnara di Romagna
+comune	Bagnaria
+comune	Bagnaria Arsa
+comune	Bagnasco
+comune	Bagnatica
+comune	Bagni di Lucca
+comune	Bagno a Ripoli
+comune	Bagno di Romagna
+comune	Bagnoli del Trigno
+comune	Bagnoli di Sopra
+comune	Bagnoli Irpino
+comune	Bagnolo Cremasco
+comune	Bagnolo del Salento
+comune	Bagnolo di Po
+comune	Bagnolo in Piano
+comune	Bagnolo Mella
+comune	Bagnolo Piemonte
+comune	Bagnolo San Vito
+comune	Bagnone
+comune	Bagnoregio
+comune	Bagolino
+comune	Baia e Latina
+comune	Baiano
+comune	Bairo
+comune	Baiso
+comune	Bajardo
+comune	Balangero
+comune	Baldichieri d'Asti
+comune	Baldissero Canavese
+comune	Baldissero d'Alba
+comune	Baldissero Torinese
+comune	Balestrate
+comune	Balestrino
+comune	Ballabio
+comune	Ballao
+comune	Balme
+comune	Balmuccia
+comune	Balocco
+comune	Balsorano
+comune	Balvano
+comune	Balzola
+comune	Banari
+comune	Banchette
+comune	Bannio Anzino
+comune	Banzi
+comune	Baone
+comune	Baradili
+comune	Baragiano
+comune	Baranello
+comune	Barano d'Ischia
+comune	Baranzate
+comune	Barasso
+comune	Baratili San Pietro
+comune	Barbania
+comune	Barbara
+comune	Barbarano Mossano
+comune	Barbarano Romano
+comune	Barbaresco
+comune	Barbariga
+comune	Barbata
+comune	Barberino di Mugello
+comune	Barberino Tavarnelle
+comune	Barbian
+comune	Barbianello
+comune	Barbiano
+comune	Barbiano/Barbian
+comune	Barbona
+comune	Barcellona Pozzo di Gotto
+comune	Barcis
+comune	Bard
+comune	Bardello con Malgesso e Bregano
+comune	Bardi
+comune	Bardineto
+comune	Bardolino
+comune	Bardonecchia
+comune	Bareggio
+comune	Barengo
+comune	Baressa
+comune	Barete
+comune	Barga
+comune	Bargagli
+comune	Barge
+comune	Barghe
+comune	Bari
+comune	Bari Sardo
+comune	Bariano
+comune	Baricella
+comune	Barile
+comune	Barisciano
+comune	Barlassina
+comune	Barletta
+comune	Barni
+comune	Barolo
+comune	Barone Canavese
+comune	Baronissi
+comune	Barrafranca
+comune	Barrali
+comune	Barrea
+comune	Barumini
+comune	Barzago
+comune	Barzana
+comune	Barzanò
+comune	Barzio
+comune	Basaluzzo
+comune	Bascapè
+comune	Baschi
+comune	Basciano
+comune	Baselga di Pinè
+comune	Baselice
+comune	Basiano
+comune	Basicò
+comune	Basiglio
+comune	Basiliano
+comune	Bassano Bresciano
+comune	Bassano del Grappa
+comune	Bassano in Teverina
+comune	Bassano Romano
+comune	Bassiano
+comune	Bassignana
+comune	Bastia Mondovì
+comune	Bastia Umbra
+comune	Bastida Pancarana
+comune	Bastiglia
+comune	Battaglia Terme
+comune	Battifollo
+comune	Battipaglia
+comune	Battuda
+comune	Baucina
+comune	Bauladu
+comune	Baunei
+comune	Baveno
+comune	Bedero Valcuvia
+comune	Bedizzole
+comune	Bedollo
+comune	Bedonia
+comune	Bedulita
+comune	Bee
+comune	Beinasco
+comune	Beinette
+comune	Belcastro
+comune	Belfiore
+comune	Belforte all'Isauro
+comune	Belforte del Chienti
+comune	Belforte Monferrato
+comune	Belgioioso
+comune	Belgirate
+comune	Bella
+comune	Bellagio
+comune	Bellano
+comune	Bellante
+comune	Bellaria-Igea Marina
+comune	Bellegra
+comune	Bellino
+comune	Bellinzago Lombardo
+comune	Bellinzago Novarese
+comune	Bellizzi
+comune	Bellona
+comune	Bellosguardo
+comune	Belluno
+comune	Bellusco
+comune	Belmonte Calabro
+comune	Belmonte Castello
+comune	Belmonte del Sannio
+comune	Belmonte in Sabina
+comune	Belmonte Mezzagno
+comune	Belmonte Piceno
+comune	Belpasso
+comune	Belsito
+comune	Belvedere di Spinello
+comune	Belvedere Langhe
+comune	Belvedere Marittimo
+comune	Belvedere Ostrense
+comune	Belveglio
+comune	Belvì
+comune	Bema
+comune	Bene Lario
+comune	Bene Vagienna
+comune	Benestare
+comune	Benetutti
+comune	Benevello
+comune	Benevento
+comune	Benna
+comune	Bentivoglio
+comune	Berbenno
+comune	Berbenno di Valtellina
+comune	Berceto
+comune	Berchidda
+comune	Beregazzo con Figliaro
+comune	Bereguardo
+comune	Bergamasco
+comune	Bergamo
+comune	Bergantino
+comune	Bergeggi
+comune	Bergolo
+comune	Berlingo
+comune	Bernalda
+comune	Bernareggio
+comune	Bernate Ticino
+comune	Bernezzo
+comune	Bertinoro
+comune	Bertiolo
+comune	Bertonico
+comune	Berzano di San Pietro
+comune	Berzano di Tortona
+comune	Berzo Demo
+comune	Berzo Inferiore
+comune	Berzo San Fermo
+comune	Besana in Brianza
+comune	Besano
+comune	Besate
+comune	Besenello
+comune	Besenzone
+comune	Besnate
+comune	Besozzo
+comune	Bessude
+comune	Bettola
+comune	Bettona
+comune	Beura-Cardezza
+comune	Bevagna
+comune	Beverino
+comune	Bevilacqua
+comune	Biancavilla
+comune	Bianchi
+comune	Bianco
+comune	Biandrate
+comune	Biandronno
+comune	Bianzano
+comune	Bianzone
+comune	Bianzè
+comune	Biassono
+comune	Bibbiano
+comune	Bibbiena
+comune	Bibbona
+comune	Bibiana
+comune	Biccari
+comune	Bicinicco
+comune	Bidonì
+comune	Biella
+comune	Bienno
+comune	Bieno
+comune	Bientina
+comune	Binago
+comune	Binasco
+comune	Binetto
+comune	Bioglio
+comune	Bionaz
+comune	Bione
+comune	Birori
+comune	Bisaccia
+comune	Bisacquino
+comune	Bisceglie
+comune	Bisegna
+comune	Bisenti
+comune	Bisignano
+comune	Bistagno
+comune	Bisuschio
+comune	Bitetto
+comune	Bitonto
+comune	Bitritto
+comune	Bitti
+comune	Bivona
+comune	Bivongi
+comune	Bizzarone
+comune	Bleggio Superiore
+comune	Blello
+comune	Blera
+comune	Blessagno
+comune	Blevio
+comune	Blufi
+comune	Boara Pisani
+comune	Bobbio
+comune	Bobbio Pellice
+comune	Boca
+comune	Bocchigliero
+comune	Boccioleto
+comune	Bocenago
+comune	Bodio Lomnago
+comune	Boffalora d'Adda
+comune	Boffalora sopra Ticino
+comune	Bogliasco
+comune	Bognanco
+comune	Bogogno
+comune	Boissano
+comune	Bojano
+comune	Bolano
+comune	Bolgare
+comune	Bollate
+comune	Bollengo
+comune	Bologna
+comune	Bolognano
+comune	Bolognetta
+comune	Bolognola
+comune	Bolotana
+comune	Bolsena
+comune	Boltiere
+comune	Bolzano
+comune	Bolzano Novarese
+comune	Bolzano Vicentino
+comune	Bolzano/Bozen
+comune	Bomarzo
+comune	Bomba
+comune	Bompensiere
+comune	Bompietro
+comune	Bomporto
+comune	Bonarcado
+comune	Bonassola
+comune	Bonate Sopra
+comune	Bonate Sotto
+comune	Bonavigo
+comune	Bondeno
+comune	Bondone
+comune	Bonea
+comune	Bonefro
+comune	Bonemerse
+comune	Bonifati
+comune	Bonito
+comune	Bonnanaro
+comune	Bono
+comune	Bonorva
+comune	Bonvicino
+comune	Borbona
+comune	Borca di Cadore
+comune	Bordano
+comune	Bordighera
+comune	Bordolano
+comune	Bore
+comune	Boretto
+comune	Borgarello
+comune	Borgaro Torinese
+comune	Borgetto
+comune	Borghetto d'Arroscia
+comune	Borghetto di Borbera
+comune	Borghetto di Vara
+comune	Borghetto Lodigiano
+comune	Borghetto Santo Spirito
+comune	Borghi
+comune	Borgia
+comune	Borgiallo
+comune	Borgio Verezzi
+comune	Borgo a Mozzano
+comune	Borgo Chiese
+comune	Borgo d'Ale
+comune	Borgo d'Anaunia
+comune	Borgo di Terzo
+comune	Borgo Lares
+comune	Borgo Mantovano
+comune	Borgo Pace
+comune	Borgo Priolo
+comune	Borgo San Dalmazzo
+comune	Borgo San Giacomo
+comune	Borgo San Giovanni
+comune	Borgo San Lorenzo
+comune	Borgo San Martino
+comune	Borgo San Siro
+comune	Borgo Ticino
+comune	Borgo Tossignano
+comune	Borgo Val di Taro
+comune	Borgo Valbelluna
+comune	Borgo Valsugana
+comune	Borgo Velino
+comune	Borgo Veneto
+comune	Borgo Vercelli
+comune	Borgo Virgilio
+comune	Borgocarbonara
+comune	Borgofranco d'Ivrea
+comune	Borgolavezzaro
+comune	Borgomale
+comune	Borgomanero
+comune	Borgomaro
+comune	Borgomasino
+comune	Borgomezzavalle
+comune	Borgone Susa
+comune	Borgonovo Val Tidone
+comune	Borgoratto Alessandrino
+comune	Borgoratto Mormorolo
+comune	Borgoricco
+comune	Borgorose
+comune	Borgosatollo
+comune	Borgosesia
+comune	Bormida
+comune	Bormio
+comune	Bornasco
+comune	Borno
+comune	Boroneddu
+comune	Borore
+comune	Borrello
+comune	Borriana
+comune	Borso del Grappa
+comune	Bortigali
+comune	Bortigiadas
+comune	Borutta
+comune	Borzonasca
+comune	Bosa
+comune	Bosaro
+comune	Boschi Sant'Anna
+comune	Bosco Chiesanuova
+comune	Bosco Marengo
+comune	Bosconero
+comune	Boscoreale
+comune	Boscotrecase
+comune	Bosia
+comune	Bosio
+comune	Bosisio Parini
+comune	Bosnasco
+comune	Bossico
+comune	Bossolasco
+comune	Botricello
+comune	Botrugno
+comune	Bottanuco
+comune	Botticino
+comune	Bottidda
+comune	Bova
+comune	Bova Marina
+comune	Bovalino
+comune	Bovegno
+comune	Boves
+comune	Bovezzo
+comune	Boville Ernica
+comune	Bovino
+comune	Bovisio-Masciago
+comune	Bovolenta
+comune	Bovolone
+comune	Bozen
+comune	Bozzole
+comune	Bozzolo
+comune	Bra
+comune	Bracca
+comune	Bracciano
+comune	Bracigliano
+comune	Braies
+comune	Braies/Prags
+comune	Brallo di Pregola
+comune	Brancaleone
+comune	Brandico
+comune	Brandizzo
+comune	Branzi
+comune	Branzoll
+comune	Braone
+comune	Brebbia
+comune	Breda di Piave
+comune	Breganze
+comune	Bregnano
+comune	Brembate
+comune	Brembate di Sopra
+comune	Brembio
+comune	Breme
+comune	Brendola
+comune	Brenna
+comune	Brenner
+comune	Brennero
+comune	Brennero/Brenner
+comune	Breno
+comune	Brenta
+comune	Brentino Belluno
+comune	Brentonico
+comune	Brenzone sul Garda
+comune	Brescello
+comune	Brescia
+comune	Bresimo
+comune	Bressana Bottarone
+comune	Bressanone
+comune	Bressanone/Brixen
+comune	Bressanvido
+comune	Bresso
+comune	Brezzo di Bedero
+comune	Briaglia
+comune	Briatico
+comune	Bricherasio
+comune	Brienno
+comune	Brienza
+comune	Briga Alta
+comune	Briga Novarese
+comune	Brignano Gera d'Adda
+comune	Brignano-Frascata
+comune	Brindisi
+comune	Brindisi Montagna
+comune	Brinzio
+comune	Briona
+comune	Brione
+comune	Briosco
+comune	Brisighella
+comune	Brissago-Valtravaglia
+comune	Brissogne
+comune	Brittoli
+comune	Brivio
+comune	Brixen
+comune	Broccostella
+comune	Brogliano
+comune	Brognaturo
+comune	Brolo
+comune	Brondello
+comune	Broni
+comune	Bronte
+comune	Bronzolo
+comune	Bronzolo/Branzoll
+comune	Brossasco
+comune	Brosso
+comune	Brovello-Carpugnino
+comune	Brozolo
+comune	Brugherio
+comune	Brugine
+comune	Brugnato
+comune	Brugnera
+comune	Bruino
+comune	Brumano
+comune	Brunate
+comune	Bruneck
+comune	Brunello
+comune	Brunico
+comune	Brunico/Bruneck
+comune	Bruno
+comune	Brusaporto
+comune	Brusasco
+comune	Brusciano
+comune	Brusimpiano
+comune	Brusnengo
+comune	Brusson
+comune	Bruzolo
+comune	Bruzzano Zeffirio
+comune	Bubbiano
+comune	Bubbio
+comune	Buccheri
+comune	Bucchianico
+comune	Bucciano
+comune	Buccinasco
+comune	Buccino
+comune	Bucine
+comune	Buddusò
+comune	Budoia
+comune	Budoni
+comune	Budrio
+comune	Buggerru
+comune	Buggiano
+comune	Buglio in Monte
+comune	Bugnara
+comune	Buguggiate
+comune	Buja
+comune	Bulciago
+comune	Bulgarograsso
+comune	Bultei
+comune	Bulzi
+comune	Buonabitacolo
+comune	Buonalbergo
+comune	Buonconvento
+comune	Buonvicino
+comune	Burago di Molgora
+comune	Burcei
+comune	Burgio
+comune	Burgos
+comune	Burgstall
+comune	Buriasco
+comune	Burolo
+comune	Buronzo
+comune	Busachi
+comune	Busalla
+comune	Busano
+comune	Busca
+comune	Buscate
+comune	Buscemi
+comune	Buseto Palizzolo
+comune	Busnago
+comune	Bussero
+comune	Busseto
+comune	Bussi sul Tirino
+comune	Busso
+comune	Bussolengo
+comune	Bussoleno
+comune	Busto Arsizio
+comune	Busto Garolfo
+comune	Butera
+comune	Buti
+comune	Buttapietra
+comune	Buttigliera Alta
+comune	Buttigliera d'Asti
+comune	Buttrio
+comune	Cabella Ligure
+comune	Cabiate
+comune	Cabras
+comune	Caccamo
+comune	Caccuri
+comune	Cadegliano-Viconago
+comune	Cadelbosco di Sopra
+comune	Cadeo
+comune	Caderzone Terme
+comune	Cadoneghe
+comune	Cadorago
+comune	Cadrezzate con Osmate
+comune	Caerano di San Marco
+comune	Cafasse
+comune	Caggiano
+comune	Cagli
+comune	Cagliari
+comune	Caglio
+comune	Cagnano Amiterno
+comune	Cagnano Varano
+comune	Caianello
+comune	Caiazzo
+comune	Caines
+comune	Caines/Kuens
+comune	Caino
+comune	Caiolo
+comune	Cairano
+comune	Cairate
+comune	Cairo Montenotte
+comune	Caivano
+comune	Calabritto
+comune	Calalzo di Cadore
+comune	Calamandrana
+comune	Calamonaci
+comune	Calangianus
+comune	Calanna
+comune	Calasca-Castiglione
+comune	Calascibetta
+comune	Calascio
+comune	Calasetta
+comune	Calatabiano
+comune	Calatafimi-Segesta
+comune	Calcata
+comune	Calceranica al Lago
+comune	Calci
+comune	Calciano
+comune	Calcinaia
+comune	Calcinate
+comune	Calcinato
+comune	Calcio
+comune	Calco
+comune	Caldaro sulla strada del vino
+comune	Caldaro sulla strada del vino/Kaltern an der Weinstraße
+comune	Caldarola
+comune	Calderara di Reno
+comune	Caldes
+comune	Caldiero
+comune	Caldogno
+comune	Caldonazzo
+comune	Calendasco
+comune	Calenzano
+comune	Calestano
+comune	Calice al Cornoviglio
+comune	Calice Ligure
+comune	Calimera
+comune	Calitri
+comune	Calizzano
+comune	Callabiana
+comune	Calliano
+comune	Calliano Monferrato
+comune	Calolziocorte
+comune	Calopezzati
+comune	Calosso
+comune	Caloveto
+comune	Caltabellotta
+comune	Caltagirone
+comune	Caltanissetta
+comune	Caltavuturo
+comune	Caltignaga
+comune	Calto
+comune	Caltrano
+comune	Calusco d'Adda
+comune	Caluso
+comune	Calvagese della Riviera
+comune	Calvanico
+comune	Calvatone
+comune	Calvello
+comune	Calvene
+comune	Calvenzano
+comune	Calvera
+comune	Calvi
+comune	Calvi dell'Umbria
+comune	Calvi Risorta
+comune	Calvignano
+comune	Calvignasco
+comune	Calvisano
+comune	Calvizzano
+comune	Camagna Monferrato
+comune	Camaiore
+comune	Camandona
+comune	Camastra
+comune	Cambiago
+comune	Cambiano
+comune	Cambiasca
+comune	Camburzano
+comune	Camerana
+comune	Camerano
+comune	Camerano Casasco
+comune	Camerata Cornello
+comune	Camerata Nuova
+comune	Camerata Picena
+comune	Cameri
+comune	Camerino
+comune	Camerota
+comune	Camigliano
+comune	Camini
+comune	Camino
+comune	Camino al Tagliamento
+comune	Camisano
+comune	Camisano Vicentino
+comune	Cammarata
+comune	Camogli
+comune	Campagna
+comune	Campagna Lupia
+comune	Campagnano di Roma
+comune	Campagnatico
+comune	Campagnola Cremasca
+comune	Campagnola Emilia
+comune	Campana
+comune	Camparada
+comune	Campegine
+comune	Campello sul Clitunno
+comune	Campertogno
+comune	Campi Bisenzio
+comune	Campi Salentina
+comune	Campiglia Cervo
+comune	Campiglia dei Berici
+comune	Campiglia Marittima
+comune	Campiglione Fenile
+comune	Campione d'Italia
+comune	Campitello di Fassa
+comune	Campli
+comune	Campo Calabro
+comune	Campo di Giove
+comune	Campo di Trens
+comune	Campo di Trens/Freienfeld
+comune	Campo Ligure
+comune	Campo nell'Elba
+comune	Campo San Martino
+comune	Campo Tures
+comune	Campo Tures/Sand in Taufers
+comune	Campobasso
+comune	Campobello di Licata
+comune	Campobello di Mazara
+comune	Campochiaro
+comune	Campodarsego
+comune	Campodenno
+comune	Campodimele
+comune	Campodipietra
+comune	Campodolcino
+comune	Campodoro
+comune	Campofelice di Fitalia
+comune	Campofelice di Roccella
+comune	Campofilone
+comune	Campofiorito
+comune	Campoformido
+comune	Campofranco
+comune	Campogalliano
+comune	Campolattaro
+comune	Campoli Appennino
+comune	Campoli del Monte Taburno
+comune	Campolieto
+comune	Campolongo Maggiore
+comune	Campolongo Tapogliano
+comune	Campomaggiore
+comune	Campomarino
+comune	Campomorone
+comune	Camponogara
+comune	Campora
+comune	Camporeale
+comune	Camporgiano
+comune	Camporosso
+comune	Camporotondo di Fiastrone
+comune	Camporotondo Etneo
+comune	Camposampiero
+comune	Camposano
+comune	Camposanto
+comune	Campospinoso Albaredo
+comune	Campotosto
+comune	Camugnano
+comune	Canal San Bovo
+comune	Canale
+comune	Canale d'Agordo
+comune	Canale Monterano
+comune	Canaro
+comune	Canazei
+comune	Cancellara
+comune	Cancello ed Arnone
+comune	Canda
+comune	Candela
+comune	Candelo
+comune	Candia Canavese
+comune	Candia Lomellina
+comune	Candiana
+comune	Candida
+comune	Candidoni
+comune	Candiolo
+comune	Canegrate
+comune	Canelli
+comune	Canepina
+comune	Caneva
+comune	Canicattini Bagni
+comune	Canicattì
+comune	Canino
+comune	Canischio
+comune	Canistro
+comune	Canna
+comune	Cannalonga
+comune	Cannara
+comune	Cannero Riviera
+comune	Canneto Pavese
+comune	Canneto sull'Oglio
+comune	Cannobio
+comune	Cannole
+comune	Canolo
+comune	Canonica d'Adda
+comune	Canosa di Puglia
+comune	Canosa Sannita
+comune	Canosio
+comune	Canossa
+comune	Cansano
+comune	Cantagallo
+comune	Cantalice
+comune	Cantalupa
+comune	Cantalupo in Sabina
+comune	Cantalupo Ligure
+comune	Cantalupo nel Sannio
+comune	Cantarana
+comune	Cantello
+comune	Canterano
+comune	Cantiano
+comune	Cantoira
+comune	Cantù
+comune	Canzano
+comune	Canzo
+comune	Caorle
+comune	Caorso
+comune	Capaccio Paestum
+comune	Capaci
+comune	Capalbio
+comune	Capannoli
+comune	Capannori
+comune	Capena
+comune	Capergnanica
+comune	Capestrano
+comune	Capiago Intimiano
+comune	Capistrano
+comune	Capistrello
+comune	Capitignano
+comune	Capizzi
+comune	Capizzone
+comune	Capo d'Orlando
+comune	Capo di Ponte
+comune	Capodimonte
+comune	Capodrise
+comune	Capoliveri
+comune	Capolona
+comune	Caponago
+comune	Caporciano
+comune	Caposele
+comune	Capoterra
+comune	Capovalle
+comune	Cappadocia
+comune	Cappella Cantone
+comune	Cappella de' Picenardi
+comune	Cappella Maggiore
+comune	Cappelle sul Tavo
+comune	Capracotta
+comune	Capraia e Limite
+comune	Capraia Isola
+comune	Capralba
+comune	Capranica
+comune	Capranica Prenestina
+comune	Caprarica di Lecce
+comune	Caprarola
+comune	Caprauna
+comune	Caprese Michelangelo
+comune	Caprezzo
+comune	Capri
+comune	Capri Leone
+comune	Capriana
+comune	Capriano del Colle
+comune	Capriata d'Orba
+comune	Capriate San Gervasio
+comune	Capriati a Volturno
+comune	Caprie
+comune	Capriglia Irpina
+comune	Capriglio
+comune	Caprile
+comune	Caprino Bergamasco
+comune	Caprino Veronese
+comune	Capriolo
+comune	Capriva del Friuli
+comune	Capua
+comune	Capurso
+comune	Caraffa del Bianco
+comune	Caraffa di Catanzaro
+comune	Caraglio
+comune	Caramagna Piemonte
+comune	Caramanico Terme
+comune	Carapelle
+comune	Carapelle Calvisio
+comune	Carasco
+comune	Carassai
+comune	Carate Brianza
+comune	Carate Urio
+comune	Caravaggio
+comune	Caravate
+comune	Caravino
+comune	Caravonica
+comune	Carbognano
+comune	Carbonara al Ticino
+comune	Carbonara di Nola
+comune	Carbonara Scrivia
+comune	Carbonate
+comune	Carbone
+comune	Carbonera
+comune	Carbonia
+comune	Carcare
+comune	Carcoforo
+comune	Cardano al Campo
+comune	Cardedu
+comune	Cardeto
+comune	Cardinale
+comune	Cardito
+comune	Cardè
+comune	Careggine
+comune	Carema
+comune	Carenno
+comune	Carentino
+comune	Careri
+comune	Caresana
+comune	Caresanablot
+comune	Carezzano
+comune	Carfizzi
+comune	Cargeghe
+comune	Cariati
+comune	Carife
+comune	Carignano
+comune	Carimate
+comune	Carinaro
+comune	Carini
+comune	Carinola
+comune	Carisio
+comune	Carisolo
+comune	Carlantino
+comune	Carlazzo
+comune	Carlentini
+comune	Carlino
+comune	Carloforte
+comune	Carlopoli
+comune	Carmagnola
+comune	Carmiano
+comune	Carmignano
+comune	Carmignano di Brenta
+comune	Carnago
+comune	Carnate
+comune	Carobbio degli Angeli
+comune	Carolei
+comune	Carona
+comune	Caronia
+comune	Caronno Pertusella
+comune	Caronno Varesino
+comune	Carosino
+comune	Carovigno
+comune	Carovilli
+comune	Carpaneto Piacentino
+comune	Carpanzano
+comune	Carpegna
+comune	Carpenedolo
+comune	Carpeneto
+comune	Carpi
+comune	Carpiano
+comune	Carpignano Salentino
+comune	Carpignano Sesia
+comune	Carpineti
+comune	Carpineto della Nora
+comune	Carpineto Romano
+comune	Carpineto Sinello
+comune	Carpino
+comune	Carpinone
+comune	Carrara
+comune	Carrega Ligure
+comune	Carro
+comune	Carrodano
+comune	Carrosio
+comune	Carrè
+comune	Carrù
+comune	Carsoli
+comune	Cartigliano
+comune	Cartignano
+comune	Cartoceto
+comune	Cartosio
+comune	Cartura
+comune	Carugate
+comune	Carugo
+comune	Carunchio
+comune	Carvico
+comune	Carzano
+comune	Casabona
+comune	Casacalenda
+comune	Casacanditella
+comune	Casagiove
+comune	Casal Cermelli
+comune	Casal di Principe
+comune	Casal Velino
+comune	Casalanguida
+comune	Casalattico
+comune	Casalbeltrame
+comune	Casalbordino
+comune	Casalbore
+comune	Casalborgone
+comune	Casalbuono
+comune	Casalbuttano ed Uniti
+comune	Casalciprano
+comune	Casalduni
+comune	Casale Corte Cerro
+comune	Casale Cremasco-Vidolasco
+comune	Casale di Scodosia
+comune	Casale Litta
+comune	Casale Marittimo
+comune	Casale Monferrato
+comune	Casale sul Sile
+comune	Casalecchio di Reno
+comune	Casaleggio Boiro
+comune	Casaleggio Novara
+comune	Casaleone
+comune	Casaletto Ceredano
+comune	Casaletto di Sopra
+comune	Casaletto Lodigiano
+comune	Casaletto Spartano
+comune	Casaletto Vaprio
+comune	Casalfiumanese
+comune	Casalgrande
+comune	Casalgrasso
+comune	Casali del Manco
+comune	Casalincontrada
+comune	Casalino
+comune	Casalmaggiore
+comune	Casalmaiocco
+comune	Casalmorano
+comune	Casalmoro
+comune	Casalnoceto
+comune	Casalnuovo di Napoli
+comune	Casalnuovo Monterotaro
+comune	Casaloldo
+comune	Casalpusterlengo
+comune	Casalromano
+comune	Casalserugo
+comune	Casaluce
+comune	Casalvecchio di Puglia
+comune	Casalvecchio Siculo
+comune	Casalvieri
+comune	Casalvolone
+comune	Casalzuigno
+comune	Casamarciano
+comune	Casamassima
+comune	Casamicciola Terme
+comune	Casandrino
+comune	Casanova Elvo
+comune	Casanova Lerrone
+comune	Casanova Lonati
+comune	Casape
+comune	Casapesenna
+comune	Casapinta
+comune	Casaprota
+comune	Casapulla
+comune	Casarano
+comune	Casargo
+comune	Casarile
+comune	Casarsa della Delizia
+comune	Casarza Ligure
+comune	Casasco
+comune	Casatenovo
+comune	Casatisma
+comune	Casavatore
+comune	Casazza
+comune	Cascia
+comune	Casciago
+comune	Casciana Terme Lari
+comune	Cascina
+comune	Cascinette d'Ivrea
+comune	Casei Gerola
+comune	Caselette
+comune	Casella
+comune	Caselle in Pittari
+comune	Caselle Landi
+comune	Caselle Lurani
+comune	Caselle Torinese
+comune	Caserta
+comune	Casier
+comune	Casignana
+comune	Casina
+comune	Casirate d'Adda
+comune	Caslino d'Erba
+comune	Casnate con Bernate
+comune	Casnigo
+comune	Casola di Napoli
+comune	Casola in Lunigiana
+comune	Casola Valsenio
+comune	Casole d'Elsa
+comune	Casoli
+comune	Casorate Primo
+comune	Casorate Sempione
+comune	Casorezzo
+comune	Casoria
+comune	Casorzo Monferrato
+comune	Casperia
+comune	Caspoggio
+comune	Cassacco
+comune	Cassago Brianza
+comune	Cassano all'Ionio
+comune	Cassano d'Adda
+comune	Cassano delle Murge
+comune	Cassano Irpino
+comune	Cassano Magnago
+comune	Cassano Spinola
+comune	Cassano Valcuvia
+comune	Cassaro
+comune	Cassiglio
+comune	Cassina de' Pecchi
+comune	Cassina Rizzardi
+comune	Cassina Valsassina
+comune	Cassinasco
+comune	Cassine
+comune	Cassinelle
+comune	Cassinetta di Lugagnano
+comune	Cassino
+comune	Cassola
+comune	Cassolnovo
+comune	Castagnaro
+comune	Castagneto Carducci
+comune	Castagneto Po
+comune	Castagnito
+comune	Castagnole delle Lanze
+comune	Castagnole Monferrato
+comune	Castagnole Piemonte
+comune	Castana
+comune	Castano Primo
+comune	Casteggio
+comune	Castegnato
+comune	Castegnero Nanto
+comune	Castel Baronia
+comune	Castel Boglione
+comune	Castel Bolognese
+comune	Castel Campagnano
+comune	Castel Castagna
+comune	Castel Condino
+comune	Castel d'Aiano
+comune	Castel d'Ario
+comune	Castel d'Azzano
+comune	Castel del Giudice
+comune	Castel del Monte
+comune	Castel del Piano
+comune	Castel del Rio
+comune	Castel di Casio
+comune	Castel di Ieri
+comune	Castel di Iudica
+comune	Castel di Lama
+comune	Castel di Lucio
+comune	Castel di Sangro
+comune	Castel di Sasso
+comune	Castel di Tora
+comune	Castel Focognano
+comune	Castel Frentano
+comune	Castel Gabbiano
+comune	Castel Gandolfo
+comune	Castel Giorgio
+comune	Castel Goffredo
+comune	Castel Guelfo di Bologna
+comune	Castel Ivano
+comune	Castel Madama
+comune	Castel Maggiore
+comune	Castel Mella
+comune	Castel Morrone
+comune	Castel Ritaldi
+comune	Castel Rocchero
+comune	Castel Rozzone
+comune	Castel San Giorgio
+comune	Castel San Giovanni
+comune	Castel San Lorenzo
+comune	Castel San Niccolò
+comune	Castel San Pietro Romano
+comune	Castel San Pietro Terme
+comune	Castel San Vincenzo
+comune	Castel Sant'Angelo
+comune	Castel Sant'Elia
+comune	Castel Viscardo
+comune	Castel Vittorio
+comune	Castel Volturno
+comune	Castelbaldo
+comune	Castelbelforte
+comune	Castelbellino
+comune	Castelbello-Ciardes
+comune	Castelbello-Ciardes/Kastelbell-Tschars
+comune	Castelbianco
+comune	Castelbottaccio
+comune	Castelbuono
+comune	Castelcivita
+comune	Castelcovati
+comune	Castelcucco
+comune	Casteldaccia
+comune	Casteldelci
+comune	Casteldelfino
+comune	Casteldidone
+comune	Castelfidardo
+comune	Castelfiorentino
+comune	Castelforte
+comune	Castelfranci
+comune	Castelfranco di Sotto
+comune	Castelfranco Emilia
+comune	Castelfranco in Miscano
+comune	Castelfranco Piandiscò
+comune	Castelfranco Veneto
+comune	Castelgerundo
+comune	Castelgomberto
+comune	Castelgrande
+comune	Castelguglielmo
+comune	Castelguidone
+comune	Castell'Alfero
+comune	Castell'Arquato
+comune	Castell'Azzara
+comune	Castell'Umberto
+comune	Castellabate
+comune	Castellafiume
+comune	Castellalto
+comune	Castellammare del Golfo
+comune	Castellammare di Stabia
+comune	Castellamonte
+comune	Castellana Grotte
+comune	Castellana Sicula
+comune	Castellaneta
+comune	Castellania Coppi
+comune	Castellanza
+comune	Castellar Guidobono
+comune	Castellarano
+comune	Castellaro
+comune	Castellazzo Bormida
+comune	Castellazzo Novarese
+comune	Castelleone
+comune	Castelleone di Suasa
+comune	Castellero
+comune	Castelletto Cervo
+comune	Castelletto d'Erro
+comune	Castelletto d'Orba
+comune	Castelletto di Branduzzo
+comune	Castelletto Merli
+comune	Castelletto Molina
+comune	Castelletto Monferrato
+comune	Castelletto sopra Ticino
+comune	Castelletto Stura
+comune	Castelletto Uzzone
+comune	Castelli
+comune	Castelli Calepio
+comune	Castellina in Chianti
+comune	Castellina Marittima
+comune	Castellinaldo d'Alba
+comune	Castellino del Biferno
+comune	Castellino Tanaro
+comune	Castelliri
+comune	Castello Cabiaglio
+comune	Castello d'Agogna
+comune	Castello d'Argile
+comune	Castello del Matese
+comune	Castello dell'Acqua
+comune	Castello di Annone
+comune	Castello di Brianza
+comune	Castello di Cisterna
+comune	Castello di Godego
+comune	Castello Tesino
+comune	Castello-Molina di Fiemme
+comune	Castellucchio
+comune	Castelluccio dei Sauri
+comune	Castelluccio Inferiore
+comune	Castelluccio Superiore
+comune	Castelluccio Valmaggiore
+comune	Castelmagno
+comune	Castelmarte
+comune	Castelmassa
+comune	Castelmauro
+comune	Castelmezzano
+comune	Castelmola
+comune	Castelnovetto
+comune	Castelnovo Bariano
+comune	Castelnovo del Friuli
+comune	Castelnovo di Sotto
+comune	Castelnovo ne' Monti
+comune	Castelnuovo
+comune	Castelnuovo Belbo
+comune	Castelnuovo Berardenga
+comune	Castelnuovo Bocca d'Adda
+comune	Castelnuovo Bormida
+comune	Castelnuovo Bozzente
+comune	Castelnuovo Calcea
+comune	Castelnuovo Cilento
+comune	Castelnuovo del Garda
+comune	Castelnuovo della Daunia
+comune	Castelnuovo di Ceva
+comune	Castelnuovo di Conza
+comune	Castelnuovo di Farfa
+comune	Castelnuovo di Garfagnana
+comune	Castelnuovo di Porto
+comune	Castelnuovo di Val di Cecina
+comune	Castelnuovo Don Bosco
+comune	Castelnuovo Magra
+comune	Castelnuovo Nigra
+comune	Castelnuovo Parano
+comune	Castelnuovo Rangone
+comune	Castelnuovo Scrivia
+comune	Castelpagano
+comune	Castelpetroso
+comune	Castelpizzuto
+comune	Castelplanio
+comune	Castelpoto
+comune	Castelraimondo
+comune	Castelrotto
+comune	Castelrotto/Kastelruth
+comune	Castelsantangelo sul Nera
+comune	Castelsaraceno
+comune	Castelsardo
+comune	Castelseprio
+comune	Castelsilano
+comune	Castelspina
+comune	Casteltermini
+comune	Castelveccana
+comune	Castelvecchio Calvisio
+comune	Castelvecchio di Rocca Barbena
+comune	Castelvecchio Subequo
+comune	Castelvenere
+comune	Castelverde
+comune	Castelverrino
+comune	Castelvetere in Val Fortore
+comune	Castelvetere sul Calore
+comune	Castelvetrano
+comune	Castelvetro di Modena
+comune	Castelvetro Piacentino
+comune	Castelvisconti
+comune	Castenaso
+comune	Castenedolo
+comune	Castiadas
+comune	Castiglion Fibocchi
+comune	Castiglion Fiorentino
+comune	Castiglione a Casauria
+comune	Castiglione Chiavarese
+comune	Castiglione Cosentino
+comune	Castiglione d'Adda
+comune	Castiglione d'Orcia
+comune	Castiglione dei Pepoli
+comune	Castiglione del Genovesi
+comune	Castiglione del Lago
+comune	Castiglione della Pescaia
+comune	Castiglione delle Stiviere
+comune	Castiglione di Garfagnana
+comune	Castiglione di Sicilia
+comune	Castiglione Falletto
+comune	Castiglione in Teverina
+comune	Castiglione Messer Marino
+comune	Castiglione Messer Raimondo
+comune	Castiglione Olona
+comune	Castiglione Tinella
+comune	Castiglione Torinese
+comune	Castignano
+comune	Castilenti
+comune	Castino
+comune	Castione Andevenno
+comune	Castione della Presolana
+comune	Castions di Strada
+comune	Castiraga Vidardo
+comune	Casto
+comune	Castorano
+comune	Castrezzato
+comune	Castri di Lecce
+comune	Castrignano de' Greci
+comune	Castrignano del Capo
+comune	Castro
+comune	Castro dei Volsci
+comune	Castrocaro Terme e Terra del Sole
+comune	Castrocielo
+comune	Castrofilippo
+comune	Castrolibero
+comune	Castronno
+comune	Castronovo di Sicilia
+comune	Castronuovo di Sant'Andrea
+comune	Castropignano
+comune	Castroreale
+comune	Castroregio
+comune	Castrovillari
+comune	Catania
+comune	Catanzaro
+comune	Catenanuova
+comune	Catignano
+comune	Cattolica
+comune	Cattolica Eraclea
+comune	Caulonia
+comune	Cautano
+comune	Cava de' Tirreni
+comune	Cava Manara
+comune	Cavaglietto
+comune	Cavaglio d'Agogna
+comune	Cavaglià
+comune	Cavagnolo
+comune	Cavaion Veronese
+comune	Cavalese
+comune	Cavallerleone
+comune	Cavallermaggiore
+comune	Cavallino
+comune	Cavallino-Treporti
+comune	Cavallirio
+comune	Cavareno
+comune	Cavargna
+comune	Cavaria con Premezzo
+comune	Cavarzere
+comune	Cavaso del Tomba
+comune	Cavasso Nuovo
+comune	Cavatore
+comune	Cavazzo Carnico
+comune	Cave
+comune	Cavedago
+comune	Cavedine
+comune	Cavenago d'Adda
+comune	Cavenago di Brianza
+comune	Cavernago
+comune	Cavezzo
+comune	Cavizzana
+comune	Cavour
+comune	Cavriago
+comune	Cavriana
+comune	Cavriglia
+comune	Cazzago Brabbia
+comune	Cazzago San Martino
+comune	Cazzano di Tramigna
+comune	Cazzano Sant'Andrea
+comune	Ceccano
+comune	Cecima
+comune	Cecina
+comune	Cedegolo
+comune	Cedrasco
+comune	Cefalà Diana
+comune	Cefalù
+comune	Ceggia
+comune	Ceglie Messapica
+comune	Celano
+comune	Celenza sul Trigno
+comune	Celenza Valfortore
+comune	Celico
+comune	Cella Dati
+comune	Cella Monte
+comune	Cellamare
+comune	Cellara
+comune	Cellarengo
+comune	Cellatica
+comune	Celle di Bulgheria
+comune	Celle di Macra
+comune	Celle di San Vito
+comune	Celle Enomondo
+comune	Celle Ligure
+comune	Celleno
+comune	Cellere
+comune	Cellino Attanasio
+comune	Cellino San Marco
+comune	Cellio con Breia
+comune	Cellole
+comune	Cembra Lisignago
+comune	Cenadi
+comune	Cenate Sopra
+comune	Cenate Sotto
+comune	Cencenighe Agordino
+comune	Cene
+comune	Ceneselli
+comune	Cengio
+comune	Centallo
+comune	Cento
+comune	Centola
+comune	Centrache
+comune	Centro Valle Intelvi
+comune	Centuripe
+comune	Cepagatti
+comune	Ceppaloni
+comune	Ceppo Morelli
+comune	Ceprano
+comune	Cerami
+comune	Ceranesi
+comune	Cerano
+comune	Cerano d'Intelvi
+comune	Ceranova
+comune	Ceraso
+comune	Cercemaggiore
+comune	Cercenasco
+comune	Cercepiccola
+comune	Cerchiara di Calabria
+comune	Cerchio
+comune	Cercino
+comune	Cercivento
+comune	Cercola
+comune	Cerda
+comune	Cerea
+comune	Ceregnano
+comune	Cerenzia
+comune	Ceres
+comune	Ceresara
+comune	Cereseto
+comune	Ceresole Alba
+comune	Ceresole Reale
+comune	Cerete
+comune	Ceretto Lomellina
+comune	Cergnago
+comune	Ceriale
+comune	Ceriana
+comune	Ceriano Laghetto
+comune	Cerignale
+comune	Cerignola
+comune	Cerisano
+comune	Cermenate
+comune	Cermes
+comune	Cermes/Tscherms
+comune	Cermignano
+comune	Cernobbio
+comune	Cernusco Lombardone
+comune	Cernusco sul Naviglio
+comune	Cerreto d'Asti
+comune	Cerreto d'Esi
+comune	Cerreto di Spoleto
+comune	Cerreto Grue
+comune	Cerreto Guidi
+comune	Cerreto Laziale
+comune	Cerreto Sannita
+comune	Cerretto Langhe
+comune	Cerrina Monferrato
+comune	Cerrione
+comune	Cerro al Lambro
+comune	Cerro al Volturno
+comune	Cerro Maggiore
+comune	Cerro Tanaro
+comune	Cerro Veronese
+comune	Cersosimo
+comune	Certaldo
+comune	Certosa di Pavia
+comune	Cerva
+comune	Cervara di Roma
+comune	Cervarese Santa Croce
+comune	Cervaro
+comune	Cervasca
+comune	Cervatto
+comune	Cerveno
+comune	Cervere
+comune	Cervesina
+comune	Cerveteri
+comune	Cervia
+comune	Cervicati
+comune	Cervignano d'Adda
+comune	Cervignano del Friuli
+comune	Cervinara
+comune	Cervino
+comune	Cervo
+comune	Cerzeto
+comune	Cesa
+comune	Cesana Brianza
+comune	Cesana Torinese
+comune	Cesano Boscone
+comune	Cesano Maderno
+comune	Cesara
+comune	Cesarò
+comune	Cesate
+comune	Cesena
+comune	Cesenatico
+comune	Cesinali
+comune	Cesio
+comune	Cesiomaggiore
+comune	Cessalto
+comune	Cessaniti
+comune	Cessapalombo
+comune	Cessole
+comune	Cetara
+comune	Ceto
+comune	Cetona
+comune	Cetraro
+comune	Ceva
+comune	Cevo
+comune	Challand-Saint-Anselme
+comune	Challand-Saint-Victor
+comune	Chambave
+comune	Chamois
+comune	Champdepraz
+comune	Champorcher
+comune	Charvensod
+comune	Cherasco
+comune	Cheremule
+comune	Chialamberto
+comune	Chiampo
+comune	Chianche
+comune	Chianciano Terme
+comune	Chianni
+comune	Chianocco
+comune	Chiaramonte Gulfi
+comune	Chiaramonti
+comune	Chiarano
+comune	Chiaravalle
+comune	Chiaravalle Centrale
+comune	Chiari
+comune	Chiaromonte
+comune	Chiauci
+comune	Chiavari
+comune	Chiavenna
+comune	Chiaverano
+comune	Chienes
+comune	Chienes/Kiens
+comune	Chieri
+comune	Chies d'Alpago
+comune	Chiesa in Valmalenco
+comune	Chiesanuova
+comune	Chiesina Uzzanese
+comune	Chieti
+comune	Chieuti
+comune	Chieve
+comune	Chignolo d'Isola
+comune	Chignolo Po
+comune	Chioggia
+comune	Chiomonte
+comune	Chions
+comune	Chiopris-Viscone
+comune	Chitignano
+comune	Chiuduno
+comune	Chiuppano
+comune	Chiuro
+comune	Chiusa
+comune	Chiusa di Pesio
+comune	Chiusa di San Michele
+comune	Chiusa Sclafani
+comune	Chiusa/Klausen
+comune	Chiusaforte
+comune	Chiusanico
+comune	Chiusano d'Asti
+comune	Chiusano di San Domenico
+comune	Chiusavecchia
+comune	Chiusdino
+comune	Chiusi
+comune	Chiusi della Verna
+comune	Chivasso
+comune	Châtillon
+comune	Ciampino
+comune	Cianciana
+comune	Cibiana di Cadore
+comune	Cicagna
+comune	Cicala
+comune	Cicciano
+comune	Cicerale
+comune	Ciciliano
+comune	Cicognolo
+comune	Ciconio
+comune	Cigliano
+comune	Cigliè
+comune	Cigognola
+comune	Cigole
+comune	Cilavegna
+comune	Cimadolmo
+comune	Cimbergo
+comune	Ciminna
+comune	Ciminà
+comune	Cimitile
+comune	Cimolais
+comune	Cimone
+comune	Cinaglio
+comune	Cineto Romano
+comune	Cingia de' Botti
+comune	Cingoli
+comune	Cinigiano
+comune	Cinisello Balsamo
+comune	Cinisi
+comune	Cino
+comune	Cinquefrondi
+comune	Cintano
+comune	Cinte Tesino
+comune	Cinto Caomaggiore
+comune	Cinto Euganeo
+comune	Cinzano
+comune	Ciorlano
+comune	Cipressa
+comune	Circello
+comune	Cirigliano
+comune	Cirimido
+comune	Ciriè
+comune	Cirò
+comune	Cirò Marina
+comune	Cis
+comune	Cisano Bergamasco
+comune	Cisano sul Neva
+comune	Ciserano
+comune	Cislago
+comune	Cisliano
+comune	Cison di Valmarino
+comune	Cissone
+comune	Cisterna d'Asti
+comune	Cisterna di Latina
+comune	Cisternino
+comune	Citerna
+comune	Cittadella
+comune	Cittaducale
+comune	Cittanova
+comune	Cittareale
+comune	Cittiglio
+comune	Città della Pieve
+comune	Città di Castello
+comune	Città Sant'Angelo
+comune	Civate
+comune	Civezza
+comune	Civezzano
+comune	Civiasco
+comune	Cividale del Friuli
+comune	Cividate al Piano
+comune	Cividate Camuno
+comune	Civita
+comune	Civita Castellana
+comune	Civita d'Antino
+comune	Civitacampomarano
+comune	Civitaluparella
+comune	Civitanova del Sannio
+comune	Civitanova Marche
+comune	Civitaquana
+comune	Civitavecchia
+comune	Civitella Alfedena
+comune	Civitella Casanova
+comune	Civitella d'Agliano
+comune	Civitella del Tronto
+comune	Civitella di Romagna
+comune	Civitella in Val di Chiana
+comune	Civitella Messer Raimondo
+comune	Civitella Paganico
+comune	Civitella Roveto
+comune	Civitella San Paolo
+comune	Civo
+comune	Claino con Osteno
+comune	Claut
+comune	Clauzetto
+comune	Clavesana
+comune	Claviere
+comune	Cles
+comune	Cleto
+comune	Clivio
+comune	Clusone
+comune	Coassolo Torinese
+comune	Coazze
+comune	Coazzolo
+comune	Coccaglio
+comune	Cocconato
+comune	Cocquio-Trevisago
+comune	Cocullo
+comune	Codevigo
+comune	Codevilla
+comune	Codigoro
+comune	Codogno
+comune	Codognè
+comune	Codroipo
+comune	Codrongianos
+comune	Coggiola
+comune	Cogliate
+comune	Cogne
+comune	Cogoleto
+comune	Cogollo del Cengio
+comune	Cogorno
+comune	Colazza
+comune	Colceresa
+comune	Colere
+comune	Colfelice
+comune	Coli
+comune	Colico
+comune	Collalto Sabino
+comune	Collarmele
+comune	Collazzone
+comune	Colle Brianza
+comune	Colle d'Anchise
+comune	Colle di Tora
+comune	Colle di Val d'Elsa
+comune	Colle San Magno
+comune	Colle Sannita
+comune	Colle Santa Lucia
+comune	Colle Umberto
+comune	Collebeato
+comune	Collecchio
+comune	Collecorvino
+comune	Colledara
+comune	Colledimacine
+comune	Colledimezzo
+comune	Colleferro
+comune	Collegiove
+comune	Collegno
+comune	Collelongo
+comune	Collepardo
+comune	Collepasso
+comune	Collepietro
+comune	Colleretto Castelnuovo
+comune	Colleretto Giacosa
+comune	Collesalvetti
+comune	Collesano
+comune	Colletorto
+comune	Collevecchio
+comune	Colli a Volturno
+comune	Colli al Metauro
+comune	Colli del Tronto
+comune	Colli sul Velino
+comune	Colli Verdi
+comune	Colliano
+comune	Collinas
+comune	Collio
+comune	Collobiano
+comune	Colloredo di Monte Albano
+comune	Colmurano
+comune	Colobraro
+comune	Cologna Veneta
+comune	Cologne
+comune	Cologno al Serio
+comune	Cologno Monzese
+comune	Colognola ai Colli
+comune	Colonna
+comune	Colonnella
+comune	Colonno
+comune	Colorina
+comune	Colorno
+comune	Colosimi
+comune	Colturano
+comune	Colverde
+comune	Colzate
+comune	Comabbio
+comune	Comacchio
+comune	Comano
+comune	Comano Terme
+comune	Comazzo
+comune	Comeglians
+comune	Comelico Superiore
+comune	Comerio
+comune	Comezzano-Cizzago
+comune	Comignago
+comune	Comiso
+comune	Comitini
+comune	Comiziano
+comune	Commessaggio
+comune	Commezzadura
+comune	Como
+comune	Compiano
+comune	Comun Nuovo
+comune	Comunanza
+comune	Cona
+comune	Conca Casale
+comune	Conca dei Marini
+comune	Conca della Campania
+comune	Concamarise
+comune	Concerviano
+comune	Concesio
+comune	Concordia Sagittaria
+comune	Concordia sulla Secchia
+comune	Concorezzo
+comune	Condofuri
+comune	Condove
+comune	Condrò
+comune	Conegliano
+comune	Confienza
+comune	Configni
+comune	Conflenti
+comune	Coniolo
+comune	Conselice
+comune	Conselve
+comune	Contessa Entellina
+comune	Contigliano
+comune	Contrada
+comune	Controguerra
+comune	Controne
+comune	Contursi Terme
+comune	Contà
+comune	Conversano
+comune	Conza della Campania
+comune	Conzano
+comune	Copertino
+comune	Copiano
+comune	Copparo
+comune	Corana
+comune	Corato
+comune	Corbara
+comune	Corbetta
+comune	Corbola
+comune	Corchiano
+comune	Corciano
+comune	Cordenons
+comune	Cordignano
+comune	Cordovado
+comune	Coreglia Antelminelli
+comune	Coreglia Ligure
+comune	Coreno Ausonio
+comune	Corfinio
+comune	Cori
+comune	Coriano
+comune	Corigliano d'Otranto
+comune	Corigliano-Rossano
+comune	Corinaldo
+comune	Corio
+comune	Corleone
+comune	Corleto Monforte
+comune	Corleto Perticara
+comune	Cormano
+comune	Cormons
+comune	Corna Imagna
+comune	Cornalba
+comune	Cornale e Bastida
+comune	Cornaredo
+comune	Cornate d'Adda
+comune	Cornedo all'Isarco
+comune	Cornedo all'Isarco/Karneid
+comune	Cornedo Vicentino
+comune	Cornegliano Laudense
+comune	Corneliano d'Alba
+comune	Corniglio
+comune	Corno di Rosazzo
+comune	Corno Giovine
+comune	Cornovecchio
+comune	Cornuda
+comune	Correggio
+comune	Correzzana
+comune	Correzzola
+comune	Corrido
+comune	Corridonia
+comune	Corropoli
+comune	Corsano
+comune	Corsico
+comune	Corsione
+comune	Cortaccia sulla strada del vino
+comune	Cortaccia sulla strada del vino/Kurtatsch an der Weinstraße
+comune	Cortale
+comune	Cortandone
+comune	Cortanze
+comune	Cortazzone
+comune	Corte Brugnatella
+comune	Corte de' Cortesi con Cignone
+comune	Corte de' Frati
+comune	Corte Franca
+comune	Corte Palasio
+comune	Cortemaggiore
+comune	Cortemilia
+comune	Corteno Golgi
+comune	Cortenova
+comune	Cortenuova
+comune	Corteolona e Genzone
+comune	Cortiglione
+comune	Cortina d'Ampezzo
+comune	Cortina sulla strada del vino
+comune	Cortina sulla strada del vino/Kurtinig an der Weinstraße
+comune	Cortino
+comune	Cortona
+comune	Corvara
+comune	Corvara in Badia
+comune	Corvara in Badia/Corvara
+comune	Corvino San Quirico
+comune	Corzano
+comune	Coseano
+comune	Cosenza
+comune	Cosio d'Arroscia
+comune	Cosio Valtellino
+comune	Cosoleto
+comune	Cossano Belbo
+comune	Cossano Canavese
+comune	Cossato
+comune	Cosseria
+comune	Cossignano
+comune	Cossogno
+comune	Cossoine
+comune	Cossombrato
+comune	Costa de' Nobili
+comune	Costa di Mezzate
+comune	Costa di Rovigo
+comune	Costa Masnaga
+comune	Costa Serina
+comune	Costa Valle Imagna
+comune	Costa Vescovato
+comune	Costa Volpino
+comune	Costabissara
+comune	Costacciaro
+comune	Costanzana
+comune	Costarainera
+comune	Costermano sul Garda
+comune	Costigliole d'Asti
+comune	Costigliole Saluzzo
+comune	Cotignola
+comune	Cotronei
+comune	Cottanello
+comune	Courmayeur
+comune	Covo
+comune	Cozzo
+comune	Craco
+comune	Crandola Valsassina
+comune	Cravagliana
+comune	Cravanzana
+comune	Craveggia
+comune	Creazzo
+comune	Crecchio
+comune	Credaro
+comune	Credera Rubbiano
+comune	Crema
+comune	Cremella
+comune	Cremenaga
+comune	Cremeno
+comune	Cremia
+comune	Cremolino
+comune	Cremona
+comune	Cremosano
+comune	Crescentino
+comune	Crespadoro
+comune	Crespiatica
+comune	Crespina Lorenzana
+comune	Crespino
+comune	Cressa
+comune	Crevacuore
+comune	Crevalcore
+comune	Crevoladossola
+comune	Crispano
+comune	Crispiano
+comune	Crissolo
+comune	Crocefieschi
+comune	Crocetta del Montello
+comune	Crodo
+comune	Crognaleto
+comune	Cropalati
+comune	Cropani
+comune	Crosia
+comune	Crosio della Valle
+comune	Crotone
+comune	Crotta d'Adda
+comune	Crova
+comune	Croviana
+comune	Crucoli
+comune	Cuasso al Monte
+comune	Cuccaro Vetere
+comune	Cucciago
+comune	Cuceglio
+comune	Cuggiono
+comune	Cugliate-Fabiasco
+comune	Cuglieri
+comune	Cugnoli
+comune	Cumiana
+comune	Cumignano sul Naviglio
+comune	Cunardo
+comune	Cuneo
+comune	Cunico
+comune	Cuorgnè
+comune	Cupello
+comune	Cupra Marittima
+comune	Cupramontana
+comune	Cura Carpignano
+comune	Curcuris
+comune	Cureggio
+comune	Curiglia con Monteviasco
+comune	Curinga
+comune	Curino
+comune	Curno
+comune	Curon Venosta
+comune	Curon Venosta/Graun im Vinschgau
+comune	Cursi
+comune	Curtarolo
+comune	Curtatone
+comune	Curti
+comune	Cusago
+comune	Cusano Milanino
+comune	Cusano Mutri
+comune	Cusino
+comune	Cusio
+comune	Custonaci
+comune	Cutro
+comune	Cutrofiano
+comune	Cuveglio
+comune	Cuvio
+comune	Dairago
+comune	Dalmine
+comune	Dambel
+comune	Danta di Cadore
+comune	Darfo Boario Terme
+comune	Dasà
+comune	Davagna
+comune	Daverio
+comune	Davoli
+comune	Dazio
+comune	Decimomannu
+comune	Decimoputzu
+comune	Decollatura
+comune	Dego
+comune	Deiva Marina
+comune	Delebio
+comune	Delia
+comune	Delianuova
+comune	Deliceto
+comune	Dello
+comune	Demonte
+comune	Denice
+comune	Denno
+comune	Dernice
+comune	Derovere
+comune	Deruta
+comune	Dervio
+comune	Desana
+comune	Desenzano del Garda
+comune	Desio
+comune	Desulo
+comune	Deutschnofen
+comune	Devin Nabrežina
+comune	Diamante
+comune	Diano Arentino
+comune	Diano Castello
+comune	Diano d'Alba
+comune	Diano Marina
+comune	Diano San Pietro
+comune	Dicomano
+comune	Dignano
+comune	Dimaro Folgarida
+comune	Dinami
+comune	Dipignano
+comune	Diso
+comune	Divignano
+comune	Dizzasco
+comune	Dobbiaco
+comune	Dobbiaco/Toblach
+comune	Doberdob
+comune	Doberdò del Lago
+comune	Doberdò del Lago-Doberdob
+comune	Dogliani
+comune	Dogliola
+comune	Dogna
+comune	Dolceacqua
+comune	Dolcedo
+comune	Dolcè
+comune	Dolegna del Collio
+comune	Dolianova
+comune	Dolina
+comune	Dolo
+comune	Dolzago
+comune	Domanico
+comune	Domaso
+comune	Domegge di Cadore
+comune	Domicella
+comune	Domodossola
+comune	Domus de Maria
+comune	Domusnovas
+comune	Donato
+comune	Dongo
+comune	Donnas
+comune	Donori
+comune	Dorgali
+comune	Dorio
+comune	Dormelletto
+comune	Dorno
+comune	Dorzano
+comune	Dosolo
+comune	Dossena
+comune	Dosso del Liro
+comune	Doues
+comune	Dovadola
+comune	Dovera
+comune	Dozza
+comune	Dragoni
+comune	Drapia
+comune	Drena
+comune	Drenchia
+comune	Dresano
+comune	Dro
+comune	Dronero
+comune	Druento
+comune	Druogno
+comune	Dualchi
+comune	Dubino
+comune	Due Carrare
+comune	Dueville
+comune	Dugenta
+comune	Duino Aurisina
+comune	Duino Aurisina-Devin Nabrežina
+comune	Dumenza
+comune	Duno
+comune	Durazzano
+comune	Duronia
+comune	Dusino San Michele
+comune	Eboli
+comune	Edolo
+comune	Egna
+comune	Egna/Neumarkt
+comune	Elice
+comune	Elini
+comune	Ello
+comune	Elmas
+comune	Elva
+comune	Emarèse
+comune	Empoli
+comune	Endine Gaiano
+comune	Enego
+comune	Enemonzo
+comune	Enna
+comune	Enneberg
+comune	Entracque
+comune	Entratico
+comune	Envie
+comune	Episcopia
+comune	Eppan an der Weinstraße
+comune	Eraclea
+comune	Erba
+comune	Erbezzo
+comune	Erbusco
+comune	Erbè
+comune	Erchie
+comune	Ercolano
+comune	Erice
+comune	Erli
+comune	Erto e Casso
+comune	Erula
+comune	Erve
+comune	Esanatoglia
+comune	Escalaplano
+comune	Escolca
+comune	Esine
+comune	Esino Lario
+comune	Esperia
+comune	Esporlatu
+comune	Este
+comune	Esterzili
+comune	Etroubles
+comune	Eupilio
+comune	Exilles
+comune	Fabbrica Curone
+comune	Fabbriche di Vergemoli
+comune	Fabbrico
+comune	Fabriano
+comune	Fabrica di Roma
+comune	Fabrizia
+comune	Fabro
+comune	Faedis
+comune	Faedo Valtellino
+comune	Faenza
+comune	Faeto
+comune	Fagagna
+comune	Faggeto Lario
+comune	Faggiano
+comune	Fagnano Alto
+comune	Fagnano Castello
+comune	Fagnano Olona
+comune	Fai della Paganella
+comune	Faicchio
+comune	Falcade
+comune	Falciano del Massico
+comune	Falconara Albanese
+comune	Falconara Marittima
+comune	Falcone
+comune	Faleria
+comune	Falerna
+comune	Falerone
+comune	Fallo
+comune	Faloppio
+comune	Falvaterra
+comune	Falzes
+comune	Falzes/Pfalzen
+comune	Fanano
+comune	Fanna
+comune	Fano
+comune	Fano Adriano
+comune	Fara Filiorum Petri
+comune	Fara Gera d'Adda
+comune	Fara in Sabina
+comune	Fara Novarese
+comune	Fara Olivana con Sola
+comune	Fara San Martino
+comune	Fara Vicentino
+comune	Fardella
+comune	Farigliano
+comune	Farindola
+comune	Farini
+comune	Farnese
+comune	Farra d'Isonzo
+comune	Farra di Soligo
+comune	Fasano
+comune	Fascia
+comune	Fauglia
+comune	Faule
+comune	Favale di Malvaro
+comune	Favara
+comune	Favignana
+comune	Favria
+comune	Feisoglio
+comune	Feldthurns
+comune	Feletto
+comune	Felino
+comune	Felitto
+comune	Felizzano
+comune	Feltre
+comune	Fenegrò
+comune	Fenestrelle
+comune	Ferentillo
+comune	Ferentino
+comune	Ferla
+comune	Fermignano
+comune	Fermo
+comune	Ferno
+comune	Feroleto Antico
+comune	Feroleto della Chiesa
+comune	Ferrandina
+comune	Ferrara
+comune	Ferrara di Monte Baldo
+comune	Ferrazzano
+comune	Ferrera di Varese
+comune	Ferrera Erbognone
+comune	Ferrere
+comune	Ferriere
+comune	Ferruzzano
+comune	Fiamignano
+comune	Fiano
+comune	Fiano Romano
+comune	Fiastra
+comune	Fiavè
+comune	Ficarazzi
+comune	Ficarolo
+comune	Ficarra
+comune	Ficulle
+comune	Fidenza
+comune	Fierozzo
+comune	Fiesco
+comune	Fiesole
+comune	Fiesse
+comune	Fiesso d'Artico
+comune	Fiesso Umbertiano
+comune	Figino Serenza
+comune	Figline e Incisa Valdarno
+comune	Figline Vegliaturo
+comune	Filacciano
+comune	Filadelfia
+comune	Filago
+comune	Filandari
+comune	Filattiera
+comune	Filettino
+comune	Filetto
+comune	Filiano
+comune	Filighera
+comune	Filignano
+comune	Filogaso
+comune	Filottrano
+comune	Finale Emilia
+comune	Finale Ligure
+comune	Fino del Monte
+comune	Fino Mornasco
+comune	Fiorano al Serio
+comune	Fiorano Canavese
+comune	Fiorano Modenese
+comune	Fiorenzuola d'Arda
+comune	Firenze
+comune	Firenzuola
+comune	Firmo
+comune	Fiscaglia
+comune	Fisciano
+comune	Fiuggi
+comune	Fiumalbo
+comune	Fiumara
+comune	Fiume Veneto
+comune	Fiumedinisi
+comune	Fiumefreddo Bruzio
+comune	Fiumefreddo di Sicilia
+comune	Fiumicello Villa Vicentina
+comune	Fiumicino
+comune	Fiuminata
+comune	Fivizzano
+comune	Fiè allo Sciliar
+comune	Fiè allo Sciliar/Völs am Schlern
+comune	Flaibano
+comune	Flero
+comune	Floresta
+comune	Floridia
+comune	Florinas
+comune	Flumeri
+comune	Fluminimaggiore
+comune	Flussio
+comune	Fobello
+comune	Foggia
+comune	Foglianise
+comune	Fogliano Redipuglia
+comune	Foglizzo
+comune	Foiano della Chiana
+comune	Foiano di Val Fortore
+comune	Folgaria
+comune	Folignano
+comune	Foligno
+comune	Follina
+comune	Follo
+comune	Follonica
+comune	Fombio
+comune	Fondachelli-Fantina
+comune	Fondi
+comune	Fonni
+comune	Fontainemore
+comune	Fontana Liri
+comune	Fontanafredda
+comune	Fontanarosa
+comune	Fontanelice
+comune	Fontanella
+comune	Fontanellato
+comune	Fontanelle
+comune	Fontaneto d'Agogna
+comune	Fontanetto Po
+comune	Fontanigorda
+comune	Fontanile
+comune	Fontaniva
+comune	Fonte
+comune	Fonte Nuova
+comune	Fontecchio
+comune	Fontechiari
+comune	Fontegreca
+comune	Fonteno
+comune	Fontevivo
+comune	Fonzaso
+comune	Foppolo
+comune	Forano
+comune	Force
+comune	Forchia
+comune	Forcola
+comune	Fordongianus
+comune	Forenza
+comune	Foresto Sparso
+comune	Forgaria nel Friuli
+comune	Forino
+comune	Forio
+comune	Forlimpopoli
+comune	Forlì
+comune	Forlì del Sannio
+comune	Formazza
+comune	Formello
+comune	Formia
+comune	Formicola
+comune	Formigara
+comune	Formigine
+comune	Formigliana
+comune	Fornace
+comune	Fornelli
+comune	Forni Avoltri
+comune	Forni di Sopra
+comune	Forni di Sotto
+comune	Forno Canavese
+comune	Fornovo di Taro
+comune	Fornovo San Giovanni
+comune	Forte dei Marmi
+comune	Fortezza
+comune	Fortezza/Franzensfeste
+comune	Fortunago
+comune	Forza d'Agrò
+comune	Fosciandora
+comune	Fosdinovo
+comune	Fossa
+comune	Fossacesia
+comune	Fossalta di Piave
+comune	Fossalta di Portogruaro
+comune	Fossalto
+comune	Fossano
+comune	Fossato di Vico
+comune	Fossato Serralta
+comune	Fossombrone
+comune	Fossò
+comune	Foza
+comune	Frabosa Soprana
+comune	Frabosa Sottana
+comune	Fraconalto
+comune	Fragagnano
+comune	Fragneto l'Abate
+comune	Fragneto Monforte
+comune	Fraine
+comune	Framura
+comune	Francavilla al Mare
+comune	Francavilla Angitola
+comune	Francavilla Bisio
+comune	Francavilla d'Ete
+comune	Francavilla di Sicilia
+comune	Francavilla Fontana
+comune	Francavilla in Sinni
+comune	Francavilla Marittima
+comune	Francica
+comune	Francofonte
+comune	Francolise
+comune	Franzensfeste
+comune	Frascaro
+comune	Frascarolo
+comune	Frascati
+comune	Frascineto
+comune	Frassilongo
+comune	Frassinelle Polesine
+comune	Frassinello Monferrato
+comune	Frassineto Po
+comune	Frassinetto
+comune	Frassino
+comune	Frassinoro
+comune	Frasso Sabino
+comune	Frasso Telesino
+comune	Fratta Polesine
+comune	Fratta Todina
+comune	Frattamaggiore
+comune	Frattaminore
+comune	Fratte Rosa
+comune	Frazzanò
+comune	Fregona
+comune	Freienfeld
+comune	Fresagrandinaria
+comune	Fresonara
+comune	Frigento
+comune	Frignano
+comune	Frinco
+comune	Frisa
+comune	Frisanco
+comune	Front
+comune	Frontino
+comune	Frontone
+comune	Frosinone
+comune	Frosolone
+comune	Frossasco
+comune	Frugarolo
+comune	Fubine Monferrato
+comune	Fucecchio
+comune	Fuipiano Valle Imagna
+comune	Fumane
+comune	Fumone
+comune	Funes
+comune	Funes/Villnöß
+comune	Furci
+comune	Furci Siculo
+comune	Furnari
+comune	Furore
+comune	Furtei
+comune	Fuscaldo
+comune	Fusignano
+comune	Fusine
+comune	Futani
+comune	Fénis
+comune	Gabbioneta-Binanuova
+comune	Gabiano
+comune	Gabicce Mare
+comune	Gaby
+comune	Gadesco-Pieve Delmona
+comune	Gadoni
+comune	Gaeta
+comune	Gaggi
+comune	Gaggiano
+comune	Gaggio Montano
+comune	Gaglianico
+comune	Gagliano Aterno
+comune	Gagliano Castelferrato
+comune	Gagliano del Capo
+comune	Gagliato
+comune	Gagliole
+comune	Gaiarine
+comune	Gaiba
+comune	Gaiola
+comune	Gaiole in Chianti
+comune	Gairo
+comune	Gais
+comune	Gais/Gais
+comune	Galati Mamertino
+comune	Galatina
+comune	Galatone
+comune	Galatro
+comune	Galbiate
+comune	Galeata
+comune	Galgagnano
+comune	Gallarate
+comune	Gallese
+comune	Galliate
+comune	Galliate Lombardo
+comune	Galliavola
+comune	Gallicano
+comune	Gallicano nel Lazio
+comune	Gallicchio
+comune	Galliera
+comune	Galliera Veneta
+comune	Gallinaro
+comune	Gallio
+comune	Gallipoli
+comune	Gallo Matese
+comune	Gallodoro
+comune	Galluccio
+comune	Galtellì
+comune	Galzignano Terme
+comune	Gamalero
+comune	Gambara
+comune	Gambarana
+comune	Gambasca
+comune	Gambassi Terme
+comune	Gambatesa
+comune	Gambellara
+comune	Gamberale
+comune	Gambettola
+comune	Gambolò
+comune	Gandellino
+comune	Gandino
+comune	Gandosso
+comune	Gangi
+comune	Garaguso
+comune	Garbagna
+comune	Garbagna Novarese
+comune	Garbagnate Milanese
+comune	Garbagnate Monastero
+comune	Garda
+comune	Gardone Riviera
+comune	Gardone Val Trompia
+comune	Garessio
+comune	Gargallo
+comune	Gargazon
+comune	Gargazzone
+comune	Gargazzone/Gargazon
+comune	Gargnano
+comune	Garlasco
+comune	Garlate
+comune	Garlenda
+comune	Garniga Terme
+comune	Garzeno
+comune	Garzigliana
+comune	Gasperina
+comune	Gassino Torinese
+comune	Gattatico
+comune	Gatteo
+comune	Gattico-Veruno
+comune	Gattinara
+comune	Gavardo
+comune	Gavello
+comune	Gaverina Terme
+comune	Gavi
+comune	Gavignano
+comune	Gavirate
+comune	Gavoi
+comune	Gavorrano
+comune	Gazoldo degli Ippoliti
+comune	Gazzada Schianno
+comune	Gazzaniga
+comune	Gazzo
+comune	Gazzo Veronese
+comune	Gazzola
+comune	Gazzuolo
+comune	Gela
+comune	Gemmano
+comune	Gemona del Friuli
+comune	Gemonio
+comune	Genazzano
+comune	Genga
+comune	Genivolta
+comune	Genola
+comune	Genoni
+comune	Genova
+comune	Genuri
+comune	Genzano di Lucania
+comune	Genzano di Roma
+comune	Gera Lario
+comune	Gerace
+comune	Geraci Siculo
+comune	Gerano
+comune	Gerenzago
+comune	Gerenzano
+comune	Gergei
+comune	Germagnano
+comune	Germagno
+comune	Germignaga
+comune	Gerocarne
+comune	Gerola Alta
+comune	Gerre de' Caprioli
+comune	Gesico
+comune	Gessate
+comune	Gessopalena
+comune	Gesturi
+comune	Gesualdo
+comune	Ghedi
+comune	Ghemme
+comune	Ghiffa
+comune	Ghilarza
+comune	Ghisalba
+comune	Ghislarengo
+comune	Giacciano con Baruchella
+comune	Giaglione
+comune	Gianico
+comune	Giano dell'Umbria
+comune	Giano Vetusto
+comune	Giardinello
+comune	Giardini-Naxos
+comune	Giarole
+comune	Giarratana
+comune	Giarre
+comune	Giave
+comune	Giaveno
+comune	Giavera del Montello
+comune	Giba
+comune	Gibellina
+comune	Gifflenga
+comune	Giffone
+comune	Giffoni Sei Casali
+comune	Giffoni Valle Piana
+comune	Gignese
+comune	Gignod
+comune	Gildone
+comune	Gimigliano
+comune	Ginestra
+comune	Ginestra degli Schiavoni
+comune	Ginosa
+comune	Gioi
+comune	Gioia dei Marsi
+comune	Gioia del Colle
+comune	Gioia Sannitica
+comune	Gioia Tauro
+comune	Gioiosa Ionica
+comune	Gioiosa Marea
+comune	Giove
+comune	Giovinazzo
+comune	Giovo
+comune	Girasole
+comune	Girifalco
+comune	Gissi
+comune	Giuggianello
+comune	Giugliano in Campania
+comune	Giuliana
+comune	Giuliano di Roma
+comune	Giuliano Teatino
+comune	Giulianova
+comune	Giungano
+comune	Giurdignano
+comune	Giussago
+comune	Giussano
+comune	Giustenice
+comune	Giustino
+comune	Giusvalla
+comune	Givoletto
+comune	Gizzeria
+comune	Glorenza
+comune	Glorenza/Glurns
+comune	Glurns
+comune	Godega di Sant'Urbano
+comune	Godiasco Salice Terme
+comune	Godrano
+comune	Goito
+comune	Golasecca
+comune	Golferenzo
+comune	Golfo Aranci
+comune	Gombito
+comune	Gonars
+comune	Goni
+comune	Gonnesa
+comune	Gonnoscodina
+comune	Gonnosfanadiga
+comune	Gonnosnò
+comune	Gonnostramatza
+comune	Gonzaga
+comune	Gordona
+comune	Gorga
+comune	Gorgo al Monticano
+comune	Gorgoglione
+comune	Gorgonzola
+comune	Goriano Sicoli
+comune	Gorizia
+comune	Gorla Maggiore
+comune	Gorla Minore
+comune	Gorlago
+comune	Gorle
+comune	Gornate Olona
+comune	Gorno
+comune	Goro
+comune	Gorreto
+comune	Gorzegno
+comune	Gosaldo
+comune	Gossolengo
+comune	Gottasecca
+comune	Gottolengo
+comune	Govone
+comune	Gozzano
+comune	Gradara
+comune	Gradisca d'Isonzo
+comune	Grado
+comune	Gradoli
+comune	Graffignana
+comune	Graffignano
+comune	Graglia
+comune	Gragnano
+comune	Gragnano Trebbiense
+comune	Grammichele
+comune	Grana Monferrato
+comune	Granarolo dell'Emilia
+comune	Grandate
+comune	Grandola ed Uniti
+comune	Graniti
+comune	Granozzo con Monticello
+comune	Grantola
+comune	Grantorto
+comune	Granze
+comune	Grassano
+comune	Grassobbio
+comune	Gratteri
+comune	Graun im Vinschgau
+comune	Gravedona ed Uniti
+comune	Gravellona Lomellina
+comune	Gravellona Toce
+comune	Gravere
+comune	Gravina di Catania
+comune	Gravina in Puglia
+comune	Grazzanise
+comune	Grazzano Badoglio
+comune	Greccio
+comune	Greci
+comune	Greggio
+comune	Gremiasco
+comune	Gressan
+comune	Gressoney-La-Trinité
+comune	Gressoney-Saint-Jean
+comune	Greve in Chianti
+comune	Grezzago
+comune	Grezzana
+comune	Griante
+comune	Gricignano di Aversa
+comune	Grignasco
+comune	Grigno
+comune	Grimacco
+comune	Grimaldi
+comune	Grinzane Cavour
+comune	Grisignano di Zocco
+comune	Grisolia
+comune	Grizzana Morandi
+comune	Grognardo
+comune	Gromo
+comune	Grondona
+comune	Grone
+comune	Grontardo
+comune	Gropello Cairoli
+comune	Gropparello
+comune	Groscavallo
+comune	Grosio
+comune	Grosotto
+comune	Grosseto
+comune	Grosso
+comune	Grottaferrata
+comune	Grottaglie
+comune	Grottaminarda
+comune	Grottammare
+comune	Grottazzolina
+comune	Grotte
+comune	Grotte di Castro
+comune	Grotteria
+comune	Grottole
+comune	Grottolella
+comune	Gruaro
+comune	Grugliasco
+comune	Grumello Cremonese ed Uniti
+comune	Grumello del Monte
+comune	Grumento Nova
+comune	Grumo Appula
+comune	Grumo Nevano
+comune	Grumolo delle Abbadesse
+comune	Gsies
+comune	Guagnano
+comune	Gualdo
+comune	Gualdo Cattaneo
+comune	Gualdo Tadino
+comune	Gualtieri
+comune	Gualtieri Sicaminò
+comune	Guamaggiore
+comune	Guanzate
+comune	Guarcino
+comune	Guarda Veneta
+comune	Guardabosone
+comune	Guardamiglio
+comune	Guardavalle
+comune	Guardea
+comune	Guardia Lombardi
+comune	Guardia Perticara
+comune	Guardia Piemontese
+comune	Guardia Sanframondi
+comune	Guardiagrele
+comune	Guardialfiera
+comune	Guardiaregia
+comune	Guardistallo
+comune	Guarene
+comune	Guasila
+comune	Guastalla
+comune	Guazzora
+comune	Gubbio
+comune	Gudo Visconti
+comune	Guglionesi
+comune	Guidizzolo
+comune	Guidonia Montecelio
+comune	Guiglia
+comune	Guilmi
+comune	Gurro
+comune	Guspini
+comune	Gussago
+comune	Gussola
+comune	Hafling
+comune	Hône
+comune	Idro
+comune	Iglesias
+comune	Igliano
+comune	Ilbono
+comune	Illasi
+comune	Illorai
+comune	Imbersago
+comune	Imer
+comune	Imola
+comune	Imperia
+comune	Impruneta
+comune	Inarzo
+comune	Incisa Scapaccino
+comune	Incudine
+comune	Induno Olona
+comune	Ingria
+comune	Innichen
+comune	Intragna
+comune	Introbio
+comune	Introd
+comune	Introdacqua
+comune	Inverigo
+comune	Inverno e Monteleone
+comune	Inverso Pinasca
+comune	Inveruno
+comune	Invorio
+comune	Inzago
+comune	Irgoli
+comune	Irma
+comune	Irsina
+comune	Isasca
+comune	Isca sullo Ionio
+comune	Ischia
+comune	Ischia di Castro
+comune	Ischitella
+comune	Iseo
+comune	Isera
+comune	Isernia
+comune	Isili
+comune	Isnello
+comune	Isola d'Asti
+comune	Isola del Cantone
+comune	Isola del Giglio
+comune	Isola del Gran Sasso d'Italia
+comune	Isola del Liri
+comune	Isola del Piano
+comune	Isola della Scala
+comune	Isola delle Femmine
+comune	Isola di Capo Rizzuto
+comune	Isola di Fondra
+comune	Isola Dovarese
+comune	Isola Rizza
+comune	Isola Sant'Antonio
+comune	Isola Vicentina
+comune	Isolabella
+comune	Isolabona
+comune	Isole Tremiti
+comune	Isorella
+comune	Ispani
+comune	Ispica
+comune	Ispra
+comune	Issiglio
+comune	Issime
+comune	Isso
+comune	Issogne
+comune	Istrana
+comune	Itala
+comune	Itri
+comune	Ittireddu
+comune	Ittiri
+comune	Ivrea
+comune	Izano
+comune	Jacurso
+comune	Jelsi
+comune	Jenesien
+comune	Jenne
+comune	Jerago con Orago
+comune	Jerzu
+comune	Jesi
+comune	Jesolo
+comune	Jolanda di Savoia
+comune	Jonadi
+comune	Joppolo
+comune	Joppolo Giancaxio
+comune	Jovençan
+comune	Kaltern an der Weinstraße
+comune	Karneid
+comune	Kastelbell-Tschars
+comune	Kastelruth
+comune	Kiens
+comune	Klausen
+comune	Kuens
+comune	Kurtatsch an der Weinstraße
+comune	Kurtinig an der Weinstraße
+comune	L'Aquila
+comune	La Cassa
+comune	La Loggia
+comune	La Maddalena
+comune	La Magdeleine
+comune	La Morra
+comune	La Salle
+comune	La Spezia
+comune	La Thuile
+comune	La Valle
+comune	La Valle Agordina
+comune	La Valle/Wengen
+comune	La Valletta Brianza
+comune	Laas
+comune	Labico
+comune	Labro
+comune	Lacchiarella
+comune	Lacco Ameno
+comune	Lacedonia
+comune	Laces
+comune	Laces/Latsch
+comune	Laconi
+comune	Ladispoli
+comune	Laerru
+comune	Laganadi
+comune	Laghi
+comune	Laglio
+comune	Lagnasco
+comune	Lago
+comune	Lagonegro
+comune	Lagosanto
+comune	Lagundo
+comune	Lagundo/Algund
+comune	Laigueglia
+comune	Lainate
+comune	Laino
+comune	Laino Borgo
+comune	Laino Castello
+comune	Laion
+comune	Laion/Lajen
+comune	Laives
+comune	Laives/Leifers
+comune	Lajatico
+comune	Lajen
+comune	Lallio
+comune	Lama dei Peligni
+comune	Lama Mocogno
+comune	Lambrugo
+comune	Lamezia Terme
+comune	Lamon
+comune	Lampedusa e Linosa
+comune	Lamporecchio
+comune	Lamporo
+comune	Lana
+comune	Lana/Lana
+comune	Lanciano
+comune	Landiona
+comune	Landriano
+comune	Langhirano
+comune	Langosco
+comune	Lanusei
+comune	Lanuvio
+comune	Lanzada
+comune	Lanzo Torinese
+comune	Lapedona
+comune	Lapio
+comune	Lappano
+comune	Larciano
+comune	Lardirago
+comune	Lariano
+comune	Larino
+comune	Las Plassas
+comune	Lasa
+comune	Lasa/Laas
+comune	Lascari
+comune	Lasnigo
+comune	Lastebasse
+comune	Lastra a Signa
+comune	Latera
+comune	Laterina Pergine Valdarno
+comune	Laterza
+comune	Latiano
+comune	Latina
+comune	Latisana
+comune	Latronico
+comune	Latsch
+comune	Lattarico
+comune	Lauco
+comune	Laureana Cilento
+comune	Laureana di Borrello
+comune	Lauregno
+comune	Lauregno/Laurein
+comune	Laurein
+comune	Laurenzana
+comune	Lauria
+comune	Lauriano
+comune	Laurino
+comune	Laurito
+comune	Lauro
+comune	Lavagna
+comune	Lavagno
+comune	Lavarone
+comune	Lavello
+comune	Lavena Ponte Tresa
+comune	Laveno-Mombello
+comune	Lavenone
+comune	Laviano
+comune	Lavis
+comune	Lazise
+comune	Lazzate
+comune	Lecce
+comune	Lecce nei Marsi
+comune	Lecco
+comune	Ledro
+comune	Leffe
+comune	Leggiuno
+comune	Legnago
+comune	Legnano
+comune	Legnaro
+comune	Lei
+comune	Leifers
+comune	Leini
+comune	Leivi
+comune	Lemie
+comune	Lendinara
+comune	Leni
+comune	Lenna
+comune	Leno
+comune	Lenola
+comune	Lenta
+comune	Lentate sul Seveso
+comune	Lentella
+comune	Lentini
+comune	Leonessa
+comune	Leonforte
+comune	Leporano
+comune	Lequile
+comune	Lequio Berria
+comune	Lequio Tanaro
+comune	Lercara Friddi
+comune	Lerici
+comune	Lerma
+comune	Lesa
+comune	Lesegno
+comune	Lesignano de' Bagni
+comune	Lesina
+comune	Lesmo
+comune	Lessolo
+comune	Lessona
+comune	Lestizza
+comune	Letino
+comune	Letojanni
+comune	Lettere
+comune	Lettomanoppello
+comune	Lettopalena
+comune	Levanto
+comune	Levate
+comune	Leverano
+comune	Levice
+comune	Levico Terme
+comune	Levone
+comune	Lezzeno
+comune	Liberi
+comune	Librizzi
+comune	Licata
+comune	Licciana Nardi
+comune	Licenza
+comune	Licodia Eubea
+comune	Lierna
+comune	Lignana
+comune	Lignano Sabbiadoro
+comune	Lillianes
+comune	Limana
+comune	Limatola
+comune	Limbadi
+comune	Limbiate
+comune	Limena
+comune	Limido Comasco
+comune	Limina
+comune	Limone Piemonte
+comune	Limone sul Garda
+comune	Limosano
+comune	Linarolo
+comune	Linguaglossa
+comune	Lioni
+comune	Lipari
+comune	Lipomo
+comune	Liscate
+comune	Liscia
+comune	Lisciano Niccone
+comune	Lisio
+comune	Lissone
+comune	Liveri
+comune	Livigno
+comune	Livinallongo del Col di Lana
+comune	Livo
+comune	Livorno
+comune	Livorno Ferraris
+comune	Livraga
+comune	Lizzanello
+comune	Lizzano
+comune	Lizzano in Belvedere
+comune	Loano
+comune	Loazzolo
+comune	Locana
+comune	Locate di Triulzi
+comune	Locate Varesino
+comune	Locatello
+comune	Loceri
+comune	Locorotondo
+comune	Locri
+comune	Loculi
+comune	Lodi
+comune	Lodi Vecchio
+comune	Lodine
+comune	Lodrino
+comune	Lodè
+comune	Lograto
+comune	Loiano
+comune	Loiri Porto San Paolo
+comune	Lomagna
+comune	Lomazzo
+comune	Lombardore
+comune	Lombriasco
+comune	Lomello
+comune	Lona-Lases
+comune	Lonate Ceppino
+comune	Lonate Pozzolo
+comune	Lonato del Garda
+comune	Londa
+comune	Longano
+comune	Longare
+comune	Longarone
+comune	Longhena
+comune	Longi
+comune	Longiano
+comune	Longobardi
+comune	Longobucco
+comune	Longone al Segrino
+comune	Longone Sabino
+comune	Lonigo
+comune	Loranzè
+comune	Loreggia
+comune	Loreglia
+comune	Lorenzago di Cadore
+comune	Loreo
+comune	Loreto
+comune	Loreto Aprutino
+comune	Loria
+comune	Loro Ciuffenna
+comune	Loro Piceno
+comune	Lorsica
+comune	Losine
+comune	Lotzorai
+comune	Lovere
+comune	Lovero
+comune	Lozio
+comune	Lozza
+comune	Lozzo Atestino
+comune	Lozzo di Cadore
+comune	Lozzolo
+comune	Lu e Cuccaro Monferrato
+comune	Lubriano
+comune	Lucca
+comune	Lucca Sicula
+comune	Lucera
+comune	Lucignano
+comune	Lucinasco
+comune	Lucito
+comune	Luco dei Marsi
+comune	Lucoli
+comune	Lugagnano Val d'Arda
+comune	Lugnano in Teverina
+comune	Lugo
+comune	Lugo di Vicenza
+comune	Luino
+comune	Luisago
+comune	Lula
+comune	Lumarzo
+comune	Lumezzane
+comune	Lunamatrona
+comune	Lunano
+comune	Lungavilla
+comune	Lungro
+comune	Luni
+comune	Luogosano
+comune	Luogosanto
+comune	Lupara
+comune	Lurago d'Erba
+comune	Lurago Marinone
+comune	Lurano
+comune	Luras
+comune	Lurate Caccivio
+comune	Lusciano
+comune	Luserna
+comune	Luserna San Giovanni
+comune	Lusernetta
+comune	Lusevera
+comune	Lusia
+comune	Lusiana Conco
+comune	Lusigliè
+comune	Luson
+comune	Luson/Lüsen
+comune	Lustra
+comune	Luvinate
+comune	Luzzana
+comune	Luzzara
+comune	Luzzi
+comune	Lüsen
+comune	Maccagno con Pino e Veddasca
+comune	Maccastorna
+comune	Macchia d'Isernia
+comune	Macchia Valfortore
+comune	Macchiagodena
+comune	Macello
+comune	Macerata
+comune	Macerata Campania
+comune	Macerata Feltria
+comune	Macherio
+comune	Maclodio
+comune	Macomer
+comune	Macra
+comune	Macugnaga
+comune	Maddaloni
+comune	Madesimo
+comune	Madignano
+comune	Madone
+comune	Madonna del Sasso
+comune	Madruzzo
+comune	Maenza
+comune	Mafalda
+comune	Magasa
+comune	Magenta
+comune	Maggiora
+comune	Magherno
+comune	Magione
+comune	Magisano
+comune	Magliano Alfieri
+comune	Magliano Alpi
+comune	Magliano de' Marsi
+comune	Magliano di Tenna
+comune	Magliano in Toscana
+comune	Magliano Romano
+comune	Magliano Sabina
+comune	Magliano Vetere
+comune	Maglie
+comune	Magliolo
+comune	Maglione
+comune	Magnacavallo
+comune	Magnago
+comune	Magnano
+comune	Magnano in Riviera
+comune	Magomadas
+comune	Magreglio
+comune	Magrè sulla strada del vino
+comune	Magrè sulla strada del vino/Margreid an der Weinstraße
+comune	Maida
+comune	Maierato
+comune	Maierà
+comune	Maiolati Spontini
+comune	Maiolo
+comune	Maiori
+comune	Mairago
+comune	Mairano
+comune	Maissana
+comune	Majano
+comune	Malagnino
+comune	Malalbergo
+comune	Malborghetto Valbruna
+comune	Malcesine
+comune	Malegno
+comune	Maleo
+comune	Malesco
+comune	Maletto
+comune	Malfa
+comune	Malgrate
+comune	Malito
+comune	Mallare
+comune	Malles Venosta
+comune	Malles Venosta/Mals
+comune	Malnate
+comune	Malo
+comune	Malonno
+comune	Mals
+comune	Maltignano
+comune	Malvagna
+comune	Malvicino
+comune	Malvito
+comune	Malé
+comune	Mammola
+comune	Mamoiada
+comune	Manciano
+comune	Mandanici
+comune	Mandas
+comune	Mandatoriccio
+comune	Mandela
+comune	Mandello del Lario
+comune	Mandello Vitta
+comune	Manduria
+comune	Manerba del Garda
+comune	Manerbio
+comune	Manfredonia
+comune	Mango
+comune	Mangone
+comune	Maniace
+comune	Maniago
+comune	Manocalzati
+comune	Manoppello
+comune	Mansuè
+comune	Manta
+comune	Mantello
+comune	Mantova
+comune	Manzano
+comune	Manziana
+comune	Mapello
+comune	Mappano
+comune	Mara
+comune	Maracalagonis
+comune	Maranello
+comune	Marano di Napoli
+comune	Marano di Valpolicella
+comune	Marano Equo
+comune	Marano Lagunare
+comune	Marano Marchesato
+comune	Marano Principato
+comune	Marano sul Panaro
+comune	Marano Ticino
+comune	Marano Vicentino
+comune	Maranzana
+comune	Maratea
+comune	Marcallo con Casone
+comune	Marcaria
+comune	Marcedusa
+comune	Marcellina
+comune	Marcellinara
+comune	Marcetelli
+comune	Marcheno
+comune	Marchirolo
+comune	Marciana
+comune	Marciana Marina
+comune	Marcianise
+comune	Marciano della Chiana
+comune	Marcignago
+comune	Marcon
+comune	Marebbe
+comune	Marebbe/Enneberg
+comune	Marene
+comune	Mareno di Piave
+comune	Marentino
+comune	Maretto
+comune	Margarita
+comune	Margherita di Savoia
+comune	Margno
+comune	Margreid an der Weinstraße
+comune	Mariana Mantovana
+comune	Mariano Comense
+comune	Mariano del Friuli
+comune	Marianopoli
+comune	Mariglianella
+comune	Marigliano
+comune	Marina di Gioiosa Ionica
+comune	Marineo
+comune	Marino
+comune	Marlengo
+comune	Marlengo/Marling
+comune	Marliana
+comune	Marling
+comune	Marmentino
+comune	Marmirolo
+comune	Marmora
+comune	Marnate
+comune	Marone
+comune	Maropati
+comune	Marostica
+comune	Marradi
+comune	Marrubiu
+comune	Marsaglia
+comune	Marsala
+comune	Marsciano
+comune	Marsico Nuovo
+comune	Marsicovetere
+comune	Marta
+comune	Martano
+comune	Martell
+comune	Martellago
+comune	Martello
+comune	Martello/Martell
+comune	Martignacco
+comune	Martignana di Po
+comune	Martignano
+comune	Martina Franca
+comune	Martinengo
+comune	Martiniana Po
+comune	Martinsicuro
+comune	Martirano
+comune	Martirano Lombardo
+comune	Martis
+comune	Martone
+comune	Marudo
+comune	Maruggio
+comune	Marzabotto
+comune	Marzano
+comune	Marzano Appio
+comune	Marzano di Nola
+comune	Marzi
+comune	Marzio
+comune	Masainas
+comune	Masate
+comune	Mascali
+comune	Mascalucia
+comune	Maschito
+comune	Masciago Primo
+comune	Maser
+comune	Masera
+comune	Maserada sul Piave
+comune	Maserà di Padova
+comune	Masi
+comune	Masi Torello
+comune	Masio
+comune	Maslianico
+comune	Masone
+comune	Massa
+comune	Massa d'Albe
+comune	Massa di Somma
+comune	Massa e Cozzile
+comune	Massa Fermana
+comune	Massa Lombarda
+comune	Massa Lubrense
+comune	Massa Marittima
+comune	Massa Martana
+comune	Massafra
+comune	Massalengo
+comune	Massanzago
+comune	Massarosa
+comune	Massazza
+comune	Massello
+comune	Masserano
+comune	Massignano
+comune	Massimeno
+comune	Massimino
+comune	Massino Visconti
+comune	Massiola
+comune	Masullas
+comune	Matelica
+comune	Matera
+comune	Mathi
+comune	Matino
+comune	Matrice
+comune	Mattie
+comune	Mattinata
+comune	Mazara del Vallo
+comune	Mazzano
+comune	Mazzano Romano
+comune	Mazzarino
+comune	Mazzarrone
+comune	Mazzarrà Sant'Andrea
+comune	Mazzin
+comune	Mazzo di Valtellina
+comune	Mazzè
+comune	Meana di Susa
+comune	Meana Sardo
+comune	Meda
+comune	Mede
+comune	Medea
+comune	Medesano
+comune	Medicina
+comune	Mediglia
+comune	Medolago
+comune	Medole
+comune	Medolla
+comune	Meduna di Livenza
+comune	Meduno
+comune	Megliadino San Vitale
+comune	Meina
+comune	Melara
+comune	Melazzo
+comune	Meldola
+comune	Mele
+comune	Melegnano
+comune	Melendugno
+comune	Meleti
+comune	Melfi
+comune	Melicucco
+comune	Melicuccà
+comune	Melilli
+comune	Melissa
+comune	Melissano
+comune	Melito di Napoli
+comune	Melito di Porto Salvo
+comune	Melito Irpino
+comune	Melizzano
+comune	Melle
+comune	Mello
+comune	Melpignano
+comune	Meltina
+comune	Meltina/Mölten
+comune	Melzo
+comune	Menaggio
+comune	Menconico
+comune	Mendatica
+comune	Mendicino
+comune	Menfi
+comune	Mentana
+comune	Meolo
+comune	Meran
+comune	Merana
+comune	Merano
+comune	Merano/Meran
+comune	Merate
+comune	Mercallo
+comune	Mercatello sul Metauro
+comune	Mercatino Conca
+comune	Mercato San Severino
+comune	Mercato Saraceno
+comune	Mercenasco
+comune	Mercogliano
+comune	Mereto di Tomba
+comune	Mergo
+comune	Mergozzo
+comune	Merlara
+comune	Merlino
+comune	Merone
+comune	Merì
+comune	Mesagne
+comune	Mese
+comune	Mesenzana
+comune	Mesero
+comune	Mesola
+comune	Mesoraca
+comune	Messina
+comune	Mestrino
+comune	Meta
+comune	Mezzago
+comune	Mezzana
+comune	Mezzana Bigli
+comune	Mezzana Mortigliengo
+comune	Mezzana Rabattone
+comune	Mezzane di Sotto
+comune	Mezzanego
+comune	Mezzanino
+comune	Mezzano
+comune	Mezzenile
+comune	Mezzocorona
+comune	Mezzojuso
+comune	Mezzoldo
+comune	Mezzolombardo
+comune	Mezzomerico
+comune	Miagliano
+comune	Miane
+comune	Miasino
+comune	Miazzina
+comune	Micigliano
+comune	Miggiano
+comune	Miglianico
+comune	Miglierina
+comune	Miglionico
+comune	Mignanego
+comune	Mignano Monte Lungo
+comune	Milano
+comune	Milazzo
+comune	Milena
+comune	Mileto
+comune	Milis
+comune	Militello in Val di Catania
+comune	Militello Rosmarino
+comune	Millesimo
+comune	Milo
+comune	Milzano
+comune	Mineo
+comune	Minerbe
+comune	Minerbio
+comune	Minervino di Lecce
+comune	Minervino Murge
+comune	Minori
+comune	Minturno
+comune	Minucciano
+comune	Mioglia
+comune	Mira
+comune	Mirabella Eclano
+comune	Mirabella Imbaccari
+comune	Mirabello Monferrato
+comune	Mirabello Sannitico
+comune	Miradolo Terme
+comune	Miranda
+comune	Mirandola
+comune	Mirano
+comune	Mirto
+comune	Misano Adriatico
+comune	Misano di Gera d'Adda
+comune	Misiliscemi
+comune	Misilmeri
+comune	Misinto
+comune	Missaglia
+comune	Missanello
+comune	Misterbianco
+comune	Mistretta
+comune	Moasca
+comune	Moconesi
+comune	Modena
+comune	Modica
+comune	Modigliana
+comune	Modolo
+comune	Modugno
+comune	Moena
+comune	Moggio
+comune	Moggio Udinese
+comune	Moglia
+comune	Mogliano
+comune	Mogliano Veneto
+comune	Mogorella
+comune	Mogoro
+comune	Moiano
+comune	Moimacco
+comune	Moio Alcantara
+comune	Moio de' Calvi
+comune	Moio della Civitella
+comune	Moiola
+comune	Mola di Bari
+comune	Molare
+comune	Molazzana
+comune	Molfetta
+comune	Molina Aterno
+comune	Molinara
+comune	Molinella
+comune	Molini di Triora
+comune	Molino dei Torti
+comune	Molise
+comune	Moliterno
+comune	Mollia
+comune	Molochio
+comune	Molteno
+comune	Moltrasio
+comune	Molveno
+comune	Mombaldone
+comune	Mombarcaro
+comune	Mombaroccio
+comune	Mombaruzzo
+comune	Mombasiglio
+comune	Mombello di Torino
+comune	Mombello Monferrato
+comune	Mombercelli
+comune	Momo
+comune	Mompantero
+comune	Mompeo
+comune	Momperone
+comune	Monacilioni
+comune	Monale
+comune	Monasterace
+comune	Monastero Bormida
+comune	Monastero di Lanzo
+comune	Monastero di Vasco
+comune	Monasterolo Casotto
+comune	Monasterolo del Castello
+comune	Monasterolo di Savigliano
+comune	Monastier di Treviso
+comune	Monastir
+comune	Moncalieri
+comune	Moncalvo
+comune	Moncenisio
+comune	Moncestino
+comune	Monchiero
+comune	Monchio delle Corti
+comune	Moncrivello
+comune	Moncucco Torinese
+comune	Mondaino
+comune	Mondavio
+comune	Mondolfo
+comune	Mondovì
+comune	Mondragone
+comune	Moneglia
+comune	Monesiglio
+comune	Monfalcone
+comune	Monforte d'Alba
+comune	Monforte San Giorgio
+comune	Monfumo
+comune	Mongardino
+comune	Monghidoro
+comune	Mongiana
+comune	Mongiardino Ligure
+comune	Mongiuffi Melia
+comune	Mongrando
+comune	Mongrassano
+comune	Monguelfo-Tesido
+comune	Monguelfo-Tesido/Welsberg-Taisten
+comune	Monguzzo
+comune	Moniga del Garda
+comune	Monleale
+comune	Monno
+comune	Monopoli
+comune	Monreale
+comune	Monrupino
+comune	Monrupino-Repentabor
+comune	Monsampietro Morico
+comune	Monsampolo del Tronto
+comune	Monsano
+comune	Monselice
+comune	Monserrato
+comune	Monsummano Terme
+comune	Montabone
+comune	Montacuto
+comune	Montafia
+comune	Montagano
+comune	Montagna in Valtellina
+comune	Montagna sulla strada del vino
+comune	Montagna sulla strada del vino/Montan an der Weinstraße
+comune	Montagnana
+comune	Montagnareale
+comune	Montaguto
+comune	Montaione
+comune	Montalbano Elicona
+comune	Montalbano Jonico
+comune	Montalcino
+comune	Montaldeo
+comune	Montaldo Bormida
+comune	Montaldo di Mondovì
+comune	Montaldo Roero
+comune	Montaldo Scarampi
+comune	Montaldo Torinese
+comune	Montale
+comune	Montalenghe
+comune	Montallegro
+comune	Montalto Carpasio
+comune	Montalto delle Marche
+comune	Montalto di Castro
+comune	Montalto Dora
+comune	Montalto Pavese
+comune	Montalto Uffugo
+comune	Montan an der Weinstraße
+comune	Montanaro
+comune	Montanaso Lombardo
+comune	Montanera
+comune	Montano Antilia
+comune	Montano Lucino
+comune	Montappone
+comune	Montaquila
+comune	Montasola
+comune	Montauro
+comune	Montazzoli
+comune	Monte Argentario
+comune	Monte Castello di Vibio
+comune	Monte Cavallo
+comune	Monte Cerignone
+comune	Monte Compatri
+comune	Monte Cremasco
+comune	Monte di Malo
+comune	Monte di Procida
+comune	Monte Giberto
+comune	Monte Grimano Terme
+comune	Monte Isola
+comune	Monte Marenzo
+comune	Monte Porzio
+comune	Monte Porzio Catone
+comune	Monte Rinaldo
+comune	Monte Roberto
+comune	Monte Romano
+comune	Monte San Biagio
+comune	Monte San Giacomo
+comune	Monte San Giovanni Campano
+comune	Monte San Giovanni in Sabina
+comune	Monte San Giusto
+comune	Monte San Martino
+comune	Monte San Pietrangeli
+comune	Monte San Pietro
+comune	Monte San Savino
+comune	Monte San Vito
+comune	Monte Sant'Angelo
+comune	Monte Santa Maria Tiberina
+comune	Monte Urano
+comune	Monte Vidon Combatte
+comune	Monte Vidon Corrado
+comune	Montebello della Battaglia
+comune	Montebello di Bertona
+comune	Montebello Jonico
+comune	Montebello sul Sangro
+comune	Montebello Vicentino
+comune	Montebelluna
+comune	Montebruno
+comune	Montebuono
+comune	Montecalvo in Foglia
+comune	Montecalvo Irpino
+comune	Montecalvo Versiggia
+comune	Montecarlo
+comune	Montecarotto
+comune	Montecassiano
+comune	Montecastello
+comune	Montecastrilli
+comune	Montecatini Val di Cecina
+comune	Montecatini-Terme
+comune	Montecchia di Crosara
+comune	Montecchio
+comune	Montecchio Emilia
+comune	Montecchio Maggiore
+comune	Montecchio Precalcino
+comune	Montechiaro d'Acqui
+comune	Montechiaro d'Asti
+comune	Montechiarugolo
+comune	Montecilfone
+comune	Montecopiolo
+comune	Montecorice
+comune	Montecorvino Pugliano
+comune	Montecorvino Rovella
+comune	Montecosaro
+comune	Montecrestese
+comune	Montecreto
+comune	Montedinove
+comune	Montedoro
+comune	Montefalcione
+comune	Montefalco
+comune	Montefalcone Appennino
+comune	Montefalcone di Val Fortore
+comune	Montefalcone nel Sannio
+comune	Montefano
+comune	Montefelcino
+comune	Monteferrante
+comune	Montefiascone
+comune	Montefino
+comune	Montefiore Conca
+comune	Montefiore dell'Aso
+comune	Montefiorino
+comune	Monteflavio
+comune	Monteforte Cilento
+comune	Monteforte d'Alpone
+comune	Monteforte Irpino
+comune	Montefortino
+comune	Montefranco
+comune	Montefredane
+comune	Montefusco
+comune	Montegabbione
+comune	Montegalda
+comune	Montegaldella
+comune	Montegallo
+comune	Montegioco
+comune	Montegiordano
+comune	Montegiorgio
+comune	Montegranaro
+comune	Montegridolfo
+comune	Montegrino Valtravaglia
+comune	Montegrosso d'Asti
+comune	Montegrosso Pian Latte
+comune	Montegrotto Terme
+comune	Monteiasi
+comune	Montelabbate
+comune	Montelanico
+comune	Montelapiano
+comune	Monteleone d'Orvieto
+comune	Monteleone di Fermo
+comune	Monteleone di Puglia
+comune	Monteleone di Spoleto
+comune	Monteleone Rocca Doria
+comune	Monteleone Sabino
+comune	Montelepre
+comune	Montelibretti
+comune	Montella
+comune	Montello
+comune	Montelongo
+comune	Montelparo
+comune	Montelupo Albese
+comune	Montelupo Fiorentino
+comune	Montelupone
+comune	Montemaggiore Belsito
+comune	Montemagno Monferrato
+comune	Montemale di Cuneo
+comune	Montemarano
+comune	Montemarciano
+comune	Montemarzino
+comune	Montemesola
+comune	Montemezzo
+comune	Montemignaio
+comune	Montemiletto
+comune	Montemilone
+comune	Montemitro
+comune	Montemonaco
+comune	Montemurlo
+comune	Montemurro
+comune	Montenars
+comune	Montenero di Bisaccia
+comune	Montenero Sabino
+comune	Montenero Val Cocchiara
+comune	Montenerodomo
+comune	Monteodorisio
+comune	Montepaone
+comune	Monteparano
+comune	Monteprandone
+comune	Montepulciano
+comune	Monterchi
+comune	Montereale
+comune	Montereale Valcellina
+comune	Monterenzio
+comune	Monteriggioni
+comune	Monteroduni
+comune	Monteroni d'Arbia
+comune	Monteroni di Lecce
+comune	Monterosi
+comune	Monterosso al Mare
+comune	Monterosso Almo
+comune	Monterosso Calabro
+comune	Monterosso Grana
+comune	Monterotondo
+comune	Monterotondo Marittimo
+comune	Monterubbiano
+comune	Montesano Salentino
+comune	Montesano sulla Marcellana
+comune	Montesarchio
+comune	Montescaglioso
+comune	Montescano
+comune	Montescheno
+comune	Montescudaio
+comune	Montescudo-Monte Colombo
+comune	Montese
+comune	Montesegale
+comune	Montesilvano
+comune	Montespertoli
+comune	Monteu da Po
+comune	Monteu Roero
+comune	Montevago
+comune	Montevarchi
+comune	Montevecchia
+comune	Monteverde
+comune	Monteverdi Marittimo
+comune	Monteviale
+comune	Montezemolo
+comune	Monti
+comune	Montiano
+comune	Monticelli Brusati
+comune	Monticelli d'Ongina
+comune	Monticelli Pavese
+comune	Monticello Brianza
+comune	Monticello Conte Otto
+comune	Monticello d'Alba
+comune	Montichiari
+comune	Monticiano
+comune	Montieri
+comune	Montiglio Monferrato
+comune	Montignoso
+comune	Montirone
+comune	Montjovet
+comune	Montodine
+comune	Montoggio
+comune	Montone
+comune	Montopoli di Sabina
+comune	Montopoli in Val d'Arno
+comune	Montorfano
+comune	Montorio al Vomano
+comune	Montorio nei Frentani
+comune	Montorio Romano
+comune	Montoro
+comune	Montorso Vicentino
+comune	Montottone
+comune	Montresta
+comune	Montà
+comune	Montù Beccaria
+comune	Monvalle
+comune	Monza
+comune	Monzambano
+comune	Monzuno
+comune	Moos in Passeier
+comune	Morano Calabro
+comune	Morano sul Po
+comune	Moransengo-Tonengo
+comune	Moraro
+comune	Morazzone
+comune	Morbegno
+comune	Morbello
+comune	Morciano di Leuca
+comune	Morciano di Romagna
+comune	Morcone
+comune	Mordano
+comune	Morengo
+comune	Mores
+comune	Moresco
+comune	Moretta
+comune	Morfasso
+comune	Morgano
+comune	Morgex
+comune	Morgongiori
+comune	Mori
+comune	Moriago della Battaglia
+comune	Moricone
+comune	Morigerati
+comune	Morimondo
+comune	Morino
+comune	Moriondo Torinese
+comune	Morlupo
+comune	Mormanno
+comune	Mornago
+comune	Mornese
+comune	Mornico al Serio
+comune	Mornico Losana
+comune	Morolo
+comune	Morozzo
+comune	Morra De Sanctis
+comune	Morro d'Alba
+comune	Morro d'Oro
+comune	Morro Reatino
+comune	Morrone del Sannio
+comune	Morrovalle
+comune	Morsano al Tagliamento
+comune	Morsasco
+comune	Mortara
+comune	Mortegliano
+comune	Morterone
+comune	Moruzzo
+comune	Moscazzano
+comune	Moschiano
+comune	Mosciano Sant'Angelo
+comune	Moscufo
+comune	Moso in Passiria
+comune	Moso in Passiria/Moos in Passeier
+comune	Mossa
+comune	Motta Baluffi
+comune	Motta Camastra
+comune	Motta d'Affermo
+comune	Motta de' Conti
+comune	Motta di Livenza
+comune	Motta Montecorvino
+comune	Motta San Giovanni
+comune	Motta Sant'Anastasia
+comune	Motta Santa Lucia
+comune	Motta Visconti
+comune	Mottafollone
+comune	Mottalciata
+comune	Motteggiana
+comune	Mottola
+comune	Mozzagrogna
+comune	Mozzanica
+comune	Mozzate
+comune	Mozzecane
+comune	Mozzo
+comune	Muccia
+comune	Muggia
+comune	Muggiò
+comune	Mugnano del Cardinale
+comune	Mugnano di Napoli
+comune	Mulazzano
+comune	Mulazzo
+comune	Mura
+comune	Muravera
+comune	Murazzano
+comune	Murello
+comune	Murialdo
+comune	Murisengo Monferrato
+comune	Murlo
+comune	Muro Leccese
+comune	Muro Lucano
+comune	Muros
+comune	Muscoline
+comune	Musei
+comune	Musile di Piave
+comune	Musso
+comune	Mussolente
+comune	Mussomeli
+comune	Muzzana del Turgnano
+comune	Muzzano
+comune	Mölten
+comune	Mühlbach
+comune	Mühlwald
+comune	Nago-Torbole
+comune	Nalles
+comune	Nalles/Nals
+comune	Nals
+comune	Napoli
+comune	Narbolia
+comune	Narcao
+comune	Nardodipace
+comune	Nardò
+comune	Narni
+comune	Naro
+comune	Narzole
+comune	Nasino
+comune	Naso
+comune	Naturno
+comune	Naturno/Naturns
+comune	Naturns
+comune	Natz-Schabs
+comune	Nave
+comune	Navelli
+comune	Naz-Sciaves
+comune	Naz-Sciaves/Natz-Schabs
+comune	Nazzano
+comune	Ne
+comune	Nebbiuno
+comune	Negrar di Valpolicella
+comune	Neirone
+comune	Neive
+comune	Nembro
+comune	Nemi
+comune	Nemoli
+comune	Neoneli
+comune	Nepi
+comune	Nereto
+comune	Nerola
+comune	Nervesa della Battaglia
+comune	Nerviano
+comune	Nespolo
+comune	Nesso
+comune	Netro
+comune	Nettuno
+comune	Neumarkt
+comune	Neviano
+comune	Neviano degli Arduini
+comune	Neviglie
+comune	Niardo
+comune	Nibbiola
+comune	Nibionno
+comune	Nichelino
+comune	Nicolosi
+comune	Nicorvo
+comune	Nicosia
+comune	Nicotera
+comune	Niederdorf
+comune	Niella Belbo
+comune	Niella Tanaro
+comune	Nimis
+comune	Niscemi
+comune	Nissoria
+comune	Nizza di Sicilia
+comune	Nizza Monferrato
+comune	Noale
+comune	Noasca
+comune	Nocara
+comune	Nocciano
+comune	Nocera Inferiore
+comune	Nocera Superiore
+comune	Nocera Terinese
+comune	Nocera Umbra
+comune	Noceto
+comune	Noci
+comune	Nociglia
+comune	Noepoli
+comune	Nogara
+comune	Nogaredo
+comune	Nogarole Rocca
+comune	Nogarole Vicentino
+comune	Noicattaro
+comune	Nola
+comune	Nole
+comune	Noli
+comune	Nomaglio
+comune	Nomi
+comune	Nonantola
+comune	None
+comune	Nonio
+comune	Noragugume
+comune	Norbello
+comune	Norcia
+comune	Norma
+comune	Nosate
+comune	Notaresco
+comune	Noto
+comune	Nova Levante
+comune	Nova Levante/Welschnofen
+comune	Nova Milanese
+comune	Nova Ponente
+comune	Nova Ponente/Deutschnofen
+comune	Nova Siri
+comune	Novafeltria
+comune	Novaledo
+comune	Novalesa
+comune	Novara
+comune	Novara di Sicilia
+comune	Novate Mezzola
+comune	Novate Milanese
+comune	Nove
+comune	Novedrate
+comune	Novella
+comune	Novellara
+comune	Novello
+comune	Noventa di Piave
+comune	Noventa Padovana
+comune	Noventa Vicentina
+comune	Novi di Modena
+comune	Novi Ligure
+comune	Novi Velia
+comune	Noviglio
+comune	Novoli
+comune	Nucetto
+comune	Nughedu San Nicolò
+comune	Nughedu Santa Vittoria
+comune	Nule
+comune	Nulvi
+comune	Numana
+comune	Nuoro
+comune	Nurachi
+comune	Nuragus
+comune	Nurallao
+comune	Nuraminis
+comune	Nureci
+comune	Nurri
+comune	Nus
+comune	Nusco
+comune	Nuvolento
+comune	Nuvolera
+comune	Nuxis
+comune	Occhieppo Inferiore
+comune	Occhieppo Superiore
+comune	Occhiobello
+comune	Occimiano
+comune	Ocre
+comune	Odalengo Grande
+comune	Odalengo Piccolo
+comune	Oderzo
+comune	Odolo
+comune	Ofena
+comune	Offagna
+comune	Offanengo
+comune	Offida
+comune	Offlaga
+comune	Oggebbio
+comune	Oggiona con Santo Stefano
+comune	Oggiono
+comune	Oglianico
+comune	Ogliastro Cilento
+comune	Olang
+comune	Olbia
+comune	Olcenengo
+comune	Oldenico
+comune	Oleggio
+comune	Oleggio Castello
+comune	Olevano di Lomellina
+comune	Olevano Romano
+comune	Olevano sul Tusciano
+comune	Olgiate Comasco
+comune	Olgiate Molgora
+comune	Olgiate Olona
+comune	Olginate
+comune	Oliena
+comune	Oliva Gessi
+comune	Olivadi
+comune	Oliveri
+comune	Oliveto Citra
+comune	Oliveto Lario
+comune	Oliveto Lucano
+comune	Olivetta San Michele
+comune	Olivola
+comune	Ollastra
+comune	Ollolai
+comune	Ollomont
+comune	Olmedo
+comune	Olmeneta
+comune	Olmo al Brembo
+comune	Olmo Gentile
+comune	Oltre il Colle
+comune	Oltressenda Alta
+comune	Oltrona di San Mamette
+comune	Olzai
+comune	Ome
+comune	Omegna
+comune	Omignano
+comune	Onano
+comune	Onanì
+comune	Oncino
+comune	Oneta
+comune	Onifai
+comune	Oniferi
+comune	Ono San Pietro
+comune	Onore
+comune	Onzo
+comune	Opera
+comune	Opi
+comune	Oppeano
+comune	Oppido Lucano
+comune	Oppido Mamertina
+comune	Ora
+comune	Ora/Auer
+comune	Orani
+comune	Oratino
+comune	Orbassano
+comune	Orbetello
+comune	Orciano Pisano
+comune	Orco Feglino
+comune	Ordona
+comune	Orero
+comune	Orgiano
+comune	Orgosolo
+comune	Oria
+comune	Oricola
+comune	Origgio
+comune	Orino
+comune	Orio al Serio
+comune	Orio Canavese
+comune	Orio Litta
+comune	Oriolo
+comune	Oriolo Romano
+comune	Oristano
+comune	Ormea
+comune	Ormelle
+comune	Ornago
+comune	Ornavasso
+comune	Ornica
+comune	Orosei
+comune	Orotelli
+comune	Orria
+comune	Orroli
+comune	Orsago
+comune	Orsara Bormida
+comune	Orsara di Puglia
+comune	Orsenigo
+comune	Orsogna
+comune	Orsomarso
+comune	Orta di Atella
+comune	Orta Nova
+comune	Orta San Giulio
+comune	Ortacesus
+comune	Orte
+comune	Ortelle
+comune	Ortezzano
+comune	Ortignano Raggiolo
+comune	Ortisei
+comune	Ortisei/St. Ulrich
+comune	Ortona
+comune	Ortona dei Marsi
+comune	Ortovero
+comune	Ortucchio
+comune	Ortueri
+comune	Orune
+comune	Orvieto
+comune	Orvinio
+comune	Orzinuovi
+comune	Orzivecchi
+comune	Osasco
+comune	Osasio
+comune	Oschiri
+comune	Osidda
+comune	Osiglia
+comune	Osilo
+comune	Osimo
+comune	Osini
+comune	Osio Sopra
+comune	Osio Sotto
+comune	Osnago
+comune	Osoppo
+comune	Ospedaletti
+comune	Ospedaletto
+comune	Ospedaletto d'Alpinolo
+comune	Ospedaletto Euganeo
+comune	Ospedaletto Lodigiano
+comune	Ospitale di Cadore
+comune	Ospitaletto
+comune	Ossago Lodigiano
+comune	Ossana
+comune	Ossi
+comune	Ossimo
+comune	Ossona
+comune	Ostana
+comune	Ostellato
+comune	Ostiano
+comune	Ostiglia
+comune	Ostra
+comune	Ostra Vetere
+comune	Ostuni
+comune	Otranto
+comune	Otricoli
+comune	Ottana
+comune	Ottati
+comune	Ottaviano
+comune	Ottiglio
+comune	Ottobiano
+comune	Ottone
+comune	Oulx
+comune	Ovada
+comune	Ovaro
+comune	Oviglio
+comune	Ovindoli
+comune	Ovodda
+comune	Oyace
+comune	Ozegna
+comune	Ozieri
+comune	Ozzano dell'Emilia
+comune	Ozzano Monferrato
+comune	Ozzero
+comune	Pabillonis
+comune	Pace del Mela
+comune	Paceco
+comune	Pacentro
+comune	Pachino
+comune	Paciano
+comune	Padenghe sul Garda
+comune	Paderna
+comune	Paderno d'Adda
+comune	Paderno Dugnano
+comune	Paderno Franciacorta
+comune	Paderno Ponchielli
+comune	Padova
+comune	Padria
+comune	Padru
+comune	Padula
+comune	Paduli
+comune	Paesana
+comune	Paese
+comune	Pagani
+comune	Paganico Sabino
+comune	Pagazzano
+comune	Pagliara
+comune	Paglieta
+comune	Pagnacco
+comune	Pagno
+comune	Pagnona
+comune	Pago del Vallo di Lauro
+comune	Pago Veiano
+comune	Paisco Loveno
+comune	Paitone
+comune	Paladina
+comune	Palagano
+comune	Palagianello
+comune	Palagiano
+comune	Palagonia
+comune	Palaia
+comune	Palanzano
+comune	Palata
+comune	Palau
+comune	Palazzago
+comune	Palazzo Adriano
+comune	Palazzo Canavese
+comune	Palazzo Pignano
+comune	Palazzo San Gervasio
+comune	Palazzolo Acreide
+comune	Palazzolo dello Stella
+comune	Palazzolo sull'Oglio
+comune	Palazzolo Vercellese
+comune	Palazzuolo sul Senio
+comune	Palena
+comune	Palermiti
+comune	Palermo
+comune	Palestrina
+comune	Palestro
+comune	Paliano
+comune	Palizzi
+comune	Pallagorio
+comune	Pallanzeno
+comune	Pallare
+comune	Palma Campania
+comune	Palma di Montechiaro
+comune	Palmanova
+comune	Palmariggi
+comune	Palmas Arborea
+comune	Palmi
+comune	Palmiano
+comune	Palmoli
+comune	Palo del Colle
+comune	Palombara Sabina
+comune	Palombaro
+comune	Palomonte
+comune	Palosco
+comune	Paludi
+comune	Paluzza
+comune	Palù
+comune	Palù del Fersina
+comune	Pamparato
+comune	Pancalieri
+comune	Pancarana
+comune	Panchià
+comune	Pandino
+comune	Panettieri
+comune	Panicale
+comune	Pannarano
+comune	Panni
+comune	Pantelleria
+comune	Pantigliate
+comune	Paola
+comune	Paolisi
+comune	Papasidero
+comune	Papozze
+comune	Parabiago
+comune	Parabita
+comune	Paratico
+comune	Parcines
+comune	Parcines/Partschins
+comune	Parella
+comune	Parenti
+comune	Parete
+comune	Pareto
+comune	Parghelia
+comune	Parlasco
+comune	Parma
+comune	Parodi Ligure
+comune	Paroldo
+comune	Parolise
+comune	Parona
+comune	Parrano
+comune	Parre
+comune	Partanna
+comune	Partinico
+comune	Partschins
+comune	Paruzzaro
+comune	Parzanica
+comune	Pasian di Prato
+comune	Pasiano di Pordenone
+comune	Paspardo
+comune	Passerano Marmorito
+comune	Passignano sul Trasimeno
+comune	Passirano
+comune	Pastena
+comune	Pastorano
+comune	Pastrengo
+comune	Pasturana
+comune	Pasturo
+comune	Paterno
+comune	Paterno Calabro
+comune	Paternopoli
+comune	Paternò
+comune	Patrica
+comune	Pattada
+comune	Patti
+comune	Patù
+comune	Pau
+comune	Paularo
+comune	Pauli Arbarei
+comune	Paulilatino
+comune	Paullo
+comune	Paupisi
+comune	Pavarolo
+comune	Pavia
+comune	Pavia di Udine
+comune	Pavone Canavese
+comune	Pavone del Mella
+comune	Pavullo nel Frignano
+comune	Pazzano
+comune	Peccioli
+comune	Pecetto di Valenza
+comune	Pecetto Torinese
+comune	Pedara
+comune	Pedaso
+comune	Pedavena
+comune	Pedemonte
+comune	Pederobba
+comune	Pedesina
+comune	Pedivigliano
+comune	Pedrengo
+comune	Peglio
+comune	Pegognaga
+comune	Peia
+comune	Peio
+comune	Pelago
+comune	Pella
+comune	Pellegrino Parmense
+comune	Pellezzano
+comune	Pellizzano
+comune	Pelugo
+comune	Penango
+comune	Penna in Teverina
+comune	Penna San Giovanni
+comune	Penna Sant'Andrea
+comune	Pennabilli
+comune	Pennadomo
+comune	Pennapiedimonte
+comune	Penne
+comune	Pentone
+comune	Perano
+comune	Perarolo di Cadore
+comune	Perca
+comune	Perca/Percha
+comune	Percha
+comune	Percile
+comune	Perdasdefogu
+comune	Perdaxius
+comune	Perdifumo
+comune	Pereto
+comune	Perfugas
+comune	Pergine Valsugana
+comune	Pergola
+comune	Perinaldo
+comune	Perito
+comune	Perledo
+comune	Perletto
+comune	Perlo
+comune	Perloz
+comune	Pernumia
+comune	Pero
+comune	Perosa Argentina
+comune	Perosa Canavese
+comune	Perrero
+comune	Persico Dosimo
+comune	Pertengo
+comune	Pertica Alta
+comune	Pertica Bassa
+comune	Pertosa
+comune	Pertusio
+comune	Perugia
+comune	Pesaro
+comune	Pescaglia
+comune	Pescantina
+comune	Pescara
+comune	Pescarolo ed Uniti
+comune	Pescasseroli
+comune	Pescate
+comune	Pesche
+comune	Peschici
+comune	Peschiera Borromeo
+comune	Peschiera del Garda
+comune	Pescia
+comune	Pescina
+comune	Pesco Sannita
+comune	Pescocostanzo
+comune	Pescolanciano
+comune	Pescopagano
+comune	Pescopennataro
+comune	Pescorocchiano
+comune	Pescosansonesco
+comune	Pescosolido
+comune	Pessano con Bornago
+comune	Pessina Cremonese
+comune	Pessinetto
+comune	Petacciato
+comune	Petilia Policastro
+comune	Petina
+comune	Petralia Soprana
+comune	Petralia Sottana
+comune	Petrella Salto
+comune	Petrella Tifernina
+comune	Petriano
+comune	Petriolo
+comune	Petritoli
+comune	Petrizzi
+comune	Petronà
+comune	Petrosino
+comune	Petruro Irpino
+comune	Pettenasco
+comune	Pettinengo
+comune	Pettineo
+comune	Pettoranello del Molise
+comune	Pettorano sul Gizio
+comune	Pettorazza Grimani
+comune	Peveragno
+comune	Pezzana
+comune	Pezzaze
+comune	Pezzolo Valle Uzzone
+comune	Pfalzen
+comune	Pfatten
+comune	Pfitsch
+comune	Piacenza
+comune	Piacenza d'Adige
+comune	Piadena Drizzona
+comune	Piaggine
+comune	Pian Camuno
+comune	Piana Crixia
+comune	Piana degli Albanesi
+comune	Piana di Monte Verna
+comune	Piancastagnaio
+comune	Piancogno
+comune	Piandimeleto
+comune	Piane Crati
+comune	Pianella
+comune	Pianello del Lario
+comune	Pianello Val Tidone
+comune	Pianengo
+comune	Pianezza
+comune	Pianezze
+comune	Pianfei
+comune	Pianico
+comune	Pianiga
+comune	Piano di Sorrento
+comune	Pianopoli
+comune	Pianoro
+comune	Piansano
+comune	Piantedo
+comune	Piario
+comune	Piasco
+comune	Piateda
+comune	Piatto
+comune	Piazza al Serchio
+comune	Piazza Armerina
+comune	Piazza Brembana
+comune	Piazzatorre
+comune	Piazzola sul Brenta
+comune	Piazzolo
+comune	Picciano
+comune	Picerno
+comune	Picinisco
+comune	Pico
+comune	Piea
+comune	Piedicavallo
+comune	Piedimonte Etneo
+comune	Piedimonte Matese
+comune	Piedimonte San Germano
+comune	Piedimulera
+comune	Piegaro
+comune	Pienza
+comune	Pieranica
+comune	Pietra de' Giorgi
+comune	Pietra Ligure
+comune	Pietra Marazzi
+comune	Pietrabbondante
+comune	Pietrabruna
+comune	Pietracamela
+comune	Pietracatella
+comune	Pietracupa
+comune	Pietradefusi
+comune	Pietraferrazzana
+comune	Pietrafitta
+comune	Pietragalla
+comune	Pietralunga
+comune	Pietramelara
+comune	Pietramontecorvino
+comune	Pietranico
+comune	Pietrapaola
+comune	Pietrapertosa
+comune	Pietraperzia
+comune	Pietraporzio
+comune	Pietraroja
+comune	Pietrarubbia
+comune	Pietrasanta
+comune	Pietrastornina
+comune	Pietravairano
+comune	Pietrelcina
+comune	Pieve a Nievole
+comune	Pieve Albignola
+comune	Pieve d'Olmi
+comune	Pieve del Cairo
+comune	Pieve del Grappa
+comune	Pieve di Bono-Prezzo
+comune	Pieve di Cadore
+comune	Pieve di Cento
+comune	Pieve di Soligo
+comune	Pieve di Teco
+comune	Pieve Emanuele
+comune	Pieve Fissiraga
+comune	Pieve Fosciana
+comune	Pieve Ligure
+comune	Pieve Porto Morone
+comune	Pieve San Giacomo
+comune	Pieve Santo Stefano
+comune	Pieve Tesino
+comune	Pieve Torina
+comune	Pieve Vergonte
+comune	Pievepelago
+comune	Piglio
+comune	Pigna
+comune	Pignataro Interamna
+comune	Pignataro Maggiore
+comune	Pignola
+comune	Pignone
+comune	Pigra
+comune	Pila
+comune	Pimentel
+comune	Pimonte
+comune	Pinarolo Po
+comune	Pinasca
+comune	Pincara
+comune	Pinerolo
+comune	Pineto
+comune	Pino d'Asti
+comune	Pino Torinese
+comune	Pinzano al Tagliamento
+comune	Pinzolo
+comune	Piobbico
+comune	Piobesi d'Alba
+comune	Piobesi Torinese
+comune	Piode
+comune	Pioltello
+comune	Piombino
+comune	Piombino Dese
+comune	Pioraco
+comune	Piossasco
+comune	Piove di Sacco
+comune	Piovene Rocchette
+comune	Piovà Massaia
+comune	Piozzano
+comune	Piozzo
+comune	Piraino
+comune	Pisa
+comune	Pisano
+comune	Piscina
+comune	Piscinas
+comune	Pisciotta
+comune	Pisogne
+comune	Pisoniano
+comune	Pisticci
+comune	Pistoia
+comune	Pitigliano
+comune	Piubega
+comune	Piuro
+comune	Piverone
+comune	Pizzale
+comune	Pizzighettone
+comune	Pizzo
+comune	Pizzoferrato
+comune	Pizzoli
+comune	Pizzone
+comune	Pizzoni
+comune	Placanica
+comune	Plataci
+comune	Platania
+comune	Platì
+comune	Plaus
+comune	Plaus/Plaus
+comune	Plesio
+comune	Ploaghe
+comune	Plodio
+comune	Pocapaglia
+comune	Pocenia
+comune	Podenzana
+comune	Podenzano
+comune	Pofi
+comune	Poggiardo
+comune	Poggibonsi
+comune	Poggio a Caiano
+comune	Poggio Bustone
+comune	Poggio Catino
+comune	Poggio Imperiale
+comune	Poggio Mirteto
+comune	Poggio Moiano
+comune	Poggio Nativo
+comune	Poggio Picenze
+comune	Poggio Renatico
+comune	Poggio Rusco
+comune	Poggio San Lorenzo
+comune	Poggio San Marcello
+comune	Poggio San Vicino
+comune	Poggio Sannita
+comune	Poggio Torriana
+comune	Poggiodomo
+comune	Poggiofiorito
+comune	Poggiomarino
+comune	Poggioreale
+comune	Poggiorsini
+comune	Poggiridenti
+comune	Pogliano Milanese
+comune	Pognana Lario
+comune	Pognano
+comune	Pogno
+comune	Poirino
+comune	Pojana Maggiore
+comune	Polaveno
+comune	Polcenigo
+comune	Polesella
+comune	Polesine Zibello
+comune	Poli
+comune	Polia
+comune	Policoro
+comune	Polignano a Mare
+comune	Polinago
+comune	Polino
+comune	Polistena
+comune	Polizzi Generosa
+comune	Polla
+comune	Pollein
+comune	Pollena Trocchia
+comune	Pollenza
+comune	Pollica
+comune	Pollina
+comune	Pollone
+comune	Pollutri
+comune	Polonghera
+comune	Polpenazze del Garda
+comune	Polverara
+comune	Polverigi
+comune	Pomarance
+comune	Pomaretto
+comune	Pomarico
+comune	Pomaro Monferrato
+comune	Pomarolo
+comune	Pombia
+comune	Pomezia
+comune	Pomigliano d'Arco
+comune	Pompei
+comune	Pompeiana
+comune	Pompiano
+comune	Pomponesco
+comune	Pompu
+comune	Poncarale
+comune	Ponderano
+comune	Ponna
+comune	Ponsacco
+comune	Ponso
+comune	Pont Canavese
+comune	Pont-Saint-Martin
+comune	Pontassieve
+comune	Pontboset
+comune	Ponte
+comune	Ponte Buggianese
+comune	Ponte dell'Olio
+comune	Ponte di Legno
+comune	Ponte di Piave
+comune	Ponte Gardena
+comune	Ponte Gardena/Waidbruck
+comune	Ponte in Valtellina
+comune	Ponte Lambro
+comune	Ponte nelle Alpi
+comune	Ponte Nizza
+comune	Ponte Nossa
+comune	Ponte San Nicolò
+comune	Ponte San Pietro
+comune	Pontebba
+comune	Pontecagnano Faiano
+comune	Pontecchio Polesine
+comune	Pontechianale
+comune	Pontecorvo
+comune	Pontecurone
+comune	Pontedassio
+comune	Pontedera
+comune	Pontelandolfo
+comune	Pontelatone
+comune	Pontelongo
+comune	Pontenure
+comune	Ponteranica
+comune	Pontestura
+comune	Pontevico
+comune	Pontey
+comune	Ponti
+comune	Ponti sul Mincio
+comune	Pontida
+comune	Pontinia
+comune	Pontinvrea
+comune	Pontirolo Nuovo
+comune	Pontoglio
+comune	Pontremoli
+comune	Ponza
+comune	Ponzano di Fermo
+comune	Ponzano Monferrato
+comune	Ponzano Romano
+comune	Ponzano Veneto
+comune	Ponzone
+comune	Popoli Terme
+comune	Poppi
+comune	Porano
+comune	Porcari
+comune	Porcia
+comune	Pordenone
+comune	Porlezza
+comune	Pornassio
+comune	Porpetto
+comune	Portacomaro
+comune	Portalbera
+comune	Porte
+comune	Porte di Rendena
+comune	Portici
+comune	Portico di Caserta
+comune	Portico e San Benedetto
+comune	Portigliola
+comune	Porto Azzurro
+comune	Porto Ceresio
+comune	Porto Cesareo
+comune	Porto Empedocle
+comune	Porto Mantovano
+comune	Porto Recanati
+comune	Porto San Giorgio
+comune	Porto Sant'Elpidio
+comune	Porto Tolle
+comune	Porto Torres
+comune	Porto Valtravaglia
+comune	Porto Viro
+comune	Portobuffolè
+comune	Portocannone
+comune	Portoferraio
+comune	Portofino
+comune	Portogruaro
+comune	Portomaggiore
+comune	Portopalo di Capo Passero
+comune	Portoscuso
+comune	Portovenere
+comune	Portula
+comune	Posada
+comune	Posina
+comune	Positano
+comune	Possagno
+comune	Posta
+comune	Posta Fibreno
+comune	Postal
+comune	Postal/Burgstall
+comune	Postalesio
+comune	Postiglione
+comune	Postua
+comune	Potenza
+comune	Potenza Picena
+comune	Pove del Grappa
+comune	Povegliano
+comune	Povegliano Veronese
+comune	Poviglio
+comune	Povoletto
+comune	Pozzaglia Sabina
+comune	Pozzaglio ed Uniti
+comune	Pozzallo
+comune	Pozzilli
+comune	Pozzo d'Adda
+comune	Pozzol Groppo
+comune	Pozzolengo
+comune	Pozzoleone
+comune	Pozzolo Formigaro
+comune	Pozzomaggiore
+comune	Pozzonovo
+comune	Pozzuoli
+comune	Pozzuolo del Friuli
+comune	Pozzuolo Martesana
+comune	Prad am Stilfserjoch
+comune	Pradalunga
+comune	Pradamano
+comune	Pradleves
+comune	Pragelato
+comune	Prags
+comune	Praia a Mare
+comune	Praiano
+comune	Pralboino
+comune	Prali
+comune	Pralormo
+comune	Pralungo
+comune	Pramaggiore
+comune	Pramollo
+comune	Prarolo
+comune	Prarostino
+comune	Prasco
+comune	Prascorsano
+comune	Prata Camportaccio
+comune	Prata d'Ansidonia
+comune	Prata di Pordenone
+comune	Prata di Principato Ultra
+comune	Prata Sannita
+comune	Pratella
+comune	Pratiglione
+comune	Prato
+comune	Prato allo Stelvio
+comune	Prato allo Stelvio/Prad am Stilfserjoch
+comune	Prato Carnico
+comune	Prato Sesia
+comune	Pratola Peligna
+comune	Pratola Serra
+comune	Pratovecchio Stia
+comune	Pravisdomini
+comune	Pray
+comune	Prazzo
+comune	Precenicco
+comune	Preci
+comune	Predaia
+comune	Predappio
+comune	Predazzo
+comune	Predoi
+comune	Predoi/Prettau
+comune	Predore
+comune	Predosa
+comune	Preganziol
+comune	Pregnana Milanese
+comune	Prelà
+comune	Premana
+comune	Premariacco
+comune	Premeno
+comune	Premia
+comune	Premilcuore
+comune	Premolo
+comune	Premosello-Chiovenda
+comune	Preone
+comune	Prepotto
+comune	Preseglie
+comune	Presenzano
+comune	Presezzo
+comune	Presicce-Acquarica
+comune	Pressana
+comune	Pretoro
+comune	Prettau
+comune	Prevalle
+comune	Prezza
+comune	Priero
+comune	Prignano Cilento
+comune	Prignano sulla Secchia
+comune	Primaluna
+comune	Primiero San Martino di Castrozza
+comune	Priocca
+comune	Priola
+comune	Priolo Gargallo
+comune	Priverno
+comune	Prizzi
+comune	Proceno
+comune	Procida
+comune	Propata
+comune	Proserpio
+comune	Prossedi
+comune	Provaglio d'Iseo
+comune	Provaglio Val Sabbia
+comune	Proveis
+comune	Proves
+comune	Proves/Proveis
+comune	Provvidenti
+comune	Prunetto
+comune	Pré-Saint-Didier
+comune	Puegnago del Garda
+comune	Puglianello
+comune	Pula
+comune	Pulfero
+comune	Pulsano
+comune	Pumenengo
+comune	Pusiano
+comune	Putifigari
+comune	Putignano
+comune	Quadrelle
+comune	Quadri
+comune	Quagliuzzo
+comune	Qualiano
+comune	Quaranti
+comune	Quaregna Cerreto
+comune	Quargnento
+comune	Quarna Sopra
+comune	Quarna Sotto
+comune	Quarona
+comune	Quarrata
+comune	Quart
+comune	Quarto
+comune	Quarto d'Altino
+comune	Quartu Sant'Elena
+comune	Quartucciu
+comune	Quassolo
+comune	Quattordio
+comune	Quattro Castella
+comune	Quiliano
+comune	Quincinetto
+comune	Quindici
+comune	Quingentole
+comune	Quintano
+comune	Quinto di Treviso
+comune	Quinto Vercellese
+comune	Quinto Vicentino
+comune	Quinzano d'Oglio
+comune	Quistello
+comune	Rabbi
+comune	Racale
+comune	Racalmuto
+comune	Racconigi
+comune	Raccuja
+comune	Racines
+comune	Racines/Ratschings
+comune	Radda in Chianti
+comune	Raddusa
+comune	Radicofani
+comune	Radicondoli
+comune	Raffadali
+comune	Ragalna
+comune	Ragogna
+comune	Ragusa
+comune	Raiano
+comune	Ramacca
+comune	Rancio Valcuvia
+comune	Ranco
+comune	Randazzo
+comune	Ranica
+comune	Ranzanico
+comune	Ranzo
+comune	Rapagnano
+comune	Rapallo
+comune	Rapino
+comune	Rapolano Terme
+comune	Rapolla
+comune	Rapone
+comune	Rasen-Antholz
+comune	Rassa
+comune	Rasun-Anterselva
+comune	Rasun-Anterselva/Rasen-Antholz
+comune	Rasura
+comune	Ratschings
+comune	Ravanusa
+comune	Ravarino
+comune	Ravascletto
+comune	Ravello
+comune	Ravenna
+comune	Raveo
+comune	Raviscanina
+comune	Re
+comune	Rea
+comune	Realmonte
+comune	Reana del Rojale
+comune	Reano
+comune	Recale
+comune	Recanati
+comune	Recco
+comune	Recetto
+comune	Recoaro Terme
+comune	Redavalle
+comune	Redondesco
+comune	Refrancore
+comune	Refrontolo
+comune	Regalbuto
+comune	Reggello
+comune	Reggio di Calabria
+comune	Reggio nell'Emilia
+comune	Reggiolo
+comune	Reino
+comune	Reitano
+comune	Remanzacco
+comune	Remedello
+comune	Renate
+comune	Rende
+comune	Renon
+comune	Renon/Ritten
+comune	Repentabor
+comune	Resana
+comune	Rescaldina
+comune	Resia
+comune	Resiutta
+comune	Resuttano
+comune	Retorbido
+comune	Revello
+comune	Revigliasco d'Asti
+comune	Revine Lago
+comune	Rezzago
+comune	Rezzato
+comune	Rezzo
+comune	Rezzoaglio
+comune	Rho
+comune	Rhêmes-Notre-Dame
+comune	Rhêmes-Saint-Georges
+comune	Riace
+comune	Rialto
+comune	Riano
+comune	Riardo
+comune	Ribera
+comune	Ribordone
+comune	Ricadi
+comune	Ricaldone
+comune	Riccia
+comune	Riccione
+comune	Riccò del Golfo di Spezia
+comune	Ricengo
+comune	Ricigliano
+comune	Riese Pio X
+comune	Riesi
+comune	Rieti
+comune	Riffian
+comune	Rifiano
+comune	Rifiano/Riffian
+comune	Rifreddo
+comune	Rignano Flaminio
+comune	Rignano Garganico
+comune	Rignano sull'Arno
+comune	Rigolato
+comune	Rimella
+comune	Rimini
+comune	Rio
+comune	Rio di Pusteria
+comune	Rio di Pusteria/Mühlbach
+comune	Rio Saliceto
+comune	Riofreddo
+comune	Riola Sardo
+comune	Riolo Terme
+comune	Riolunato
+comune	Riomaggiore
+comune	Rionero in Vulture
+comune	Rionero Sannitico
+comune	Ripa Teatina
+comune	Ripabottoni
+comune	Ripacandida
+comune	Ripalimosani
+comune	Ripalta Arpina
+comune	Ripalta Cremasca
+comune	Ripalta Guerina
+comune	Riparbella
+comune	Ripatransone
+comune	Ripe San Ginesio
+comune	Ripi
+comune	Riposto
+comune	Rittana
+comune	Ritten
+comune	Riva del Garda
+comune	Riva del Po
+comune	Riva di Solto
+comune	Riva Ligure
+comune	Riva presso Chieri
+comune	Rivalba
+comune	Rivalta Bormida
+comune	Rivalta di Torino
+comune	Rivamonte Agordino
+comune	Rivanazzano Terme
+comune	Rivara
+comune	Rivarolo Canavese
+comune	Rivarolo del Re ed Uniti
+comune	Rivarolo Mantovano
+comune	Rivarone
+comune	Rivarossa
+comune	Rive
+comune	Rive d'Arcano
+comune	Rivello
+comune	Rivergaro
+comune	Rivignano Teor
+comune	Rivisondoli
+comune	Rivodutri
+comune	Rivoli
+comune	Rivoli Veronese
+comune	Rivolta d'Adda
+comune	Rizziconi
+comune	Roana
+comune	Roaschia
+comune	Roascio
+comune	Roasio
+comune	Roatto
+comune	Robassomero
+comune	Robbiate
+comune	Robbio
+comune	Robecchetto con Induno
+comune	Robecco d'Oglio
+comune	Robecco Pavese
+comune	Robecco sul Naviglio
+comune	Robella
+comune	Robilante
+comune	Roburent
+comune	Rocca Canavese
+comune	Rocca Canterano
+comune	Rocca Cigliè
+comune	Rocca d'Arazzo
+comune	Rocca d'Arce
+comune	Rocca d'Evandro
+comune	Rocca de' Baldi
+comune	Rocca de' Giorgi
+comune	Rocca di Botte
+comune	Rocca di Cambio
+comune	Rocca di Cave
+comune	Rocca di Mezzo
+comune	Rocca di Neto
+comune	Rocca di Papa
+comune	Rocca Grimalda
+comune	Rocca Imperiale
+comune	Rocca Massima
+comune	Rocca Pia
+comune	Rocca Pietore
+comune	Rocca Priora
+comune	Rocca San Casciano
+comune	Rocca San Felice
+comune	Rocca San Giovanni
+comune	Rocca Santa Maria
+comune	Rocca Santo Stefano
+comune	Rocca Sinibalda
+comune	Rocca Susella
+comune	Roccabascerana
+comune	Roccabernarda
+comune	Roccabianca
+comune	Roccabruna
+comune	Roccacasale
+comune	Roccadaspide
+comune	Roccafiorita
+comune	Roccafluvione
+comune	Roccaforte del Greco
+comune	Roccaforte Ligure
+comune	Roccaforte Mondovì
+comune	Roccaforzata
+comune	Roccafranca
+comune	Roccagiovine
+comune	Roccagloriosa
+comune	Roccagorga
+comune	Roccalbegna
+comune	Roccalumera
+comune	Roccamandolfi
+comune	Roccamena
+comune	Roccamonfina
+comune	Roccamontepiano
+comune	Roccamorice
+comune	Roccanova
+comune	Roccantica
+comune	Roccapalumba
+comune	Roccapiemonte
+comune	Roccarainola
+comune	Roccaraso
+comune	Roccaromana
+comune	Roccascalegna
+comune	Roccasecca
+comune	Roccasecca dei Volsci
+comune	Roccasicura
+comune	Roccasparvera
+comune	Roccaspinalveti
+comune	Roccastrada
+comune	Roccavaldina
+comune	Roccaverano
+comune	Roccavignale
+comune	Roccavione
+comune	Roccavivara
+comune	Roccella Ionica
+comune	Roccella Valdemone
+comune	Rocchetta a Volturno
+comune	Rocchetta Belbo
+comune	Rocchetta di Vara
+comune	Rocchetta e Croce
+comune	Rocchetta Ligure
+comune	Rocchetta Nervina
+comune	Rocchetta Palafea
+comune	Rocchetta Sant'Antonio
+comune	Rocchetta Tanaro
+comune	Rodano
+comune	Roddi
+comune	Roddino
+comune	Rodello
+comune	Rodeneck
+comune	Rodengo
+comune	Rodengo Saiano
+comune	Rodengo/Rodeneck
+comune	Rodero
+comune	Rodi Garganico
+comune	Rodigo
+comune	Rodì Milici
+comune	Rofrano
+comune	Rogeno
+comune	Roggiano Gravina
+comune	Roghudi
+comune	Rogliano
+comune	Rognano
+comune	Rogno
+comune	Rogolo
+comune	Roiate
+comune	Roio del Sangro
+comune	Roisan
+comune	Roletto
+comune	Rolo
+comune	Roma
+comune	Romagnano al Monte
+comune	Romagnano Sesia
+comune	Romagnese
+comune	Romana
+comune	Romanengo
+comune	Romano Canavese
+comune	Romano d'Ezzelino
+comune	Romano di Lombardia
+comune	Romans d'Isonzo
+comune	Rombiolo
+comune	Romeno
+comune	Romentino
+comune	Rometta
+comune	Roncade
+comune	Roncadelle
+comune	Roncaro
+comune	Roncegno Terme
+comune	Roncello
+comune	Ronchi dei Legionari
+comune	Ronchi Valsugana
+comune	Ronchis
+comune	Ronciglione
+comune	Ronco all'Adige
+comune	Ronco Biellese
+comune	Ronco Briantino
+comune	Ronco Canavese
+comune	Ronco Scrivia
+comune	Roncobello
+comune	Roncoferraro
+comune	Roncofreddo
+comune	Roncola
+comune	Roncà
+comune	Rondanina
+comune	Rondissone
+comune	Ronsecco
+comune	Ronzo-Chienis
+comune	Ronzone
+comune	Roppolo
+comune	Rorà
+comune	Rosarno
+comune	Rosasco
+comune	Rosate
+comune	Rosazza
+comune	Rosciano
+comune	Roscigno
+comune	Rose
+comune	Rosello
+comune	Roseto Capo Spulico
+comune	Roseto degli Abruzzi
+comune	Roseto Valfortore
+comune	Rosignano Marittimo
+comune	Rosignano Monferrato
+comune	Rosolina
+comune	Rosolini
+comune	Rosora
+comune	Rossa
+comune	Rossana
+comune	Rossano Veneto
+comune	Rossiglione
+comune	Rosta
+comune	Rosà
+comune	Rota d'Imagna
+comune	Rota Greca
+comune	Rotella
+comune	Rotello
+comune	Rotonda
+comune	Rotondella
+comune	Rotondi
+comune	Rottofreno
+comune	Rotzo
+comune	Roure
+comune	Rovasenda
+comune	Rovato
+comune	Rovegno
+comune	Rovellasca
+comune	Rovello Porro
+comune	Roverbella
+comune	Roverchiara
+comune	Roveredo di Guà
+comune	Roveredo in Piano
+comune	Rovereto
+comune	Roverè della Luna
+comune	Roverè Veronese
+comune	Rovescala
+comune	Rovetta
+comune	Roviano
+comune	Rovigo
+comune	Rovito
+comune	Rovolon
+comune	Rozzano
+comune	Roè Volciano
+comune	Rubano
+comune	Rubiana
+comune	Rubiera
+comune	Ruda
+comune	Rudiano
+comune	Rueglio
+comune	Ruffano
+comune	Ruffia
+comune	Ruffrè-Mendola
+comune	Rufina
+comune	Ruinas
+comune	Rumo
+comune	Ruoti
+comune	Russi
+comune	Rutigliano
+comune	Rutino
+comune	Ruviano
+comune	Ruvo del Monte
+comune	Ruvo di Puglia
+comune	Sabaudia
+comune	Sabbio Chiese
+comune	Sabbioneta
+comune	Sacco
+comune	Saccolongo
+comune	Sacile
+comune	Sacrofano
+comune	Sadali
+comune	Sagama
+comune	Sagliano Micca
+comune	Sagrado
+comune	Sagron Mis
+comune	Saint-Christophe
+comune	Saint-Denis
+comune	Saint-Marcel
+comune	Saint-Nicolas
+comune	Saint-Oyen
+comune	Saint-Pierre
+comune	Saint-Rhémy-en-Bosses
+comune	Saint-Vincent
+comune	Sala Baganza
+comune	Sala Biellese
+comune	Sala Bolognese
+comune	Sala Comacina
+comune	Sala Consilina
+comune	Sala Monferrato
+comune	Salandra
+comune	Salaparuta
+comune	Salara
+comune	Salasco
+comune	Salassa
+comune	Salbertrand
+comune	Salcedo
+comune	Salcito
+comune	Sale
+comune	Sale delle Langhe
+comune	Sale Marasino
+comune	Sale San Giovanni
+comune	Salemi
+comune	Salento
+comune	Salerano Canavese
+comune	Salerano sul Lambro
+comune	Salerno
+comune	Salgareda
+comune	Sali Vercellese
+comune	Salice Salentino
+comune	Saliceto
+comune	Salisano
+comune	Salizzole
+comune	Salle
+comune	Salmour
+comune	Salorno sulla strada del vino
+comune	Salorno sulla strada del vino/Salurn an der Weinstraße
+comune	Salsomaggiore Terme
+comune	Saltrio
+comune	Saludecio
+comune	Saluggia
+comune	Salurn an der Weinstraße
+comune	Salussola
+comune	Saluzzo
+comune	Salve
+comune	Salvirola
+comune	Salvitelle
+comune	Salza di Pinerolo
+comune	Salza Irpina
+comune	Salzano
+comune	Salò
+comune	Samarate
+comune	Samassi
+comune	Samatzai
+comune	Sambuca di Sicilia
+comune	Sambuca Pistoiese
+comune	Sambuci
+comune	Sambuco
+comune	Sammichele di Bari
+comune	Samo
+comune	Samolaco
+comune	Samone
+comune	Sampeyre
+comune	Samugheo
+comune	San Bartolomeo al Mare
+comune	San Bartolomeo in Galdo
+comune	San Bartolomeo Val Cavargna
+comune	San Basile
+comune	San Basilio
+comune	San Bassano
+comune	San Bellino
+comune	San Benedetto Belbo
+comune	San Benedetto dei Marsi
+comune	San Benedetto del Tronto
+comune	San Benedetto in Perillis
+comune	San Benedetto Po
+comune	San Benedetto Ullano
+comune	San Benedetto Val di Sambro
+comune	San Benigno Canavese
+comune	San Bernardino Verbano
+comune	San Biagio della Cima
+comune	San Biagio di Callalta
+comune	San Biagio Platani
+comune	San Biagio Saracinisco
+comune	San Biase
+comune	San Bonifacio
+comune	San Buono
+comune	San Calogero
+comune	San Candido
+comune	San Candido/Innichen
+comune	San Canzian d'Isonzo
+comune	San Carlo Canavese
+comune	San Casciano dei Bagni
+comune	San Casciano in Val di Pesa
+comune	San Cassiano
+comune	San Cataldo
+comune	San Cesareo
+comune	San Cesario di Lecce
+comune	San Cesario sul Panaro
+comune	San Chirico Nuovo
+comune	San Chirico Raparo
+comune	San Cipirello
+comune	San Cipriano d'Aversa
+comune	San Cipriano Picentino
+comune	San Cipriano Po
+comune	San Clemente
+comune	San Colombano al Lambro
+comune	San Colombano Belmonte
+comune	San Colombano Certenoli
+comune	San Cono
+comune	San Cosmo Albanese
+comune	San Costantino Albanese
+comune	San Costantino Calabro
+comune	San Costanzo
+comune	San Cristoforo
+comune	San Damiano al Colle
+comune	San Damiano d'Asti
+comune	San Damiano Macra
+comune	San Daniele del Friuli
+comune	San Daniele Po
+comune	San Demetrio Corone
+comune	San Demetrio ne' Vestini
+comune	San Didero
+comune	San Donaci
+comune	San Donato di Lecce
+comune	San Donato di Ninea
+comune	San Donato Milanese
+comune	San Donato Val di Comino
+comune	San Donà di Piave
+comune	San Dorligo della Valle
+comune	San Dorligo della Valle-Dolina
+comune	San Fele
+comune	San Felice a Cancello
+comune	San Felice Circeo
+comune	San Felice del Benaco
+comune	San Felice del Molise
+comune	San Felice sul Panaro
+comune	San Ferdinando
+comune	San Ferdinando di Puglia
+comune	San Fermo della Battaglia
+comune	San Fili
+comune	San Filippo del Mela
+comune	San Fior
+comune	San Fiorano
+comune	San Floriano del Collio
+comune	San Floriano del Collio-Števerjan
+comune	San Floro
+comune	San Francesco al Campo
+comune	San Fratello
+comune	San Gavino Monreale
+comune	San Gemini
+comune	San Genesio Atesino
+comune	San Genesio Atesino/Jenesien
+comune	San Genesio ed Uniti
+comune	San Gennaro Vesuviano
+comune	San Germano Chisone
+comune	San Germano Vercellese
+comune	San Gervasio Bresciano
+comune	San Giacomo degli Schiavoni
+comune	San Giacomo delle Segnate
+comune	San Giacomo Filippo
+comune	San Giacomo Vercellese
+comune	San Gillio
+comune	San Gimignano
+comune	San Ginesio
+comune	San Giorgio a Cremano
+comune	San Giorgio a Liri
+comune	San Giorgio Albanese
+comune	San Giorgio Bigarello
+comune	San Giorgio Canavese
+comune	San Giorgio del Sannio
+comune	San Giorgio della Richinvelda
+comune	San Giorgio delle Pertiche
+comune	San Giorgio di Lomellina
+comune	San Giorgio di Nogaro
+comune	San Giorgio di Piano
+comune	San Giorgio in Bosco
+comune	San Giorgio Ionico
+comune	San Giorgio La Molara
+comune	San Giorgio Lucano
+comune	San Giorgio Monferrato
+comune	San Giorgio Morgeto
+comune	San Giorgio Piacentino
+comune	San Giorgio Scarampi
+comune	San Giorgio su Legnano
+comune	San Giorio di Susa
+comune	San Giovanni a Piro
+comune	San Giovanni al Natisone
+comune	San Giovanni Bianco
+comune	San Giovanni del Dosso
+comune	San Giovanni di Fassa
+comune	San Giovanni di Fassa-Sèn Jan
+comune	San Giovanni di Gerace
+comune	San Giovanni Gemini
+comune	San Giovanni Ilarione
+comune	San Giovanni in Croce
+comune	San Giovanni in Fiore
+comune	San Giovanni in Galdo
+comune	San Giovanni in Marignano
+comune	San Giovanni in Persiceto
+comune	San Giovanni Incarico
+comune	San Giovanni la Punta
+comune	San Giovanni Lipioni
+comune	San Giovanni Lupatoto
+comune	San Giovanni Rotondo
+comune	San Giovanni Suergiu
+comune	San Giovanni Teatino
+comune	San Giovanni Valdarno
+comune	San Giuliano del Sannio
+comune	San Giuliano di Puglia
+comune	San Giuliano Milanese
+comune	San Giuliano Terme
+comune	San Giuseppe Jato
+comune	San Giuseppe Vesuviano
+comune	San Giustino
+comune	San Giusto Canavese
+comune	San Godenzo
+comune	San Gregorio d'Ippona
+comune	San Gregorio da Sassola
+comune	San Gregorio di Catania
+comune	San Gregorio Magno
+comune	San Gregorio Matese
+comune	San Gregorio nelle Alpi
+comune	San Lazzaro di Savena
+comune	San Leo
+comune	San Leonardo
+comune	San Leonardo in Passiria
+comune	San Leonardo in Passiria/St. Leonhard in Passeier
+comune	San Leucio del Sannio
+comune	San Lorenzello
+comune	San Lorenzo
+comune	San Lorenzo al Mare
+comune	San Lorenzo Bellizzi
+comune	San Lorenzo del Vallo
+comune	San Lorenzo di Sebato
+comune	San Lorenzo di Sebato/St. Lorenzen
+comune	San Lorenzo Dorsino
+comune	San Lorenzo in Campo
+comune	San Lorenzo Isontino
+comune	San Lorenzo Maggiore
+comune	San Lorenzo Nuovo
+comune	San Luca
+comune	San Lucido
+comune	San Lupo
+comune	San Mango d'Aquino
+comune	San Mango Piemonte
+comune	San Mango sul Calore
+comune	San Marcellino
+comune	San Marcello
+comune	San Marcello Piteglio
+comune	San Marco Argentano
+comune	San Marco d'Alunzio
+comune	San Marco dei Cavoti
+comune	San Marco Evangelista
+comune	San Marco in Lamis
+comune	San Marco la Catola
+comune	San Martino al Tagliamento
+comune	San Martino Alfieri
+comune	San Martino Buon Albergo
+comune	San Martino Canavese
+comune	San Martino d'Agri
+comune	San Martino dall'Argine
+comune	San Martino del Lago
+comune	San Martino di Finita
+comune	San Martino di Lupari
+comune	San Martino di Venezze
+comune	San Martino in Badia
+comune	San Martino in Badia/St. Martin in Thurn
+comune	San Martino in Passiria
+comune	San Martino in Passiria/St. Martin in Passeier
+comune	San Martino in Pensilis
+comune	San Martino in Rio
+comune	San Martino in Strada
+comune	San Martino Sannita
+comune	San Martino Siccomario
+comune	San Martino sulla Marrucina
+comune	San Martino Valle Caudina
+comune	San Marzano di San Giuseppe
+comune	San Marzano Oliveto
+comune	San Marzano sul Sarno
+comune	San Massimo
+comune	San Maurizio Canavese
+comune	San Maurizio d'Opaglio
+comune	San Mauro Castelverde
+comune	San Mauro Cilento
+comune	San Mauro di Saline
+comune	San Mauro Forte
+comune	San Mauro la Bruca
+comune	San Mauro Marchesato
+comune	San Mauro Pascoli
+comune	San Mauro Torinese
+comune	San Michele al Tagliamento
+comune	San Michele all'Adige
+comune	San Michele di Ganzaria
+comune	San Michele di Serino
+comune	San Michele Mondovì
+comune	San Michele Salentino
+comune	San Miniato
+comune	San Nazzaro
+comune	San Nazzaro Sesia
+comune	San Nazzaro Val Cavargna
+comune	San Nicandro Garganico
+comune	San Nicola Arcella
+comune	San Nicola Baronia
+comune	San Nicola da Crissa
+comune	San Nicola dell'Alto
+comune	San Nicola la Strada
+comune	San Nicola Manfredi
+comune	San Nicolò d'Arcidano
+comune	San Nicolò di Comelico
+comune	San Nicolò Gerrei
+comune	San Pancrazio
+comune	San Pancrazio Salentino
+comune	San Pancrazio/St. Pankraz
+comune	San Paolo
+comune	San Paolo Albanese
+comune	San Paolo Bel Sito
+comune	San Paolo d'Argon
+comune	San Paolo di Civitate
+comune	San Paolo di Jesi
+comune	San Paolo Solbrito
+comune	San Pellegrino Terme
+comune	San Pier d'Isonzo
+comune	San Pier Niceto
+comune	San Piero Patti
+comune	San Pietro a Maida
+comune	San Pietro al Natisone
+comune	San Pietro al Tanagro
+comune	San Pietro Apostolo
+comune	San Pietro Avellana
+comune	San Pietro Clarenza
+comune	San Pietro di Cadore
+comune	San Pietro di Caridà
+comune	San Pietro di Feletto
+comune	San Pietro di Morubio
+comune	San Pietro in Amantea
+comune	San Pietro in Cariano
+comune	San Pietro in Casale
+comune	San Pietro in Cerro
+comune	San Pietro in Gu
+comune	San Pietro in Guarano
+comune	San Pietro in Lama
+comune	San Pietro Infine
+comune	San Pietro Mosezzo
+comune	San Pietro Mussolino
+comune	San Pietro Val Lemina
+comune	San Pietro Vernotico
+comune	San Pietro Viminario
+comune	San Pio delle Camere
+comune	San Polo d'Enza
+comune	San Polo dei Cavalieri
+comune	San Polo di Piave
+comune	San Polo Matese
+comune	San Ponso
+comune	San Possidonio
+comune	San Potito Sannitico
+comune	San Potito Ultra
+comune	San Prisco
+comune	San Procopio
+comune	San Prospero
+comune	San Quirico d'Orcia
+comune	San Quirino
+comune	San Raffaele Cimena
+comune	San Roberto
+comune	San Rocco al Porto
+comune	San Romano in Garfagnana
+comune	San Rufo
+comune	San Salvatore di Fitalia
+comune	San Salvatore Monferrato
+comune	San Salvatore Telesino
+comune	San Salvo
+comune	San Sebastiano al Vesuvio
+comune	San Sebastiano Curone
+comune	San Sebastiano da Po
+comune	San Secondo di Pinerolo
+comune	San Secondo Parmense
+comune	San Severino Lucano
+comune	San Severino Marche
+comune	San Severo
+comune	San Siro
+comune	San Sossio Baronia
+comune	San Sostene
+comune	San Sosti
+comune	San Sperate
+comune	San Stino di Livenza
+comune	San Tammaro
+comune	San Teodoro
+comune	San Tomaso Agordino
+comune	San Valentino in Abruzzo Citeriore
+comune	San Valentino Torio
+comune	San Venanzo
+comune	San Vendemiano
+comune	San Vero Milis
+comune	San Vincenzo
+comune	San Vincenzo La Costa
+comune	San Vincenzo Valle Roveto
+comune	San Vitaliano
+comune	San Vito
+comune	San Vito al Tagliamento
+comune	San Vito al Torre
+comune	San Vito Chietino
+comune	San Vito dei Normanni
+comune	San Vito di Cadore
+comune	San Vito di Fagagna
+comune	San Vito di Leguzzano
+comune	San Vito Lo Capo
+comune	San Vito Romano
+comune	San Vito sullo Ionio
+comune	San Vittore del Lazio
+comune	San Vittore Olona
+comune	San Zeno di Montagna
+comune	San Zeno Naviglio
+comune	San Zenone al Lambro
+comune	San Zenone al Po
+comune	San Zenone degli Ezzelini
+comune	Sanarica
+comune	Sand in Taufers
+comune	Sandigliano
+comune	Sandrigo
+comune	Sanfront
+comune	Sanfrè
+comune	Sangano
+comune	Sangiano
+comune	Sangineto
+comune	Sanguinetto
+comune	Sanluri
+comune	Sannazzaro de' Burgondi
+comune	Sannicandro di Bari
+comune	Sannicola
+comune	Sanremo
+comune	Sansepolcro
+comune	Sant'Agapito
+comune	Sant'Agata Bolognese
+comune	Sant'Agata de' Goti
+comune	Sant'Agata del Bianco
+comune	Sant'Agata di Esaro
+comune	Sant'Agata di Militello
+comune	Sant'Agata di Puglia
+comune	Sant'Agata Feltria
+comune	Sant'Agata Fossili
+comune	Sant'Agata li Battiati
+comune	Sant'Agata sul Santerno
+comune	Sant'Agnello
+comune	Sant'Albano Stura
+comune	Sant'Alessio con Vialone
+comune	Sant'Alessio in Aspromonte
+comune	Sant'Alessio Siculo
+comune	Sant'Alfio
+comune	Sant'Ambrogio di Torino
+comune	Sant'Ambrogio di Valpolicella
+comune	Sant'Ambrogio sul Garigliano
+comune	Sant'Anastasia
+comune	Sant'Anatolia di Narco
+comune	Sant'Andrea Apostolo dello Ionio
+comune	Sant'Andrea del Garigliano
+comune	Sant'Andrea di Conza
+comune	Sant'Andrea Frius
+comune	Sant'Angelo a Cupolo
+comune	Sant'Angelo a Fasanella
+comune	Sant'Angelo a Scala
+comune	Sant'Angelo all'Esca
+comune	Sant'Angelo d'Alife
+comune	Sant'Angelo dei Lombardi
+comune	Sant'Angelo del Pesco
+comune	Sant'Angelo di Brolo
+comune	Sant'Angelo di Piove di Sacco
+comune	Sant'Angelo in Pontano
+comune	Sant'Angelo in Vado
+comune	Sant'Angelo Le Fratte
+comune	Sant'Angelo Limosano
+comune	Sant'Angelo Lodigiano
+comune	Sant'Angelo Lomellina
+comune	Sant'Angelo Muxaro
+comune	Sant'Angelo Romano
+comune	Sant'Anna Arresi
+comune	Sant'Anna d'Alfaedo
+comune	Sant'Antimo
+comune	Sant'Antioco
+comune	Sant'Antonino di Susa
+comune	Sant'Antonio Abate
+comune	Sant'Antonio di Gallura
+comune	Sant'Apollinare
+comune	Sant'Arcangelo
+comune	Sant'Arcangelo Trimonte
+comune	Sant'Arpino
+comune	Sant'Arsenio
+comune	Sant'Egidio alla Vibrata
+comune	Sant'Egidio del Monte Albino
+comune	Sant'Elena
+comune	Sant'Elena Sannita
+comune	Sant'Elia a Pianisi
+comune	Sant'Elia Fiumerapido
+comune	Sant'Elpidio a Mare
+comune	Sant'Eufemia a Maiella
+comune	Sant'Eufemia d'Aspromonte
+comune	Sant'Eusanio del Sangro
+comune	Sant'Eusanio Forconese
+comune	Sant'Ilario d'Enza
+comune	Sant'Ilario dello Ionio
+comune	Sant'Ippolito
+comune	Sant'Olcese
+comune	Sant'Omero
+comune	Sant'Omobono Terme
+comune	Sant'Onofrio
+comune	Sant'Oreste
+comune	Sant'Orsola Terme
+comune	Sant'Urbano
+comune	Santa Brigida
+comune	Santa Caterina Albanese
+comune	Santa Caterina d'Este
+comune	Santa Caterina dello Ionio
+comune	Santa Caterina Villarmosa
+comune	Santa Cesarea Terme
+comune	Santa Cristina d'Aspromonte
+comune	Santa Cristina e Bissone
+comune	Santa Cristina Gela
+comune	Santa Cristina Valgardena
+comune	Santa Cristina Valgardena/St. Christina in Gröden
+comune	Santa Croce Camerina
+comune	Santa Croce del Sannio
+comune	Santa Croce di Magliano
+comune	Santa Croce sull'Arno
+comune	Santa Domenica Talao
+comune	Santa Domenica Vittoria
+comune	Santa Elisabetta
+comune	Santa Fiora
+comune	Santa Flavia
+comune	Santa Giuletta
+comune	Santa Giusta
+comune	Santa Giustina
+comune	Santa Giustina in Colle
+comune	Santa Luce
+comune	Santa Lucia del Mela
+comune	Santa Lucia di Piave
+comune	Santa Lucia di Serino
+comune	Santa Margherita di Belice
+comune	Santa Margherita di Staffora
+comune	Santa Margherita Ligure
+comune	Santa Maria a Monte
+comune	Santa Maria a Vico
+comune	Santa Maria Capua Vetere
+comune	Santa Maria Coghinas
+comune	Santa Maria del Cedro
+comune	Santa Maria del Molise
+comune	Santa Maria della Versa
+comune	Santa Maria di Licodia
+comune	Santa Maria di Sala
+comune	Santa Maria Hoè
+comune	Santa Maria Imbaro
+comune	Santa Maria la Carità
+comune	Santa Maria la Fossa
+comune	Santa Maria la Longa
+comune	Santa Maria Maggiore
+comune	Santa Maria Nuova
+comune	Santa Marina
+comune	Santa Marina Salina
+comune	Santa Marinella
+comune	Santa Ninfa
+comune	Santa Paolina
+comune	Santa Severina
+comune	Santa Sofia
+comune	Santa Sofia d'Epiro
+comune	Santa Teresa di Riva
+comune	Santa Teresa Gallura
+comune	Santa Venerina
+comune	Santa Vittoria d'Alba
+comune	Santa Vittoria in Matenano
+comune	Santadi
+comune	Santarcangelo di Romagna
+comune	Sante Marie
+comune	Santena
+comune	Santeramo in Colle
+comune	Santhià
+comune	Santi Cosma e Damiano
+comune	Santo Stefano al Mare
+comune	Santo Stefano Belbo
+comune	Santo Stefano d'Aveto
+comune	Santo Stefano del Sole
+comune	Santo Stefano di Cadore
+comune	Santo Stefano di Camastra
+comune	Santo Stefano di Magra
+comune	Santo Stefano di Rogliano
+comune	Santo Stefano di Sessanio
+comune	Santo Stefano in Aspromonte
+comune	Santo Stefano Lodigiano
+comune	Santo Stefano Quisquina
+comune	Santo Stefano Roero
+comune	Santo Stefano Ticino
+comune	Santomenna
+comune	Santopadre
+comune	Santorso
+comune	Santu Lussurgiu
+comune	Sanza
+comune	Sanzeno
+comune	Saonara
+comune	Saponara
+comune	Sappada
+comune	Sapri
+comune	Saracena
+comune	Saracinesco
+comune	Sarcedo
+comune	Sarconi
+comune	Sardara
+comune	Sardigliano
+comune	Sarego
+comune	Sarentino
+comune	Sarentino/Sarntal
+comune	Sarezzano
+comune	Sarezzo
+comune	Sarmato
+comune	Sarmede
+comune	Sarnano
+comune	Sarnico
+comune	Sarno
+comune	Sarnonico
+comune	Sarntal
+comune	Saronno
+comune	Sarre
+comune	Sarroch
+comune	Sarsina
+comune	Sarteano
+comune	Sartirana Lomellina
+comune	Sarule
+comune	Sarzana
+comune	Sassano
+comune	Sassari
+comune	Sassello
+comune	Sassetta
+comune	Sassinoro
+comune	Sasso di Castalda
+comune	Sasso Marconi
+comune	Sassocorvaro Auditore
+comune	Sassofeltrio
+comune	Sassoferrato
+comune	Sassuolo
+comune	Satriano
+comune	Satriano di Lucania
+comune	Sauris
+comune	Sauze d'Oulx
+comune	Sauze di Cesana
+comune	Sava
+comune	Savelli
+comune	Saviano
+comune	Savigliano
+comune	Savignano Irpino
+comune	Savignano sul Panaro
+comune	Savignano sul Rubicone
+comune	Savignone
+comune	Saviore dell'Adamello
+comune	Savoca
+comune	Savogna
+comune	Savogna d'Isonzo
+comune	Savogna d'Isonzo-Sovodnje ob Soči
+comune	Savoia di Lucania
+comune	Savona
+comune	Scafa
+comune	Scafati
+comune	Scagnello
+comune	Scala
+comune	Scala Coeli
+comune	Scaldasole
+comune	Scalea
+comune	Scalenghe
+comune	Scaletta Zanclea
+comune	Scampitella
+comune	Scandale
+comune	Scandiano
+comune	Scandicci
+comune	Scandolara Ravara
+comune	Scandolara Ripa d'Oglio
+comune	Scandriglia
+comune	Scanno
+comune	Scano di Montiferro
+comune	Scansano
+comune	Scanzano Jonico
+comune	Scanzorosciate
+comune	Scapoli
+comune	Scarlino
+comune	Scarmagno
+comune	Scarnafigi
+comune	Scarperia e San Piero
+comune	Scena
+comune	Scena/Schenna
+comune	Scerni
+comune	Scheggia e Pascelupo
+comune	Scheggino
+comune	Schenna
+comune	Schiavi di Abruzzo
+comune	Schiavon
+comune	Schignano
+comune	Schilpario
+comune	Schio
+comune	Schivenoglia
+comune	Schlanders
+comune	Schluderns
+comune	Schnals
+comune	Sciacca
+comune	Sciara
+comune	Scicli
+comune	Scido
+comune	Scigliano
+comune	Scilla
+comune	Scillato
+comune	Sciolze
+comune	Scisciano
+comune	Sclafani Bagni
+comune	Scontrone
+comune	Scopa
+comune	Scopello
+comune	Scoppito
+comune	Scordia
+comune	Scorrano
+comune	Scorzè
+comune	Scurcola Marsicana
+comune	Scurelle
+comune	Scurzolengo
+comune	Seborga
+comune	Secinaro
+comune	Seclì
+comune	Secugnago
+comune	Sedegliano
+comune	Sedico
+comune	Sedilo
+comune	Sedini
+comune	Sedriano
+comune	Sedrina
+comune	Sefro
+comune	Segariu
+comune	Seggiano
+comune	Segni
+comune	Segonzano
+comune	Segrate
+comune	Segusino
+comune	Selargius
+comune	Selci
+comune	Selegas
+comune	Sella Giudicarie
+comune	Sellano
+comune	Sellero
+comune	Sellia
+comune	Sellia Marina
+comune	Selva dei Molini
+comune	Selva dei Molini/Mühlwald
+comune	Selva di Cadore
+comune	Selva di Progno
+comune	Selva di Val Gardena
+comune	Selva di Val Gardena/Wolkenstein in Gröden
+comune	Selvazzano Dentro
+comune	Selvino
+comune	Semestene
+comune	Semiana
+comune	Seminara
+comune	Semproniano
+comune	Senago
+comune	Senale-San Felice
+comune	Senale-San Felice/Unsere Liebe Frau im Walde-St. Felix
+comune	Senales
+comune	Senales/Schnals
+comune	Seneghe
+comune	Senerchia
+comune	Seniga
+comune	Senigallia
+comune	Senis
+comune	Senise
+comune	Senna Comasco
+comune	Senna Lodigiana
+comune	Sennariolo
+comune	Sennori
+comune	Senorbì
+comune	Sepino
+comune	Sequals
+comune	Seravezza
+comune	Serdiana
+comune	Seregno
+comune	Seren del Grappa
+comune	Sergnano
+comune	Seriate
+comune	Serina
+comune	Serino
+comune	Serle
+comune	Sermide e Felonica
+comune	Sermoneta
+comune	Sernaglia della Battaglia
+comune	Sernio
+comune	Serole
+comune	Serra d'Aiello
+comune	Serra de' Conti
+comune	Serra Riccò
+comune	Serra San Bruno
+comune	Serra San Quirico
+comune	Serra Sant'Abbondio
+comune	Serracapriola
+comune	Serradifalco
+comune	Serralunga d'Alba
+comune	Serralunga di Crea
+comune	Serramanna
+comune	Serramazzoni
+comune	Serramezzana
+comune	Serramonacesca
+comune	Serrapetrona
+comune	Serrara Fontana
+comune	Serrastretta
+comune	Serrata
+comune	Serravalle a Po
+comune	Serravalle di Chienti
+comune	Serravalle Langhe
+comune	Serravalle Pistoiese
+comune	Serravalle Scrivia
+comune	Serravalle Sesia
+comune	Serre
+comune	Serrenti
+comune	Serri
+comune	Serrone
+comune	Sersale
+comune	Servigliano
+comune	Sessa Aurunca
+comune	Sessa Cilento
+comune	Sessame
+comune	Sessano del Molise
+comune	Sesta Godano
+comune	Sestino
+comune	Sesto
+comune	Sesto al Reghena
+comune	Sesto Calende
+comune	Sesto Campano
+comune	Sesto ed Uniti
+comune	Sesto Fiorentino
+comune	Sesto San Giovanni
+comune	Sesto/Sexten
+comune	Sestola
+comune	Sestri Levante
+comune	Sestriere
+comune	Sestu
+comune	Settala
+comune	Settefrati
+comune	Setteville
+comune	Settime
+comune	Settimo Milanese
+comune	Settimo Rottaro
+comune	Settimo San Pietro
+comune	Settimo Torinese
+comune	Settimo Vittone
+comune	Settingiano
+comune	Setzu
+comune	Seui
+comune	Seulo
+comune	Seveso
+comune	Sexten
+comune	Sezzadio
+comune	Sezze
+comune	Sfruz
+comune	Sgonico
+comune	Sgonico-Zgonik
+comune	Sgurgola
+comune	Siamaggiore
+comune	Siamanna
+comune	Siano
+comune	Siapiccia
+comune	Sicignano degli Alburni
+comune	Siculiana
+comune	Siddi
+comune	Siderno
+comune	Siena
+comune	Sigillo
+comune	Signa
+comune	Silandro
+comune	Silandro/Schlanders
+comune	Silanus
+comune	Silea
+comune	Siligo
+comune	Siliqua
+comune	Silius
+comune	Sillano Giuncugnano
+comune	Sillavengo
+comune	Silvano d'Orba
+comune	Silvano Pietra
+comune	Silvi
+comune	Simala
+comune	Simaxis
+comune	Simbario
+comune	Simeri Crichi
+comune	Sinagra
+comune	Sinalunga
+comune	Sindia
+comune	Sini
+comune	Sinio
+comune	Siniscola
+comune	Sinnai
+comune	Sinopoli
+comune	Siracusa
+comune	Sirignano
+comune	Siris
+comune	Sirmione
+comune	Sirolo
+comune	Sirone
+comune	Sirtori
+comune	Sissa Trecasali
+comune	Siurgus Donigala
+comune	Siziano
+comune	Sizzano
+comune	Sluderno
+comune	Sluderno/Schluderns
+comune	Smerillo
+comune	Soave
+comune	Socchieve
+comune	Soddì
+comune	Sogliano al Rubicone
+comune	Sogliano Cavour
+comune	Soglio
+comune	Soiano del Lago
+comune	Solagna
+comune	Solarino
+comune	Solaro
+comune	Solarolo
+comune	Solarolo Rainerio
+comune	Solarussa
+comune	Solbiate Arno
+comune	Solbiate con Cagno
+comune	Solbiate Olona
+comune	Soldano
+comune	Soleminis
+comune	Solero
+comune	Solesino
+comune	Soleto
+comune	Solferino
+comune	Soliera
+comune	Solignano
+comune	Solofra
+comune	Solonghello
+comune	Solopaca
+comune	Solto Collina
+comune	Solza
+comune	Somaglia
+comune	Somano
+comune	Somma Lombardo
+comune	Somma Vesuviana
+comune	Sommacampagna
+comune	Sommariva del Bosco
+comune	Sommariva Perno
+comune	Sommatino
+comune	Sommo
+comune	Sona
+comune	Soncino
+comune	Sondalo
+comune	Sondrio
+comune	Songavazzo
+comune	Sonico
+comune	Sonnino
+comune	Sora
+comune	Soraga di Fassa
+comune	Soragna
+comune	Sorano
+comune	Sorbo San Basile
+comune	Sorbo Serpico
+comune	Sorbolo Mezzani
+comune	Sordevolo
+comune	Sordio
+comune	Soresina
+comune	Sorgono
+comune	Sorgà
+comune	Sori
+comune	Sorianello
+comune	Soriano Calabro
+comune	Soriano nel Cimino
+comune	Sorico
+comune	Soriso
+comune	Sorisole
+comune	Sormano
+comune	Sorradile
+comune	Sorrento
+comune	Sorso
+comune	Sortino
+comune	Sospiro
+comune	Sospirolo
+comune	Sossano
+comune	Sostegno
+comune	Sotto il Monte Giovanni XXIII
+comune	Sover
+comune	Soverato
+comune	Sovere
+comune	Soveria Mannelli
+comune	Soveria Simeri
+comune	Soverzene
+comune	Sovicille
+comune	Sovico
+comune	Sovizzo
+comune	Sovodnje ob Soči
+comune	Sovramonte
+comune	Sozzago
+comune	Spadafora
+comune	Spadola
+comune	Sparanise
+comune	Sparone
+comune	Specchia
+comune	Spello
+comune	Sperlinga
+comune	Sperlonga
+comune	Sperone
+comune	Spessa
+comune	Spezzano Albanese
+comune	Spezzano della Sila
+comune	Spiazzo
+comune	Spigno Monferrato
+comune	Spigno Saturnia
+comune	Spilamberto
+comune	Spilimbergo
+comune	Spilinga
+comune	Spinadesco
+comune	Spinazzola
+comune	Spinea
+comune	Spineda
+comune	Spinete
+comune	Spineto Scrivia
+comune	Spinetoli
+comune	Spino d'Adda
+comune	Spinone al Lago
+comune	Spinoso
+comune	Spirano
+comune	Spoleto
+comune	Spoltore
+comune	Spongano
+comune	Spormaggiore
+comune	Sporminore
+comune	Spotorno
+comune	Spresiano
+comune	Spriana
+comune	Squillace
+comune	Squinzano
+comune	St. Christina in Gröden
+comune	St. Leonhard in Passeier
+comune	St. Lorenzen
+comune	St. Martin in Passeier
+comune	St. Martin in Thurn
+comune	St. Pankraz
+comune	St. Ulrich
+comune	Staffolo
+comune	Stagno Lombardo
+comune	Staiti
+comune	Stalettì
+comune	Stanghella
+comune	Staranzano
+comune	Statte
+comune	Stazzano
+comune	Stazzema
+comune	Stazzona
+comune	Stefanaconi
+comune	Stella
+comune	Stella Cilento
+comune	Stellanello
+comune	Stelvio
+comune	Stelvio/Stilfs
+comune	Stenico
+comune	Sternatia
+comune	Sterzing
+comune	Stezzano
+comune	Stienta
+comune	Stigliano
+comune	Stignano
+comune	Stilfs
+comune	Stilo
+comune	Stimigliano
+comune	Stintino
+comune	Stio
+comune	Stornara
+comune	Stornarella
+comune	Storo
+comune	Stra
+comune	Stradella
+comune	Strambinello
+comune	Strambino
+comune	Strangolagalli
+comune	Stregna
+comune	Strembo
+comune	Stresa
+comune	Strevi
+comune	Striano
+comune	Strona
+comune	Stroncone
+comune	Strongoli
+comune	Stroppiana
+comune	Stroppo
+comune	Strozza
+comune	Sturno
+comune	Suardi
+comune	Subbiano
+comune	Subiaco
+comune	Succivo
+comune	Sueglio
+comune	Suelli
+comune	Suello
+comune	Suisio
+comune	Sulbiate
+comune	Sulmona
+comune	Sulzano
+comune	Sumirago
+comune	Summonte
+comune	Suni
+comune	Suno
+comune	Supersano
+comune	Supino
+comune	Surano
+comune	Surbo
+comune	Susa
+comune	Susegana
+comune	Sustinente
+comune	Sutera
+comune	Sutri
+comune	Sutrio
+comune	Suvereto
+comune	Suzzara
+comune	Sèn Jan
+comune	Taceno
+comune	Tadasuni
+comune	Taggia
+comune	Tagliacozzo
+comune	Taglio di Po
+comune	Tagliolo Monferrato
+comune	Taibon Agordino
+comune	Taino
+comune	Taipana
+comune	Talamello
+comune	Talamona
+comune	Talana
+comune	Taleggio
+comune	Talla
+comune	Talmassons
+comune	Tambre
+comune	Taormina
+comune	Tarano
+comune	Taranta Peligna
+comune	Tarantasca
+comune	Taranto
+comune	Tarcento
+comune	Tarquinia
+comune	Tarsia
+comune	Tartano
+comune	Tarvisio
+comune	Tarzo
+comune	Tassarolo
+comune	Taufers im Münstertal
+comune	Taurano
+comune	Taurasi
+comune	Taurianova
+comune	Taurisano
+comune	Tavagnacco
+comune	Tavagnasco
+comune	Tavazzano con Villavesco
+comune	Tavenna
+comune	Taverna
+comune	Tavernerio
+comune	Tavernola Bergamasca
+comune	Tavernole sul Mella
+comune	Taviano
+comune	Tavigliano
+comune	Tavoleto
+comune	Tavullia
+comune	Teana
+comune	Teano
+comune	Teggiano
+comune	Teglio
+comune	Teglio Veneto
+comune	Telese Terme
+comune	Telgate
+comune	Telti
+comune	Telve
+comune	Telve di Sopra
+comune	Tempio Pausania
+comune	Temù
+comune	Tenna
+comune	Tenno
+comune	Teolo
+comune	Teora
+comune	Teramo
+comune	Terdobbiate
+comune	Terelle
+comune	Terenten
+comune	Terento
+comune	Terento/Terenten
+comune	Terenzo
+comune	Tergu
+comune	Terlan
+comune	Terlano
+comune	Terlano/Terlan
+comune	Terlizzi
+comune	Terme Vigliatore
+comune	Termeno sulla strada del vino
+comune	Termeno sulla strada del vino/Tramin an der Weinstraße
+comune	Termini Imerese
+comune	Termoli
+comune	Ternate
+comune	Ternengo
+comune	Terni
+comune	Terno d'Isola
+comune	Terracina
+comune	Terragnolo
+comune	Terralba
+comune	Terranova da Sibari
+comune	Terranova dei Passerini
+comune	Terranova di Pollino
+comune	Terranova Sappo Minulio
+comune	Terranuova Bracciolini
+comune	Terrasini
+comune	Terrassa Padovana
+comune	Terravecchia
+comune	Terrazzo
+comune	Terre d'Adige
+comune	Terre del Reno
+comune	Terre Roveresche
+comune	Terricciola
+comune	Terruggia
+comune	Tertenia
+comune	Terzigno
+comune	Terzo
+comune	Terzo d'Aquileia
+comune	Terzolas
+comune	Terzorio
+comune	Tesero
+comune	Tesimo
+comune	Tesimo/Tisens
+comune	Tessennano
+comune	Testico
+comune	Teti
+comune	Teulada
+comune	Teverola
+comune	Tezze sul Brenta
+comune	Thiene
+comune	Thiesi
+comune	Tiana
+comune	Ticengo
+comune	Ticineto
+comune	Tiers
+comune	Tiggiano
+comune	Tiglieto
+comune	Tigliole
+comune	Tignale
+comune	Tinnura
+comune	Tione degli Abruzzi
+comune	Tione di Trento
+comune	Tirano
+comune	Tires
+comune	Tires/Tiers
+comune	Tiriolo
+comune	Tirol
+comune	Tirolo
+comune	Tirolo/Tirol
+comune	Tisens
+comune	Tissi
+comune	Tito
+comune	Tivoli
+comune	Tizzano Val Parma
+comune	Toano
+comune	Toblach
+comune	Tocco Caudio
+comune	Tocco da Casauria
+comune	Toceno
+comune	Todi
+comune	Toffia
+comune	Toirano
+comune	Tolentino
+comune	Tolfa
+comune	Tollegno
+comune	Tollo
+comune	Tolmezzo
+comune	Tolve
+comune	Tombolo
+comune	Ton
+comune	Tonara
+comune	Tonco
+comune	Tonezza del Cimone
+comune	Tora e Piccilli
+comune	Torano Castello
+comune	Torano Nuovo
+comune	Torbole Casaglia
+comune	Torcegno
+comune	Torchiara
+comune	Torchiarolo
+comune	Torella dei Lombardi
+comune	Torella del Sannio
+comune	Torgiano
+comune	Torgnon
+comune	Torino
+comune	Torino di Sangro
+comune	Toritto
+comune	Torlino Vimercati
+comune	Tornaco
+comune	Tornareccio
+comune	Tornata
+comune	Tornimparte
+comune	Torno
+comune	Tornolo
+comune	Toro
+comune	Torpè
+comune	Torraca
+comune	Torralba
+comune	Torrazza Coste
+comune	Torrazza Piemonte
+comune	Torrazzo
+comune	Torre Annunziata
+comune	Torre Beretti e Castellaro
+comune	Torre Boldone
+comune	Torre Bormida
+comune	Torre Cajetani
+comune	Torre Canavese
+comune	Torre d'Arese
+comune	Torre d'Isola
+comune	Torre de' Busi
+comune	Torre de' Negri
+comune	Torre de' Passeri
+comune	Torre de' Picenardi
+comune	Torre de' Roveri
+comune	Torre del Greco
+comune	Torre di Mosto
+comune	Torre di Ruggiero
+comune	Torre di Santa Maria
+comune	Torre Le Nocelle
+comune	Torre Mondovì
+comune	Torre Orsaia
+comune	Torre Pallavicina
+comune	Torre Pellice
+comune	Torre San Giorgio
+comune	Torre San Patrizio
+comune	Torre Santa Susanna
+comune	Torreano
+comune	Torrebelvicino
+comune	Torrebruna
+comune	Torrecuso
+comune	Torreglia
+comune	Torregrotta
+comune	Torremaggiore
+comune	Torrenova
+comune	Torresina
+comune	Torretta
+comune	Torrevecchia Pia
+comune	Torrevecchia Teatina
+comune	Torri del Benaco
+comune	Torri di Quartesolo
+comune	Torri in Sabina
+comune	Torrice
+comune	Torricella
+comune	Torricella del Pizzo
+comune	Torricella in Sabina
+comune	Torricella Peligna
+comune	Torricella Sicura
+comune	Torricella Verzate
+comune	Torriglia
+comune	Torrile
+comune	Torrioni
+comune	Torrita di Siena
+comune	Torrita Tiberina
+comune	Tortolì
+comune	Tortona
+comune	Tortora
+comune	Tortorella
+comune	Tortoreto
+comune	Tortorici
+comune	Torviscosa
+comune	Toscolano-Maderno
+comune	Tossicia
+comune	Tovo di Sant'Agata
+comune	Tovo San Giacomo
+comune	Trabia
+comune	Tradate
+comune	Tramatza
+comune	Trambileno
+comune	Tramin an der Weinstraße
+comune	Tramonti
+comune	Tramonti di Sopra
+comune	Tramonti di Sotto
+comune	Tramutola
+comune	Trana
+comune	Trani
+comune	Traona
+comune	Trapani
+comune	Trappeto
+comune	Trarego Viggiona
+comune	Trasacco
+comune	Trasaghis
+comune	Trasquera
+comune	Tratalias
+comune	Travacò Siccomario
+comune	Travagliato
+comune	Travedona-Monate
+comune	Traversella
+comune	Traversetolo
+comune	Traves
+comune	Travesio
+comune	Travo
+comune	Tre Ville
+comune	Trebaseleghe
+comune	Trebisacce
+comune	Trecase
+comune	Trecastagni
+comune	Trecastelli
+comune	Trecate
+comune	Trecchina
+comune	Trecenta
+comune	Tredozio
+comune	Treglio
+comune	Tregnago
+comune	Treia
+comune	Treiso
+comune	Tremestieri Etneo
+comune	Tremezzina
+comune	Tremosine sul Garda
+comune	Trentinara
+comune	Trento
+comune	Trentola Ducenta
+comune	Trenzano
+comune	Treppo Grande
+comune	Treppo Ligosullo
+comune	Trepuzzi
+comune	Trequanda
+comune	Tresana
+comune	Trescore Balneario
+comune	Trescore Cremasco
+comune	Tresignana
+comune	Tresivio
+comune	Tresnuraghes
+comune	Trevenzuolo
+comune	Trevi
+comune	Trevi nel Lazio
+comune	Trevico
+comune	Treviglio
+comune	Trevignano
+comune	Trevignano Romano
+comune	Treville
+comune	Treviolo
+comune	Treviso
+comune	Treviso Bresciano
+comune	Trezzano Rosa
+comune	Trezzano sul Naviglio
+comune	Trezzo sull'Adda
+comune	Trezzo Tinella
+comune	Trezzone
+comune	Tribano
+comune	Tribiano
+comune	Tribogna
+comune	Tricarico
+comune	Tricase
+comune	Tricerro
+comune	Tricesimo
+comune	Triei
+comune	Trieste
+comune	Triggiano
+comune	Trigolo
+comune	Trinitapoli
+comune	Trinità
+comune	Trinità d'Agultu e Vignola
+comune	Trino
+comune	Triora
+comune	Tripi - Abakainon
+comune	Trisobbio
+comune	Trissino
+comune	Triuggio
+comune	Trivento
+comune	Trivigliano
+comune	Trivignano Udinese
+comune	Trivigno
+comune	Trivolzio
+comune	Trodena nel parco naturale
+comune	Trodena nel parco naturale/Truden im Naturpark
+comune	Trofarello
+comune	Troia
+comune	Troina
+comune	Tromello
+comune	Trontano
+comune	Tronzano Lago Maggiore
+comune	Tronzano Vercellese
+comune	Tropea
+comune	Trovo
+comune	Truccazzano
+comune	Truden im Naturpark
+comune	Tscherms
+comune	Tubre
+comune	Tubre/Taufers im Münstertal
+comune	Tufara
+comune	Tufillo
+comune	Tufino
+comune	Tufo
+comune	Tuglie
+comune	Tuili
+comune	Tula
+comune	Tuoro sul Trasimeno
+comune	Turania
+comune	Turano Lodigiano
+comune	Turate
+comune	Turbigo
+comune	Turi
+comune	Turri
+comune	Turriaco
+comune	Turrivalignani
+comune	Tursi
+comune	Tusa
+comune	Tuscania
+comune	Ubiale Clanezzo
+comune	Uboldo
+comune	Ucria
+comune	Udine
+comune	Ugento
+comune	Uggiano la Chiesa
+comune	Uggiate con Ronago
+comune	Ulassai
+comune	Ulten
+comune	Ultimo
+comune	Ultimo/Ulten
+comune	Ulà Tirso
+comune	Umbertide
+comune	Umbriatico
+comune	Unsere Liebe Frau im Walde-St. Felix
+comune	Urago d'Oglio
+comune	Uras
+comune	Urbana
+comune	Urbania
+comune	Urbe
+comune	Urbino
+comune	Urbisaglia
+comune	Urgnano
+comune	Uri
+comune	Ururi
+comune	Urzulei
+comune	Uscio
+comune	Usellus
+comune	Usini
+comune	Usmate Velate
+comune	Ussana
+comune	Ussaramanna
+comune	Ussassai
+comune	Usseaux
+comune	Usseglio
+comune	Ussita
+comune	Ustica
+comune	Uta
+comune	Uzzano
+comune	Vaccarizzo Albanese
+comune	Vacone
+comune	Vacri
+comune	Vadena
+comune	Vadena/Pfatten
+comune	Vado Ligure
+comune	Vagli Sotto
+comune	Vaglia
+comune	Vaglio Basilicata
+comune	Vaglio Serra
+comune	Vahrn
+comune	Vaiano
+comune	Vaiano Cremasco
+comune	Vaie
+comune	Vailate
+comune	Vairano Patenora
+comune	Vajont
+comune	Val Brembilla
+comune	Val della Torre
+comune	Val di Chy
+comune	Val di Nizza
+comune	Val di Vizze
+comune	Val di Vizze/Pfitsch
+comune	Val di Zoldo
+comune	Val Liona
+comune	Val Masino
+comune	Val Rezzo
+comune	Valbondione
+comune	Valbrembo
+comune	Valbrenta
+comune	Valbrevenna
+comune	Valbrona
+comune	Valchiusa
+comune	Valdagno
+comune	Valdaone
+comune	Valdaora
+comune	Valdaora/Olang
+comune	Valdastico
+comune	Valdengo
+comune	Valderice
+comune	Valdidentro
+comune	Valdieri
+comune	Valdilana
+comune	Valdina
+comune	Valdisotto
+comune	Valdobbiadene
+comune	Valduggia
+comune	Valeggio
+comune	Valeggio sul Mincio
+comune	Valentano
+comune	Valenza
+comune	Valenzano
+comune	Valera Fratta
+comune	Valfabbrica
+comune	Valfenera
+comune	Valfloriana
+comune	Valfornace
+comune	Valfurva
+comune	Valganna
+comune	Valgioie
+comune	Valgoglio
+comune	Valgrana
+comune	Valgreghentino
+comune	Valgrisenche
+comune	Valguarnera Caropepe
+comune	Vallada Agordina
+comune	Vallanzengo
+comune	Vallarsa
+comune	Vallata
+comune	Valle Agricola
+comune	Valle Aurina
+comune	Valle Aurina/Ahrntal
+comune	Valle Cannobina
+comune	Valle Castellana
+comune	Valle dell'Angelo
+comune	Valle di Cadore
+comune	Valle di Casies
+comune	Valle di Casies/Gsies
+comune	Valle di Maddaloni
+comune	Valle Lomellina
+comune	Valle Salimbene
+comune	Valle San Nicolao
+comune	Vallebona
+comune	Vallecorsa
+comune	Vallecrosia
+comune	Valledolmo
+comune	Valledoria
+comune	Vallefiorita
+comune	Vallefoglia
+comune	Vallelaghi
+comune	Vallelonga
+comune	Vallelunga Pratameno
+comune	Vallemaio
+comune	Vallepietra
+comune	Vallerano
+comune	Vallermosa
+comune	Vallerotonda
+comune	Vallesaccarda
+comune	Valleve
+comune	Valli del Pasubio
+comune	Vallinfreda
+comune	Vallio Terme
+comune	Vallo della Lucania
+comune	Vallo di Nera
+comune	Vallo Torinese
+comune	Valloriate
+comune	Valmacca
+comune	Valmadrera
+comune	Valmontone
+comune	Valmorea
+comune	Valmozzola
+comune	Valnegra
+comune	Valpelline
+comune	Valperga
+comune	Valprato Soana
+comune	Valsamoggia
+comune	Valsavarenche
+comune	Valsinni
+comune	Valsolda
+comune	Valstrona
+comune	Valtopina
+comune	Valtorta
+comune	Valtournenche
+comune	Valva
+comune	Valvarrone
+comune	Valvasone Arzene
+comune	Valverde
+comune	Valvestino
+comune	Vandoies
+comune	Vandoies/Vintl
+comune	Vanzaghello
+comune	Vanzago
+comune	Vanzone con San Carlo
+comune	Vaprio d'Adda
+comune	Vaprio d'Agogna
+comune	Varallo
+comune	Varallo Pombia
+comune	Varano Borghi
+comune	Varano de' Melegari
+comune	Varapodio
+comune	Varazze
+comune	Varco Sabino
+comune	Varedo
+comune	Varenna
+comune	Varese
+comune	Varese Ligure
+comune	Varisella
+comune	Varmo
+comune	Varna
+comune	Varna/Vahrn
+comune	Varsi
+comune	Varzi
+comune	Varzo
+comune	Vasanello
+comune	Vasia
+comune	Vasto
+comune	Vastogirardi
+comune	Vauda Canavese
+comune	Vazzano
+comune	Vazzola
+comune	Vecchiano
+comune	Vedano al Lambro
+comune	Vedano Olona
+comune	Vedelago
+comune	Vedeseta
+comune	Veduggio con Colzano
+comune	Veggiano
+comune	Veglie
+comune	Veglio
+comune	Vejano
+comune	Veleso
+comune	Velezzo Lomellina
+comune	Velletri
+comune	Vellezzo Bellini
+comune	Velo d'Astico
+comune	Velo Veronese
+comune	Velturno
+comune	Velturno/Feldthurns
+comune	Venafro
+comune	Venaria Reale
+comune	Venarotta
+comune	Venasca
+comune	Venaus
+comune	Vendone
+comune	Venegono Inferiore
+comune	Venegono Superiore
+comune	Venetico
+comune	Venezia
+comune	Veniano
+comune	Venosa
+comune	Ventasso
+comune	Venticano
+comune	Ventimiglia
+comune	Ventimiglia di Sicilia
+comune	Ventotene
+comune	Venzone
+comune	Verano
+comune	Verano Brianza
+comune	Verano/Vöran
+comune	Verbania
+comune	Verbicaro
+comune	Vercana
+comune	Verceia
+comune	Vercelli
+comune	Vercurago
+comune	Verdellino
+comune	Verdello
+comune	Verderio
+comune	Verduno
+comune	Vergato
+comune	Verghereto
+comune	Vergiate
+comune	Vermezzo con Zelo
+comune	Vermiglio
+comune	Vernante
+comune	Vernasca
+comune	Vernate
+comune	Vernazza
+comune	Vernio
+comune	Vernole
+comune	Verolanuova
+comune	Verolavecchia
+comune	Verolengo
+comune	Veroli
+comune	Verona
+comune	Veronella
+comune	Verrayes
+comune	Verretto
+comune	Verrone
+comune	Verrua Po
+comune	Verrua Savoia
+comune	Verrès
+comune	Vertemate con Minoprio
+comune	Vertova
+comune	Verucchio
+comune	Vervio
+comune	Verzegnis
+comune	Verzino
+comune	Verzuolo
+comune	Vescovana
+comune	Vescovato
+comune	Vesime
+comune	Vespolate
+comune	Vessalico
+comune	Vestenanova
+comune	Vestignè
+comune	Vestone
+comune	Vetralla
+comune	Vetto
+comune	Vezza d'Alba
+comune	Vezza d'Oglio
+comune	Vezzano Ligure
+comune	Vezzano sul Crostolo
+comune	Vezzi Portio
+comune	Viadana
+comune	Viadanica
+comune	Viagrande
+comune	Viale
+comune	Vialfrè
+comune	Viano
+comune	Viareggio
+comune	Viarigi
+comune	Vibo Valentia
+comune	Vibonati
+comune	Vicalvi
+comune	Vicari
+comune	Vicchio
+comune	Vicenza
+comune	Vico del Gargano
+comune	Vico Equense
+comune	Vico nel Lazio
+comune	Vicoforte
+comune	Vicoli
+comune	Vicolungo
+comune	Vicopisano
+comune	Vicovaro
+comune	Viddalba
+comune	Vidigulfo
+comune	Vidor
+comune	Vidracco
+comune	Vieste
+comune	Vietri di Potenza
+comune	Vietri sul Mare
+comune	Vigano San Martino
+comune	Viganò
+comune	Vigarano Mainarda
+comune	Vigasio
+comune	Vigevano
+comune	Viggianello
+comune	Viggiano
+comune	Viggiù
+comune	Vigliano Biellese
+comune	Vigliano d'Asti
+comune	Vignale Monferrato
+comune	Vignanello
+comune	Vignate
+comune	Vignola
+comune	Vignola-Falesina
+comune	Vignole Borbera
+comune	Vignolo
+comune	Vignone
+comune	Vigo di Cadore
+comune	Vigodarzere
+comune	Vigolo
+comune	Vigolzone
+comune	Vigone
+comune	Vigonovo
+comune	Vigonza
+comune	Viguzzolo
+comune	Villa Bartolomea
+comune	Villa Basilica
+comune	Villa Biscossi
+comune	Villa Carcina
+comune	Villa Castelli
+comune	Villa Celiera
+comune	Villa Collemandina
+comune	Villa Cortese
+comune	Villa d'Adda
+comune	Villa d'Almè
+comune	Villa d'Ogna
+comune	Villa del Bosco
+comune	Villa del Conte
+comune	Villa di Briano
+comune	Villa di Chiavenna
+comune	Villa di Serio
+comune	Villa di Tirano
+comune	Villa Estense
+comune	Villa Faraldi
+comune	Villa Guardia
+comune	Villa Lagarina
+comune	Villa Latina
+comune	Villa Literno
+comune	Villa Minozzo
+comune	Villa San Giovanni
+comune	Villa San Giovanni in Tuscia
+comune	Villa San Pietro
+comune	Villa San Secondo
+comune	Villa Sant'Angelo
+comune	Villa Sant'Antonio
+comune	Villa Santa Lucia
+comune	Villa Santa Lucia degli Abruzzi
+comune	Villa Santa Maria
+comune	Villa Santina
+comune	Villa Santo Stefano
+comune	Villa Verde
+comune	Villabassa
+comune	Villabassa/Niederdorf
+comune	Villabate
+comune	Villachiara
+comune	Villacidro
+comune	Villadeati
+comune	Villadose
+comune	Villadossola
+comune	Villafalletto
+comune	Villafranca d'Asti
+comune	Villafranca di Verona
+comune	Villafranca in Lunigiana
+comune	Villafranca Padovana
+comune	Villafranca Piemonte
+comune	Villafranca Sicula
+comune	Villafranca Tirrena
+comune	Villafrati
+comune	Villaga
+comune	Villagrande Strisaili
+comune	Villalago
+comune	Villalba
+comune	Villalfonsina
+comune	Villalvernia
+comune	Villamagna
+comune	Villamaina
+comune	Villamar
+comune	Villamarzana
+comune	Villamassargia
+comune	Villamiroglio
+comune	Villanders
+comune	Villandro
+comune	Villandro/Villanders
+comune	Villanova Biellese
+comune	Villanova Canavese
+comune	Villanova d'Albenga
+comune	Villanova d'Ardenghi
+comune	Villanova d'Asti
+comune	Villanova del Battista
+comune	Villanova del Ghebbo
+comune	Villanova del Sillaro
+comune	Villanova di Camposampiero
+comune	Villanova Marchesana
+comune	Villanova Mondovì
+comune	Villanova Monferrato
+comune	Villanova Monteleone
+comune	Villanova Solaro
+comune	Villanova sull'Arda
+comune	Villanova Truschedu
+comune	Villanova Tulo
+comune	Villanovaforru
+comune	Villanovafranca
+comune	Villanterio
+comune	Villanuova sul Clisi
+comune	Villaperuccio
+comune	Villapiana
+comune	Villaputzu
+comune	Villar Dora
+comune	Villar Focchiardo
+comune	Villar Pellice
+comune	Villar Perosa
+comune	Villar San Costanzo
+comune	Villarbasse
+comune	Villarboit
+comune	Villareggia
+comune	Villaricca
+comune	Villaromagnano
+comune	Villarosa
+comune	Villasalto
+comune	Villasanta
+comune	Villasimius
+comune	Villasor
+comune	Villaspeciosa
+comune	Villastellone
+comune	Villata
+comune	Villaurbana
+comune	Villavallelonga
+comune	Villaverla
+comune	Ville d'Anaunia
+comune	Ville di Fiemme
+comune	Villeneuve
+comune	Villesse
+comune	Villetta Barrea
+comune	Villette
+comune	Villimpenta
+comune	Villnöß
+comune	Villongo
+comune	Villorba
+comune	Vilminore di Scalve
+comune	Vimercate
+comune	Vimodrone
+comune	Vinadio
+comune	Vinchiaturo
+comune	Vinchio
+comune	Vinci
+comune	Vinovo
+comune	Vintl
+comune	Vinzaglio
+comune	Viola
+comune	Vione
+comune	Vipiteno
+comune	Vipiteno/Sterzing
+comune	Virle Piemonte
+comune	Visano
+comune	Vische
+comune	Visciano
+comune	Visco
+comune	Visone
+comune	Visso
+comune	Vistarino
+comune	Vistrorio
+comune	Vita
+comune	Viterbo
+comune	Viticuso
+comune	Vito d'Asio
+comune	Vitorchiano
+comune	Vittoria
+comune	Vittorio Veneto
+comune	Vittorito
+comune	Vittuone
+comune	Vitulano
+comune	Vitulazio
+comune	Vivaro
+comune	Vivaro Romano
+comune	Viverone
+comune	Vizzini
+comune	Vizzola Ticino
+comune	Vizzolo Predabissi
+comune	Viù
+comune	Vo'
+comune	Vobarno
+comune	Vobbia
+comune	Vocca
+comune	Vodo Cadore
+comune	Voghera
+comune	Voghiera
+comune	Vogogna
+comune	Volano
+comune	Volla
+comune	Volongo
+comune	Volpago del Montello
+comune	Volpara
+comune	Volpedo
+comune	Volpeglino
+comune	Volpiano
+comune	Volta Mantovana
+comune	Voltaggio
+comune	Voltago Agordino
+comune	Volterra
+comune	Voltido
+comune	Volturara Appula
+comune	Volturara Irpina
+comune	Volturino
+comune	Volvera
+comune	Vottignasco
+comune	Völs am Schlern
+comune	Vöran
+comune	Waidbruck
+comune	Welsberg-Taisten
+comune	Welschnofen
+comune	Wengen
+comune	Wolkenstein in Gröden
+comune	Zaccanopoli
+comune	Zafferana Etnea
+comune	Zagarise
+comune	Zagarolo
+comune	Zambrone
+comune	Zandobbio
+comune	Zanica
+comune	Zanè
+comune	Zapponeta
+comune	Zavattarello
+comune	Zeccone
+comune	Zeddiani
+comune	Zelbio
+comune	Zelo Buon Persico
+comune	Zeme
+comune	Zenevredo
+comune	Zenson di Piave
+comune	Zerba
+comune	Zerbo
+comune	Zerbolò
+comune	Zerfaliu
+comune	Zeri
+comune	Zermeghedo
+comune	Zero Branco
+comune	Zevio
+comune	Zgonik
+comune	Ziano di Fiemme
+comune	Ziano Piacentino
+comune	Zibido San Giacomo
+comune	Zignago
+comune	Zimella
+comune	Zimone
+comune	Zinasco
+comune	Zoagli
+comune	Zocca
+comune	Zogno
+comune	Zola Predosa
+comune	Zollino
+comune	Zone
+comune	Zoppola
+comune	Zoppè di Cadore
+comune	Zovencedo
+comune	Zubiena
+comune	Zuccarello
+comune	Zugliano
+comune	Zuglio
+comune	Zumaglia
+comune	Zumpano
+comune	Zungoli
+comune	Zungri
+comune	Števerjan
+regione	Abruzzo
+regione	Basilicata
+regione	Calabria
+regione	Campania
+regione	Emilia-Romagna
+regione	Friuli-Venezia Giulia
+regione	Lazio
+regione	Liguria
+regione	Lombardia
+regione	Marche
+regione	Molise
+regione	Piemonte
+regione	Puglia
+regione	Sardegna
+regione	Sicilia
+regione	Südtirol
+regione	Toscana
+regione	Trentino-Alto Adige
+regione	Trentino-Alto Adige/Südtirol
+regione	Umbria
+regione	Valle d'Aosta
+regione	Valle d'Aosta/Vallée d'Aoste
+regione	Vallée d'Aoste
+regione	Veneto
+uts	Agrigento
+uts	Alessandria
+uts	Ancona
+uts	Arezzo
+uts	Ascoli Piceno
+uts	Asti
+uts	Avellino
+uts	Bari
+uts	Barletta-Andria-Trani
+uts	Belluno
+uts	Benevento
+uts	Bergamo
+uts	Biella
+uts	Bologna
+uts	Bolzano
+uts	Bolzano/Bozen
+uts	Bozen
+uts	Brescia
+uts	Brindisi
+uts	Cagliari
+uts	Caltanissetta
+uts	Campobasso
+uts	Caserta
+uts	Catania
+uts	Catanzaro
+uts	Chieti
+uts	Como
+uts	Cosenza
+uts	Cremona
+uts	Crotone
+uts	Cuneo
+uts	Enna
+uts	Fermo
+uts	Ferrara
+uts	Firenze
+uts	Foggia
+uts	Forlì-Cesena
+uts	Frosinone
+uts	Gallura Nord-Est Sardegna
+uts	Genova
+uts	Gorizia
+uts	Grosseto
+uts	Imperia
+uts	Isernia
+uts	L'Aquila
+uts	La Spezia
+uts	Latina
+uts	Lecce
+uts	Lecco
+uts	Livorno
+uts	Lodi
+uts	Lucca
+uts	Macerata
+uts	Mantova
+uts	Massa-Carrara
+uts	Matera
+uts	Medio Campidano
+uts	Messina
+uts	Milano
+uts	Modena
+uts	Monza e della Brianza
+uts	Napoli
+uts	Novara
+uts	Nuoro
+uts	Ogliastra
+uts	Oristano
+uts	Padova
+uts	Palermo
+uts	Parma
+uts	Pavia
+uts	Perugia
+uts	Pesaro e Urbino
+uts	Pescara
+uts	Piacenza
+uts	Pisa
+uts	Pistoia
+uts	Pordenone
+uts	Potenza
+uts	Prato
+uts	Ragusa
+uts	Ravenna
+uts	Reggio Calabria
+uts	Reggio nell'Emilia
+uts	Rieti
+uts	Rimini
+uts	Roma
+uts	Rovigo
+uts	Salerno
+uts	Sassari
+uts	Savona
+uts	Siena
+uts	Siracusa
+uts	Sondrio
+uts	Sulcis Iglesiente
+uts	Taranto
+uts	Teramo
+uts	Terni
+uts	Torino
+uts	Trapani
+uts	Trento
+uts	Treviso
+uts	Trieste
+uts	Udine
+uts	Valle d'Aosta
+uts	Valle d'Aosta/Vallée d'Aoste
+uts	Vallée d'Aoste
+uts	Varese
+uts	Venezia
+uts	Verbano-Cusio-Ossola
+uts	Vercelli
+uts	Verona
+uts	Vibo Valentia
+uts	Vicenza
+uts	Viterbo

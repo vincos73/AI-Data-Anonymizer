@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from privacy_guardian import __version__
 from privacy_guardian.models import Finding
+from privacy_guardian.persistence import atomic_write_bytes
 from privacy_guardian.reporting import ENTITY_PLACEHOLDERS
 
 
@@ -168,11 +169,18 @@ def decrypt_mapping(data: bytes | str, passphrase: str) -> tuple[ReversibleMapEn
 
 def write_encrypted_mapping(path: str | Path, mapping: Iterable[ReversibleMapEntry], passphrase: str) -> None:
     target = Path(path)
-    target.write_bytes(encrypt_mapping(mapping, passphrase))
+    try:
+        atomic_write_bytes(target, encrypt_mapping(mapping, passphrase))
+    except OSError as exc:
+        raise ReversibleMapError("Non riesco a salvare la mappa reversibile.") from exc
 
 
 def read_encrypted_mapping(path: str | Path, passphrase: str) -> tuple[ReversibleMapEntry, ...]:
-    return decrypt_mapping(Path(path).read_bytes(), passphrase)
+    try:
+        data = Path(path).read_bytes()
+    except OSError as exc:
+        raise ReversibleMapError("Non riesco a leggere la mappa reversibile.") from exc
+    return decrypt_mapping(data, passphrase)
 
 
 def _mapping_payload(mapping: Iterable[ReversibleMapEntry]) -> bytes:

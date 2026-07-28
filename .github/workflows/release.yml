@@ -1,0 +1,159 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag esistente da costruire, per esempio v0.6.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+
+jobs:
+  validate:
+    name: Verifica versione
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Controlla tag e sorgenti
+        shell: python
+        run: |
+          import pathlib
+          import re
+          import tomllib
+
+          tag = "${{ env.RELEASE_TAG }}"
+          expected = tag.removeprefix("v")
+          metadata = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
+          package_version = metadata["project"]["version"]
+          init_text = pathlib.Path("src/privacy_guardian/__init__.py").read_text(encoding="utf-8")
+          source_version = re.search(r'__version__\s*=\s*"([^"]+)"', init_text).group(1)
+          if package_version != expected or source_version != expected:
+              raise SystemExit(
+                  f"Versione non allineata: tag={expected}, pyproject={package_version}, sorgente={source_version}"
+              )
+
+      - name: Installa dipendenze di test
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[desktop,web]"
+
+      - name: Esegui suite completa
+        env:
+          QT_QPA_PLATFORM: offscreen
+          OMISSIS_SYNC_JOBS: "1"
+        run: python -m unittest discover -s tests -v
+
+  build-macos:
+    name: Build macOS
+    needs: validate
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Importa certificato Apple se configurato
+        env:
+          APPLE_DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          BUILD_KEYCHAIN_PASSWORD: ${{ secrets.BUILD_KEYCHAIN_PASSWORD }}
+        run: |
+          if [ -z "$APPLE_DEVELOPER_ID_CERTIFICATE_BASE64" ] || [ -z "$APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD" ]; then
+            echo "Certificato Apple non configurato: verrà prodotta una build ad-hoc non notarizzata."
+            exit 0
+          fi
+          KEYCHAIN_PASSWORD="${BUILD_KEYCHAIN_PASSWORD:-temporary-build-keychain-password}"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          echo "$APPLE_DEVELOPER_ID_CERTIFICATE_BASE64" | base64 --decode > developer-id.p12
+          security import developer-id.p12 \
+            -k build.keychain \
+            -P "$APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+
+      - name: Costruisci DMG
+        env:
+          APPLE_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: ./scripts/build_macos_app.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OMISSIS-macOS
+          path: dist/OMISSIS-macOS-Apple-Silicon.dmg
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Windows
+    needs: validate
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Costruisci ZIP
+        shell: pwsh
+        run: .\scripts\build_windows_app.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OMISSIS-Windows
+          path: dist/OMISSIS-Windows.zip
+          if-no-files-found: error
+
+  publish:
+    name: Pubblica release completa
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: OMISSIS-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Genera checksum
+        working-directory: release-assets
+        run: sha256sum OMISSIS-macOS-Apple-Silicon.dmg OMISSIS-Windows.zip > SHA256SUMS.txt
+
+      - name: Crea o aggiorna la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" release-assets/* \
+              --repo "${GITHUB_REPOSITORY}" \
+              --clobber
+          else
+            gh release create "${RELEASE_TAG}" release-assets/* \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "OMISSIS ${RELEASE_TAG}" \
+              --generate-notes \
+              --latest
+          fi

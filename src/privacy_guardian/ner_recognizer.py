@@ -2,16 +2,18 @@ from __future__ import annotations
 
 import os
 
+from privacy_guardian.italian_locations import contains_address_marker, should_accept_ner_location
 from privacy_guardian.models import Finding
 
 
 NER_MODELS = ("it_core_news_lg", "it_core_news_md", "it_core_news_sm")
 NER_ENV_FLAG = "OMISSIS_NER"
 NER_SCORE = 0.7
+NER_LOCATION_SCORE = 0.78
 
 
 class NerPersonRecognizer:
-    """Optional local spaCy NER for person names the regex rules cannot see.
+    """Optional local spaCy NER for people and locations the rules cannot see.
 
     Enabled only when spaCy and an Italian model are installed; everything runs
     on the local machine, no external services. Set OMISSIS_NER=0 to disable.
@@ -39,15 +41,32 @@ class NerPersonRecognizer:
     def analyze(self, text: str) -> list[Finding]:
         findings: list[Finding] = []
         for entity in self._nlp(text).ents:
-            if entity.label_ != "PER":
-                continue
-            name = entity.text.strip()
-            if not self._looks_like_full_name(name):
-                continue
+            value = entity.text.strip()
+            leading_space = len(entity.text) - len(entity.text.lstrip())
+            start = entity.start_char + leading_space
             end = entity.start_char + len(entity.text.rstrip())
-            findings.append(Finding("PERSON", entity.start_char, end, NER_SCORE, source="ner_local"))
+            if entity.label_ == "PER":
+                if self._looks_like_full_name(value):
+                    findings.append(Finding("PERSON", start, end, NER_SCORE, source="ner_local"))
+                continue
+            if entity.label_ in {"LOC", "GPE"} and should_accept_ner_location(
+                text, start, end, value
+            ):
+                findings.append(
+                    Finding("LOCATION", start, end, NER_LOCATION_SCORE, source="ner_local")
+                )
         return findings
 
     def _looks_like_full_name(self, name: str) -> bool:
         words = name.split()
-        return len(words) >= 2 and all(word[0].isupper() for word in words)
+        return (
+            len(words) >= 2
+            and not contains_address_marker(name)
+            and all(self._is_name_word(word) for word in words)
+        )
+
+    @staticmethod
+    def _is_name_word(word: str) -> bool:
+        """Accept normal name punctuation but reject merged CSV/email tokens."""
+        normalized = word.replace("-", "").replace("'", "").replace("’", "")
+        return bool(normalized) and word[0].isupper() and normalized.isalpha()

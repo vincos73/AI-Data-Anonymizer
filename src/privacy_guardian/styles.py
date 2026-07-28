@@ -6,7 +6,7 @@
 #   surface       #1A222B   surface-dim    #161D25   surface-selected #14202B
 #   border        #232D38   border-strong  #35414E
 #   text          #E8EDF2   text-title     #FFFFFF
-#   text-2        #AABBCB   text-3         #8899AA   muted #5F6F7F
+#   text-2        #AABBCB   text-3         #8899AA   muted #8192A3
 #   accent        #4FB8E7   on-accent      #0D1218
 #   success       #4CC38A   warning        #D9A13B   map-gold #E5C368
 #   step-done bg  #1A2E24   step-done border #2E6B4A  step-done text #7DD8A8
@@ -21,6 +21,27 @@ QWidget {
     color: #E8EDF2;
     font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
     font-size: 13px;
+}
+
+/*
+ * macOS keeps QMessageBox on a native light surface even when it inherits the
+ * application's dark text palette. Define both sides of the contrast pair so
+ * warning, error and confirmation text remains readable on every platform.
+ */
+QMessageBox {
+    background-color: #F4F6F8;
+    color: #12181F;
+}
+
+QMessageBox QLabel,
+QMessageBox QLabel#qt_msgbox_label {
+    background: transparent;
+    color: #12181F;
+}
+
+QMessageBox QLabel#qt_msgbox_informativelabel {
+    background: transparent;
+    color: #2F3D4B;
 }
 
 QDialog#InfoDialog {
@@ -51,6 +72,15 @@ QLabel#DialogTitle {
 QLabel#DialogDetails {
     color: #AABBCB;
     line-height: 1.5;
+}
+
+QLabel#ActivitySettings {
+    background: #161D25;
+    color: #C9EAF8;
+    border: 1px solid #2B6D8F;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-weight: 600;
 }
 
 QMenuBar {
@@ -141,7 +171,7 @@ QLabel#Byline {
 }
 
 QLabel#RailSectionLabel {
-    color: #5F6F7F;
+    color: #8192A3;
     font-size: 10.5px;
     font-weight: 700;
     letter-spacing: 1px;
@@ -160,7 +190,7 @@ QLabel#LocalNotice {
 
 QLabel#VersionPill {
     background: transparent;
-    color: #5F6F7F;
+    color: #8192A3;
     border: 0;
     padding: 2px 2px;
     font-family: "IBM Plex Mono", "Menlo", monospace;
@@ -176,13 +206,13 @@ QFrame#StepRowPending, QFrame#StepRowCurrent, QFrame#StepRowDone {
 }
 
 QFrame#StepRowPending QLabel#StepTitle {
-    color: #5F6F7F;
+    color: #8192A3;
     font-size: 13px;
     font-weight: 500;
 }
 
 QFrame#StepRowPending QLabel#StepDot {
-    color: #5F6F7F;
+    color: #8192A3;
     background: #161D25;
     border: 1px solid #232D38;
     border-radius: 10px;
@@ -296,6 +326,25 @@ QLabel#NerHint {
     padding-left: 2px;
 }
 
+QLabel#MapStatus, QLabel#MapStatusReady, QLabel#MapStatusWarning {
+    background: #161D25;
+    border: 1px solid #232D38;
+    border-radius: 8px;
+    color: #AABBCB;
+    font-size: 11px;
+    padding: 7px 9px;
+}
+
+QLabel#MapStatusReady {
+    border-color: #2E6B4A;
+    color: #7DD8A8;
+}
+
+QLabel#MapStatusWarning {
+    border-color: #6A4E16;
+    color: #F0C66B;
+}
+
 /* ---------- Main area ---------- */
 
 QFrame#DocumentToolbar {
@@ -320,6 +369,41 @@ QLabel#ReportNotice {
     border-radius: 10px;
     padding: 10px 12px;
     line-height: 1.35;
+}
+
+QLabel#ReportNoticeStale {
+    background: #241B0C;
+    color: #F0C66B;
+    border: 1px solid #6A4E16;
+    border-radius: 10px;
+    padding: 10px 12px;
+    line-height: 1.35;
+    font-weight: 600;
+}
+
+QFrame#JobFrame {
+    background: #122331;
+    border: 1px solid #2B6D8F;
+    border-radius: 10px;
+}
+
+QLabel#JobStatus {
+    color: #C9EAF8;
+    border: 0;
+    font-weight: 600;
+}
+
+QProgressBar#JobProgress {
+    min-width: 180px;
+    max-height: 8px;
+    background: #0D1218;
+    border: 0;
+    border-radius: 4px;
+}
+
+QProgressBar#JobProgress::chunk {
+    background: #4FB8E7;
+    border-radius: 4px;
 }
 
 QLabel#NerNotice {
@@ -359,6 +443,12 @@ QTextEdit:focus {
     border: 1px solid #4FB8E7;
 }
 
+QTextEdit:disabled {
+    background: #161D25;
+    color: #8899AA;
+    border-color: #35414E;
+}
+
 QPushButton {
     min-height: 32px;
     border: 1px solid #35414E;
@@ -379,8 +469,12 @@ QPushButton:pressed {
     background: #161D25;
 }
 
+QPushButton:focus {
+    border: 2px solid #7DD8FF;
+}
+
 QPushButton:disabled {
-    color: #5F6F7F;
+    color: #8192A3;
     background: #161D25;
     border-color: #232D38;
 }
@@ -404,7 +498,7 @@ QPushButton#PrimaryButton:pressed {
 QPushButton#PrimaryButton:disabled {
     background: #223038;
     border-color: #232D38;
-    color: #5F6F7F;
+    color: #8192A3;
 }
 
 QPushButton#SecondaryButton {
@@ -473,7 +567,7 @@ QTableWidget::item:selected {
 /* ---------- Findings panel (Dati rilevati) ---------- */
 
 QLabel#FindingsCounter {
-    color: #5F6F7F;
+    color: #8192A3;
     font-size: 12px;
     font-weight: 500;
 }
@@ -498,6 +592,20 @@ QPushButton#FilterPill:checked {
     background: #4FB8E7;
     border-color: #4FB8E7;
     color: #0D1218;
+}
+
+QScrollArea#FilterScroll {
+    background: transparent;
+    border: 0;
+}
+
+QScrollArea#FilterScroll > QWidget > QWidget {
+    background: transparent;
+}
+
+QLabel#SelectionHelp {
+    color: #AABBCB;
+    font-size: 11px;
 }
 
 QLineEdit#FindingsSearch {
@@ -559,6 +667,10 @@ QTreeView#FindingsTree {
     border-radius: 10px;
     outline: 0;
     show-decoration-selected: 1;
+}
+
+QTreeView#FindingsTree:focus {
+    border: 2px solid #7DD8FF;
 }
 
 QTreeView#FindingsTree::item {

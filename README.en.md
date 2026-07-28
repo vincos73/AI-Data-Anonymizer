@@ -6,16 +6,19 @@ The main product is the desktop app: install it, open a document, anonymize it l
 
 The web app exists only as an advanced option for developers, local demos, or self-hosted deployments on infrastructure you control.
 
+Current source version: **v0.6.2**. Published builds may temporarily have an earlier version; use the repository [Releases page](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) and check the version shown in the app.
+
 ## What It Does
 
 - Detects and anonymizes common Italian personal and business data.
 - Works with pasted text and uploaded documents.
 - Offers a standard mode and a maximum-protection mode.
 - Offers a reversible mode with numbered placeholders and a locally encrypted map in the desktop app.
-- In standard mode, preserves initials for people, organizations, addresses, and territorial bodies.
+- In standard mode, preserves initials while keeping territorial and academic institution roles readable for contextual understanding.
 - In standard mode, does not anonymize dates.
 - In maximum-protection mode, replaces detected personal data with full placeholders and also redacts common date formats.
 - Keeps `.docx` formatting as much as possible while replacing sensitive text.
+- Can convert PDF extraction into normalized text for stronger recognition and LLM-oriented `.txt` output.
 - Provides a desktop app, with a self-hosted web app for advanced use cases.
 
 Detected data includes:
@@ -31,8 +34,11 @@ Detected data includes:
 - identity documents, passports, and driving licences when explicit context is present
 - vehicle plates when explicit context is present
 - protocol, case, file, or application numbers when explicit context is present
+- cadastral references such as sheet, parcel, map, subaltern, section, and cadastral category
 - Italian addresses with strong address signals, including lowercase ones when a house number is present
-- people names only with strong context, including birth/residence and payment-recipient contexts; an optional local spaCy NER (`pip install "ai-data-anonymizer[ner]"` plus an Italian model, fully offline) also catches names without context
+- explicitly labelled Italian postal codes, and postal codes followed by a city
+- Italian regions, provinces, and municipalities using the bundled ISTAT list updated on 21 February 2026, with contextual safeguards for ambiguous names
+- people names with strong context, including birth/residence and payment-recipient contexts; an optional local spaCy NER (`pip install "ai-data-anonymizer[ner]"` plus an Italian model, fully offline) also catches people and locations without context, including foreign locations
 - company names with legal forms such as `S.r.l.`, `S.p.A.`, `S.n.c.`, `S.a.s.`, cooperatives and similar
 - territorial bodies such as `Provincia di Potenza`, `Comune di Roma`, `Regione Basilicata`
 - common date formats in maximum-protection and reversible modes
@@ -62,9 +68,9 @@ The desktop app processes documents locally. It does not send text or files to e
 
 See the Italian [security and privacy page](SICUREZZA.md) for the full operational model.
 
-The desktop app keeps a local activity log available from **Strumenti > Registro attività**. It stores metadata only: timestamp, operation, mode, category counts, file extension, file size, and SHA-256 hashes when files are available. It does not store original text, anonymized text, detected values, previews, or full file paths.
+The desktop app keeps a local activity log available from **Strumenti > Registro attività**. It stores metadata only: timestamp, operation, mode, category counts, file extension, file size, and SHA-256 hashes when files are available. It does not store original text, anonymized text, detected values, previews, or full file paths. The same dialog can disable logging, set its retention limit, or clear it.
 
-The reversible mode creates a password-encrypted local `.omissis-map` file. It contains the sensitive correspondence between numbered placeholders and original values, so it should be kept private and never uploaded to external AI or cloud services.
+The reversible mode creates a password-encrypted local `.omissis-map` file. It contains the sensitive correspondence between numbered placeholders and original values, so it should be kept private and never uploaded to external AI or cloud services. Results, maps, and local settings use atomic replacement; sensitive local files are owner-only on supported systems.
 
 The web app is not required for normal desktop use. If you run it locally on `127.0.0.1`, it stays on your computer as a browser interface. If you publish it on a server, text submitted to the web app is sent to that server. For sensitive documents, run it only on infrastructure you control and use HTTPS.
 
@@ -88,6 +94,10 @@ Typical workflow:
 8. Save the anonymized result.
 
 The desktop app defaults to maximum-protection mode, which is the recommended choice before sharing content with ChatGPT or other AI tools.
+
+Document loading, OCR, analysis, and anonymization show progress and can be cancelled. A cancelled or failed operation preserves the previous result. Converting a PDF to normalized text automatically starts a fresh analysis.
+
+Main shortcuts: `Cmd/Ctrl+O` loads a document, `Cmd/Ctrl+Enter` runs the current step, `Cmd/Ctrl+F` searches detected data, and `Cmd/Ctrl+S` saves the result.
 
 Reversible mode is available for pasted text, `.txt`, and `.docx` in the desktop app. Use maximum protection for `.md`, `.csv`, and PDF files because those outputs are not reversible.
 
@@ -191,6 +201,8 @@ Build macOS package:
 ./scripts/build_macos_app.sh
 ```
 
+The build creates a DMG when macOS allows volume creation. In isolated environments where `hdiutil` cannot mount it, the script preserves the signed `.app` and automatically creates a versioned installable ZIP.
+
 ### macOS Signing and Notarization
 
 To distribute OMISSIS without Gatekeeper warnings, an Apple Developer Program account and a **Developer ID Application** certificate are required.
@@ -213,7 +225,7 @@ Build Windows package from PowerShell:
 .\scripts\build_windows_app.ps1
 ```
 
-The GitHub Actions workflow `build-windows` can also create the Windows zip manually or attach it to a release when a tag such as `v0.3.0` is published.
+The unified GitHub Actions release workflow checks version alignment, builds both macOS and Windows, and publishes the release only after both artifacts are available.
 
 ## Tests
 
@@ -226,14 +238,14 @@ The test suite covers Italian false positives, person and organization recogniti
 
 ## Project Status
 
-This is an early open-source release. The engine is rule-based and intentionally conservative. Contributions are welcome, especially for:
+OMISSIS is an evolving open-source project. The engine is rule-based and intentionally conservative. Contributions are welcome, especially for:
 
 - reducing Italian false positives;
 - improving document formatting preservation;
 - improving local OCR for scanned PDFs and images;
 - refining reversible mode and AI-response reconstruction;
 - adding carefully tested recognizers;
-- improving packaging and release automation.
+- improving signing and notarization of published builds.
 
 ## License
 

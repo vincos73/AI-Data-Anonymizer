@@ -73,7 +73,9 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         findings = self.findings_for("Il sottoscritto Mario Rossi nato a Roma il 10/01/1980.")
         self.assertIn(("PERSON", "Mario Rossi"), findings)
         self.assertNotIn(("DATE_TIME", "10/01/1980"), findings)
-        self.assertEqual(self.findings_for("Mario andrà domani a Milano."), [])
+        findings = self.findings_for("Mario andrà domani a Milano.")
+        self.assertNotIn(("PERSON", "Mario"), findings)
+        self.assertIn(("LOCATION", "Milano"), findings)
 
     def test_detects_person_with_abbreviated_sig_title(self) -> None:
         findings = self.findings_for("Il Sig. Mario Rossi ha firmato il contratto.")
@@ -203,12 +205,44 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertNotIn("Figli", anonymized)
         self.assertIn("<ORGANIZZAZIONE>", anonymized)
 
+    def test_standard_mode_preserves_academic_institution_context(self) -> None:
+        text = (
+            "L'Università degli Studi della Basilicata collabora con il "
+            "Dipartimento di Ingegneria."
+        )
+        findings = self.engine.analyze(text, "standard")
+        values = [(finding.entity_type, text[finding.start : finding.end]) for finding in findings]
+
+        self.assertIn(
+            ("ORGANIZATION", "Università degli Studi della Basilicata"),
+            values,
+        )
+        self.assertIn(("ORGANIZATION", "Dipartimento di Ingegneria"), values)
+        self.assertEqual(
+            self.engine.anonymize(text, findings, "standard"),
+            "L'Università degli Studi della B. collabora con il Dipartimento di I.",
+        )
+
+    def test_maximum_mode_fully_redacts_academic_institutions(self) -> None:
+        text = "Università degli Studi della Basilicata e Dipartimento di Ingegneria"
+        anonymized = self.engine.anonymize(text, mode="maximum")
+
+        self.assertEqual(anonymized, "<ORGANIZZAZIONE> e <ORGANIZZAZIONE>")
+
+    def test_unqualified_department_remains_visible(self) -> None:
+        text = "Il Dipartimento ha approvato l'atto."
+        for mode in ("standard", "maximum", "reversible"):
+            with self.subTest(mode=mode):
+                findings = self.engine.analyze(text, mode)
+                self.assertEqual(findings, [])
+                self.assertEqual(self.engine.anonymize(text, findings, mode), text)
+
     def test_keeps_initials_for_people_organizations_and_places(self) -> None:
         text = "Il sottoscritto Mario Rossi lavora per Alfa Beta S.r.l. nella Provincia di Potenza."
         anonymized = self.engine.anonymize(text)
         self.assertIn("M. R.", anonymized)
         self.assertIn("A. B. S. r. l.", anonymized)
-        self.assertIn("P. d. P.", anonymized)
+        self.assertIn("Provincia di P.", anonymized)
         self.assertNotIn("<PERSONA>", anonymized)
         self.assertNotIn("<ORGANIZZAZIONE>", anonymized)
 
@@ -217,6 +251,57 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn(("TERRITORIAL_BODY", "Provincia di Potenza"), findings)
         self.assertIn(("TERRITORIAL_BODY", "regione Basilicata"), findings)
         self.assertIn(("TERRITORIAL_BODY", "Comune di Roma"), findings)
+
+    def test_standard_mode_preserves_territorial_body_context(self) -> None:
+        text = "Provincia di Potenza, regione Basilicata e Comune di Roma."
+        findings = self.engine.analyze(text, "standard")
+
+        self.assertEqual(
+            self.engine.anonymize(text, findings, "standard"),
+            "Provincia di P., regione B. e Comune di R.",
+        )
+
+    def test_detects_italian_locations_with_local_istat_dictionary(self) -> None:
+        text = "Mario Rossi vive a Potenza, in Basilicata, ed è nato a Venosa."
+        findings = self.engine.analyze(text, "maximum")
+        values = [(finding.entity_type, text[finding.start : finding.end]) for finding in findings]
+
+        self.assertIn(("LOCATION", "Potenza"), values)
+        self.assertIn(("LOCATION", "Basilicata"), values)
+        self.assertIn(("LOCATION", "Venosa"), values)
+        self.assertTrue(
+            all(
+                finding.source == "location_dictionary"
+                for finding in findings
+                if finding.entity_type == "LOCATION"
+            )
+        )
+
+        anonymized = self.engine.anonymize(text, findings, "maximum")
+        self.assertEqual(anonymized.count("<LOCALITA>"), 3)
+        self.assertNotIn("Potenza", anonymized)
+        self.assertNotIn("Basilicata", anonymized)
+        self.assertNotIn("Venosa", anonymized)
+
+    def test_italian_location_dictionary_contains_current_istat_examples(self) -> None:
+        from privacy_guardian.italian_locations import load_italian_locations
+
+        locations = load_italian_locations()
+        self.assertGreater(len(locations.all_names), 8000)
+        self.assertTrue(locations.contains("Potenza"))
+        self.assertTrue(locations.contains("Basilicata"))
+        self.assertTrue(locations.contains("Venosa"))
+        self.assertTrue(locations.is_region("Basilicata"))
+        self.assertEqual(
+            source_label("location_dictionary"),
+            "Elenco località italiane (ISTAT)",
+        )
+
+    def test_does_not_treat_ambiguous_potenza_as_a_location(self) -> None:
+        text = "Potenza del motore è elevata, ma la potenza assorbita resta contenuta."
+        findings = self.engine.analyze(text, "maximum")
+        self.assertFalse(any(finding.entity_type == "LOCATION" for finding in findings))
+        self.assertEqual(self.engine.anonymize(text, findings, "maximum"), text)
 
     def test_detects_qualified_administration_with_place(self) -> None:
         findings = self.findings_for("amministrazione provinciale di Potenza")
@@ -388,9 +473,45 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         findings = self.findings_for("Ufficio 47521 Cesena aperto.")
         self.assertIn(("ADDRESS", "47521 Cesena"), findings)
 
+    def test_detects_and_redacts_explicitly_labeled_postal_codes(self) -> None:
+        samples = (
+            ("CAP 85100", "85100"),
+            ("C.A.P.: 00185", "00185"),
+            ("Codice postale: 85029", "85029"),
+            ("Codice di avviamento postale\n20121", "20121"),
+        )
+        for text, postal_code in samples:
+            with self.subTest(text=text):
+                findings = self.engine.analyze(text, "maximum")
+                values = [
+                    (finding.entity_type, text[finding.start : finding.end])
+                    for finding in findings
+                ]
+                self.assertIn(("POSTAL_CODE", postal_code), values)
+                anonymized = self.engine.anonymize(text, findings, "maximum")
+                self.assertIn("<CAP>", anonymized)
+                self.assertNotIn(postal_code, anonymized)
+
+    def test_standard_mode_replaces_a_postal_code_without_initials(self) -> None:
+        text = "CAP 85100"
+        findings = self.engine.analyze(text, "standard")
+        self.assertEqual(self.engine.anonymize(text, findings, "standard"), "CAP <CAP>")
+
+    def test_reversible_mode_maps_a_postal_code(self) -> None:
+        text = "CAP 85100"
+        findings = self.engine.analyze(text, "reversible")
+        result = self.engine.anonymize_reversible(text, findings)
+
+        self.assertEqual(result.text, "CAP <CAP_1>")
+        self.assertEqual(len(result.mapping), 1)
+        self.assertEqual(result.mapping[0].entity_type, "POSTAL_CODE")
+        self.assertEqual(result.mapping[0].value, "85100")
+        self.assertEqual(restore_text(result.text, result.mapping), text)
+
     def test_postal_code_without_city_is_not_matched(self) -> None:
         findings = self.findings_for("Il numero 00185 non è una città.")
         self.assertNotIn("ADDRESS", [entity_type for entity_type, _ in findings])
+        self.assertNotIn("POSTAL_CODE", [entity_type for entity_type, _ in findings])
 
     def test_postal_code_followed_by_month_is_not_matched(self) -> None:
         findings = self.findings_for("Consegna prevista 12345 Gennaio del prossimo anno.")
@@ -534,6 +655,198 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertNotIn("Elin Andersson", anonymized)
         self.assertEqual(source_label("ner_local"), "NER locale (spaCy)")
 
+    def test_optional_local_ner_adds_foreign_locations(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        text = "La sede è a Parigi e l'incontro si tiene a New York."
+
+        def fake_nlp(value: str):
+            entities = []
+            for name, label in (("Parigi", "LOC"), ("New York", "GPE")):
+                start = value.find(name)
+                entities.append(
+                    SimpleNamespace(
+                        label_=label,
+                        text=name,
+                        start_char=start,
+                        end_char=start + len(name),
+                    )
+                )
+            return SimpleNamespace(ents=entities)
+
+        engine = PrivacyEngine()
+        engine._ner = NerPersonRecognizer(fake_nlp)
+        findings = engine.analyze(text, "maximum")
+        values = [
+            (finding.entity_type, text[finding.start : finding.end], finding.source)
+            for finding in findings
+        ]
+
+        self.assertIn(("LOCATION", "Parigi", "ner_local"), values)
+        self.assertIn(("LOCATION", "New York", "ner_local"), values)
+        self.assertEqual(engine.anonymize(text, findings, "maximum").count("<LOCALITA>"), 2)
+
+    def test_optional_local_ner_does_not_treat_an_address_as_a_location(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        text = "Residente in Via Appia e domiciliato in Viale Europa 10."
+        location = "Residente in Via Appia"
+
+        def fake_nlp(value: str):
+            start = value.index(location)
+            return SimpleNamespace(
+                ents=[
+                    SimpleNamespace(
+                        label_="LOC",
+                        text=location,
+                        start_char=start,
+                        end_char=start + len(location),
+                    )
+                ]
+            )
+
+        engine = PrivacyEngine()
+        engine._ner = NerPersonRecognizer(fake_nlp)
+        findings = engine.analyze(text, "maximum")
+        values = [(finding.entity_type, text[finding.start : finding.end]) for finding in findings]
+
+        self.assertNotIn(("LOCATION", location), values)
+        self.assertIn(("ADDRESS", "Via Appia"), values)
+        self.assertIn(("ADDRESS", "Viale Europa 10"), values)
+
+    def test_optional_local_ner_does_not_treat_an_institution_as_a_location(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        text = "Università degli Studi della Basilicata"
+
+        def fake_nlp(value: str):
+            return SimpleNamespace(
+                ents=[
+                    SimpleNamespace(
+                        label_="LOC",
+                        text=value,
+                        start_char=0,
+                        end_char=len(value),
+                    )
+                ]
+            )
+
+        engine = PrivacyEngine()
+        engine._ner = NerPersonRecognizer(fake_nlp)
+        findings = engine.analyze(text, "standard")
+        values = [(finding.entity_type, text[finding.start : finding.end]) for finding in findings]
+
+        self.assertNotIn(("LOCATION", text), values)
+        self.assertIn(("ORGANIZATION", text), values)
+
+    def test_optional_local_ner_rejects_an_unknown_single_word_pdf_line(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        text = "Ispettori"
+
+        def fake_nlp(value: str):
+            return SimpleNamespace(
+                ents=[
+                    SimpleNamespace(
+                        label_="LOC",
+                        text=value,
+                        start_char=0,
+                        end_char=len(value),
+                    )
+                ]
+            )
+
+        engine = PrivacyEngine()
+        engine._ner = NerPersonRecognizer(fake_nlp)
+
+        self.assertEqual(engine.analyze(text, "standard"), [])
+
+    def test_optional_local_ner_rejects_a_location_crossing_paragraphs(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        text = "Parrutta\n\nCorpo della Relazione"
+
+        def fake_nlp(value: str):
+            return SimpleNamespace(
+                ents=[
+                    SimpleNamespace(
+                        label_="LOC",
+                        text=value,
+                        start_char=0,
+                        end_char=len(value),
+                    )
+                ]
+            )
+
+        engine = PrivacyEngine()
+        engine._ner = NerPersonRecognizer(fake_nlp)
+
+        self.assertEqual(engine.analyze(text, "standard"), [])
+
+    def test_optional_local_ner_does_not_extend_a_person_into_an_address(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        text = "Il dott. Mario Rossi Via Appia 12 chiede accesso."
+        extended_person = "Mario Rossi Via Appia"
+
+        def fake_nlp(value: str):
+            start = value.index(extended_person)
+            return SimpleNamespace(
+                ents=[
+                    SimpleNamespace(
+                        label_="PER",
+                        text=extended_person,
+                        start_char=start,
+                        end_char=start + len(extended_person),
+                    )
+                ]
+            )
+
+        engine = PrivacyEngine()
+        engine._ner = NerPersonRecognizer(fake_nlp)
+        findings = engine.analyze(text, "maximum")
+        values = [(finding.entity_type, text[finding.start : finding.end]) for finding in findings]
+
+        self.assertNotIn(("PERSON", extended_person), values)
+        self.assertIn(("PERSON", "Mario Rossi"), values)
+        self.assertTrue(
+            any(
+                entity_type == "ADDRESS" and value.startswith("Via Appia 12")
+                for entity_type, value in values
+            )
+        )
+
+    def test_optional_local_ner_does_not_absorb_an_email_in_a_csv_value(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        text = "Wolfgang Keller,wolfgang@example.com"
+
+        def fake_nlp(value: str):
+            return SimpleNamespace(
+                ents=[SimpleNamespace(label_="PER", text=value, start_char=0, end_char=len(value))]
+            )
+
+        engine = PrivacyEngine()
+        engine._ner = NerPersonRecognizer(fake_nlp)
+
+        findings = engine.analyze(text, "maximum")
+        self.assertNotIn("PERSON", [finding.entity_type for finding in findings])
+        self.assertEqual(engine.anonymize(text, findings, "maximum"), "Wolfgang Keller,<EMAIL>")
+
     def test_detects_pec_as_dedicated_category(self) -> None:
         text = (
             "Email ordinaria mario.rossi@example.com, PEC azienda@pec.it "
@@ -598,6 +911,66 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
 
         self.assertNotIn(("PROTOCOL_CASE_NUMBER", "SUAP-7788-A"), findings)
         self.assertNotIn(("PROTOCOL_CASE_NUMBER", "10/01/2024"), findings)
+
+    def test_detects_cadastral_components_and_preserves_their_labels(self) -> None:
+        text = (
+            "L'immobile è censito al Catasto Fabbricati al foglio 12, "
+            "particella 345, subalterno 6, categoria catastale A/3."
+        )
+        findings = self.findings_for(text)
+        anonymized = self.engine.anonymize(text)
+
+        self.assertIn(("CATASTO", "12"), findings)
+        self.assertIn(("CATASTO", "345"), findings)
+        self.assertIn(("CATASTO", "6"), findings)
+        self.assertIn(("CATASTO", "A/3"), findings)
+        self.assertIn("foglio <DATO_CATASTALE>", anonymized)
+        self.assertIn("particella <DATO_CATASTALE>", anonymized)
+        self.assertIn("subalterno <DATO_CATASTALE>", anonymized)
+        self.assertIn("categoria catastale <DATO_CATASTALE>", anonymized)
+        self.assertNotIn("particella 345", anonymized)
+
+    def test_detects_abbreviated_cadastral_components_in_a_group(self) -> None:
+        text = "Dati N.C.E.U.: fg. 8, p.lla 120, sub. 4, sez. A."
+        findings = self.findings_for(text)
+
+        self.assertIn(("CATASTO", "8"), findings)
+        self.assertIn(("CATASTO", "120"), findings)
+        self.assertIn(("CATASTO", "4"), findings)
+        self.assertIn(("CATASTO", "A"), findings)
+
+    def test_detects_standalone_unambiguous_cadastral_components(self) -> None:
+        text = (
+            "La particella 345 confina con il mappale 77 e il subalterno 6; "
+            "sono richiamate anche le particelle 901 e i mappali 902."
+        )
+        findings = self.findings_for(text)
+
+        self.assertIn(("CATASTO", "345"), findings)
+        self.assertIn(("CATASTO", "77"), findings)
+        self.assertIn(("CATASTO", "6"), findings)
+        self.assertIn(("CATASTO", "901"), findings)
+        self.assertIn(("CATASTO", "902"), findings)
+
+    def test_reversible_cadastral_placeholders_restore_original_values(self) -> None:
+        text = "Particella 345, subalterno 6."
+        findings = self.engine.analyze(text, "reversible")
+        result = self.engine.anonymize_reversible(text, findings)
+
+        self.assertEqual(
+            result.text,
+            "Particella <DATO_CATASTALE_1>, subalterno <DATO_CATASTALE_2>.",
+        )
+        self.assertEqual(
+            [(entry.entity_type, entry.value) for entry in result.mapping],
+            [("CATASTO", "345"), ("CATASTO", "6")],
+        )
+        self.assertEqual(restore_text(result.text, result.mapping), text)
+
+    def test_ambiguous_page_and_section_references_are_not_cadastral(self) -> None:
+        text = "Il documento è composto dal foglio 12. Leggere la sezione A e la parte 3."
+
+        self.assertFalse(any(entity_type == "CATASTO" for entity_type, _value in self.findings_for(text)))
 
     def test_invoice_and_health_codes_require_clear_context(self) -> None:
         text = "La sigla ABC1234 e il numero 80380000000000000000 non bastano da soli."
@@ -671,7 +1044,12 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertEqual(entity_label("HEALTH_CARD"), "tessera sanitaria")
         self.assertEqual(entity_label("SDI_CODE", 2), "codici SDI")
         self.assertEqual(entity_label("PEC_ADDRESS"), "PEC")
+        self.assertEqual(entity_label("POSTAL_CODE"), "CAP")
+        self.assertEqual(entity_placeholder("POSTAL_CODE"), "<CAP>")
         self.assertEqual(entity_label("PROTOCOL_CASE_NUMBER", 2), "numeri protocollo/pratica")
+        self.assertEqual(entity_label("CATASTO"), "dato catastale")
+        self.assertEqual(entity_label("CATASTO", 2), "dati catastali")
+        self.assertEqual(entity_placeholder("CATASTO"), "<DATO_CATASTALE>")
         self.assertEqual(entity_placeholder("PERSON"), "<PERSONA>")
         self.assertEqual(entity_placeholder("IDENTITY_DOCUMENT"), "<DOCUMENTO_IDENTITA>")
         self.assertEqual(entity_placeholder("PHONE_NUMBER"), "<TELEFONO>")
@@ -847,6 +1225,118 @@ class DocumentAnonymizationTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
+
+    def test_normalizes_pdf_text_for_llm_analysis(self) -> None:
+        raw_text = (
+            "Università degli Studi della Basili-\ncata\n"
+            "Dipartimento di Ingegne-\nria.\n\n"
+            "Uﬃcio del sig. Mario Ros-\nsi"
+        )
+
+        normalized = document_service.normalize_pdf_text_for_llm(raw_text)
+
+        self.assertEqual(
+            normalized,
+            "Università degli Studi della Basilicata Dipartimento di Ingegneria.\n\n"
+            "Ufficio del sig. Mario Rossi",
+        )
+        values = [
+            (finding.entity_type, normalized[finding.start : finding.end])
+            for finding in self.engine.analyze(normalized, "standard")
+        ]
+        self.assertIn(
+            ("ORGANIZATION", "Università degli Studi della Basilicata"),
+            values,
+        )
+        self.assertIn(("PERSON", "Mario Rossi"), values)
+
+    def test_pdf_roster_conversion_detects_people_and_location_list(self) -> None:
+        raw_text = (
+            "Personale: 1° M.llo Np. LABANCA Giuseppe (UGP)\n"
+            "Sc. 3^ Cl. Np. CRISTALDI Giovanni\n"
+            "(APG)\n"
+            "Sc. 3^ Cl. Np. IMPERATO Daniele\n"
+            "(APG)\n\n"
+            "Comuni vigilati: TRECCHINA – Località Formica e\n"
+            "Parrutta\n\n"
+            "Corpo della Relazione di Servizio sull’attività eseguita:"
+        )
+
+        normalized = document_service.normalize_pdf_text_for_llm(raw_text)
+        values = [
+            (
+                finding.entity_type,
+                normalized[finding.start : finding.end],
+                finding.source,
+            )
+            for finding in self.engine.analyze(normalized, "standard")
+        ]
+
+        self.assertIn(("PERSON", "LABANCA Giuseppe", "surname_first_rule"), values)
+        self.assertIn(("PERSON", "CRISTALDI Giovanni", "surname_first_rule"), values)
+        self.assertIn(("PERSON", "IMPERATO Daniele", "surname_first_rule"), values)
+        self.assertTrue(
+            any(entity_type == "LOCATION" and value == "TRECCHINA" for entity_type, value, _ in values)
+        )
+        self.assertTrue(
+            any(entity_type == "LOCATION" and value == "Formica" for entity_type, value, _ in values)
+        )
+        self.assertTrue(
+            any(entity_type == "LOCATION" and value == "Parrutta" for entity_type, value, _ in values)
+        )
+        self.assertFalse(
+            any(
+                entity_type == "LOCATION" and "Corpo della Relazione" in value
+                for entity_type, value, _ in values
+            )
+        )
+
+    def test_pdf_municipality_list_detects_rotondella_and_parrutta(self) -> None:
+        raw_text = "Comuni vigilati: Rotondella e\nParrutta"
+        normalized = document_service.normalize_pdf_text_for_llm(raw_text)
+        self.engine._ner = None
+
+        values = [
+            (finding.entity_type, normalized[finding.start : finding.end])
+            for finding in self.engine.analyze(normalized, "standard")
+        ]
+
+        self.assertIn(("LOCATION", "Rotondella"), values)
+        self.assertIn(("LOCATION", "Parrutta"), values)
+        self.assertEqual(
+            self.engine.anonymize(normalized, mode="standard"),
+            "Comuni vigilati: R. e P.",
+        )
+
+    def test_pdf_roster_detects_titlecase_surname_before_given_name_without_ner(self) -> None:
+        text = "Personale impiegato: Cresci Nicola"
+        self.engine._ner = None
+
+        values = [
+            (finding.entity_type, text[finding.start : finding.end], finding.source)
+            for finding in self.engine.analyze(text, "standard")
+        ]
+
+        self.assertIn(("PERSON", "Cresci Nicola", "surname_first_rule"), values)
+        self.assertEqual(
+            self.engine.anonymize(text, mode="standard"),
+            "Personale impiegato: C. N.",
+        )
+
+    def test_pdf_company_spacing_preserves_legal_suffix_in_standard_mode(self) -> None:
+        text = "Ditta di trasporto: GEO -S. S. r. l"
+        self.engine._ner = None
+
+        values = [
+            (finding.entity_type, text[finding.start : finding.end])
+            for finding in self.engine.analyze(text, "standard")
+        ]
+
+        self.assertEqual(values, [("ORGANIZATION", "GEO -S. S. r. l")])
+        self.assertEqual(
+            self.engine.anonymize(text, mode="standard"),
+            "Ditta di trasporto: G. S. r. l",
+        )
 
     def test_anonymizes_txt_and_docx_documents(self) -> None:
         txt_path = self.base / "test.txt"
