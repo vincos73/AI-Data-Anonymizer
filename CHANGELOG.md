@@ -4,6 +4,11 @@ Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
 ## [In sviluppo]
 
+## [0.6.6] - 2026-07-28
+
+### Corretto
+- Le build NER dichiarano esplicitamente `click`, necessario all'interfaccia da riga di comando di spaCy: gli ambienti puliti macOS e Windows possono ora scaricare e includere il modello italiano senza dipendere da pacchetti preesistenti.
+
 ## [0.6.5] - 2026-07-28
 
 ### Modificato
