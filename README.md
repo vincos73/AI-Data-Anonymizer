@@ -10,7 +10,7 @@ La web app esiste solo come opzione avanzata per sviluppatori, demo locali o ins
 
 ## Scarica App Desktop
 
-Versione del codice: **v0.6.5**. Le build già pubblicate possono avere un numero precedente: usa la pagina Releases e controlla il numero mostrato nell'app.
+Versione del codice: **v0.6.6**. Le build già pubblicate possono avere un numero precedente: usa la pagina Releases e controlla il numero mostrato nell'app.
 
 | Sistema | Download |
 | --- | --- |
