@@ -197,6 +197,8 @@ class FindingsPanel(QFrame):
         self._updating_model: bool = False
         self._index_to_item: dict[int, QStandardItem] = {}
         self._pill_buttons: dict[str, QPushButton] = {}
+        self._retired_models: list[QStandardItemModel] = []
+        self._retired_trees: list[QTreeView] = []
 
         self._build_ui()
 
@@ -262,6 +264,7 @@ class FindingsPanel(QFrame):
         )
         self.selection_help_label.setObjectName("SelectionHelp")
         self.selection_help_label.setWordWrap(True)
+        self.selection_help_label.setAccessibleName("Istruzioni per la revisione")
 
         header_layout = QVBoxLayout()
         header_layout.setContentsMargins(0, 0, 0, 0)
@@ -296,40 +299,40 @@ class FindingsPanel(QFrame):
         self._model.setHorizontalHeaderLabels(["Anonimizza", "Valore", "Affidabilità", "Origine"])
         self._model.itemChanged.connect(self._on_item_changed)
 
-        self.tree = QTreeView()
-        self.tree.setObjectName("FindingsTree")
-        self.tree.setAccessibleName("Dati rilevati da anonimizzare")
-        self.tree.setAccessibleDescription(
-            "Le righe spuntate saranno anonimizzate. Premi Spazio per includere o escludere la riga selezionata."
-        )
-        self.tree.setToolTip(
+        self.tree = self._create_tree(self._model)
+        self._panel_layout = QVBoxLayout()
+        self._panel_layout.setContentsMargins(14, 10, 14, 12)
+        self._panel_layout.setSpacing(8)
+        self._panel_layout.addLayout(header_layout)
+        self._panel_layout.addWidget(self.notice_frame)
+        self._panel_layout.addWidget(self.tree, 1)
+        self.setLayout(self._panel_layout)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self._update_pill_labels()
+
+    def _create_tree(self, model: QStandardItemModel) -> QTreeView:
+        tree = QTreeView(self)
+        tree.setModel(model)
+        tree.setObjectName("FindingsTree")
+        tree.setToolTip(
             "Spuntato = sarà anonimizzato. L'affidabilità descrive la regola di rilevamento, "
             "non una probabilità statistica."
         )
-        self.tree.setModel(self._model)
-        self.tree.setUniformRowHeights(True)
-        self.tree.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.tree.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.tree.setAlternatingRowColors(False)
-        self.tree.setRootIsDecorated(False)
-        self.tree.setItemDelegate(_FindingsDelegate(self.tree))
-        self.tree.header().setStretchLastSection(False)
-        self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.tree.header().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.tree.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        self.tree.header().setSectionResizeMode(3, QHeaderView.ResizeToContents)
-        self.tree.clicked.connect(self._handle_clicked)
-        self.tree.installEventFilter(self)
-
-        layout = QVBoxLayout()
-        layout.setContentsMargins(14, 10, 14, 12)
-        layout.setSpacing(8)
-        layout.addLayout(header_layout)
-        layout.addWidget(self.notice_frame)
-        layout.addWidget(self.tree, 1)
-        self.setLayout(layout)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        tree.setUniformRowHeights(True)
+        tree.setSelectionBehavior(QAbstractItemView.SelectRows)
+        tree.setSelectionMode(QAbstractItemView.SingleSelection)
+        tree.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        tree.setAlternatingRowColors(False)
+        tree.setRootIsDecorated(False)
+        tree.setItemDelegate(_FindingsDelegate(tree))
+        tree.header().setStretchLastSection(False)
+        tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        tree.header().setSectionResizeMode(1, QHeaderView.Stretch)
+        tree.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        tree.header().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        tree.clicked.connect(self._handle_clicked)
+        tree.installEventFilter(self)
+        return tree
 
     # ------------------------------------------------------------- public API
 
@@ -498,7 +501,12 @@ class FindingsPanel(QFrame):
     def _update_pill_labels(self) -> None:
         counts = self._pill_counts()
         for category, button in self._pill_buttons.items():
-            button.setText(f"{category} {counts.get(category, 0)}")
+            count = counts.get(category, 0)
+            button.setText(f"{category} {count}")
+            button.setAccessibleName(f"Filtra {category}: {count} elementi")
+            relevant = category == "Tutti" or count > 0
+            button.setEnabled(relevant)
+            button.setMaximumWidth(16_777_215 if relevant else 0)
 
     def _value_text(self, index: int) -> str:
         finding = self._findings[index]
@@ -635,8 +643,6 @@ class FindingsPanel(QFrame):
                 blanks.append(blank)
 
             self._model.appendRow([group_item] + blanks)
-            row = self._model.rowCount() - 1
-            self.tree.setFirstColumnSpanned(row, QModelIndex(), True)
 
             ordered_values = sorted(values.keys(), key=lambda value: (-len(values[value]), value.lower()))
             for value_text in ordered_values:
@@ -646,20 +652,43 @@ class FindingsPanel(QFrame):
                 for idx in child_indices:
                     self._index_to_item[idx] = row_items[0]
 
-            self.tree.setExpanded(group_item.index(), True)
-
     def _rebuild_model(self) -> None:
         self._updating_model = True
+        old_model = self._model
+        old_tree = self.tree
         try:
-            self._model.removeRows(0, self._model.rowCount())
+            new_model = QStandardItemModel(0, 4, self)
+            new_model.setHorizontalHeaderLabels(
+                ["Anonimizza", "Valore", "Affidabilità", "Origine"]
+            )
+            self._model = new_model
             self._index_to_item = {}
             visible = self._visible_indices()
             grouped = len(visible) > GROUP_THRESHOLD
-            self.tree.setRootIsDecorated(grouped)
             if grouped:
                 self._populate_grouped(visible)
             else:
                 self._populate_flat(visible)
+            self._model.itemChanged.connect(self._on_item_changed)
+            new_tree = self._create_tree(self._model)
+            new_tree.setRootIsDecorated(grouped)
+            if grouped:
+                for row in range(self._model.rowCount()):
+                    new_tree.setFirstColumnSpanned(row, QModelIndex(), True)
+                    new_tree.expand(self._model.index(row, 0))
+            self.tree = new_tree
+            self._panel_layout.replaceWidget(old_tree, new_tree)
+            old_tree.setVisible(False)
+            new_tree.setVisible(True)
+            QWidget.setTabOrder(self.search_edit, new_tree)
+            # Cocoa may still be resolving accessibility references for the
+            # previous generation. Keep a small window of complete hidden
+            # views alive so its native objects never point at a mutated model.
+            self._retired_models.append(old_model)
+            self._retired_trees.append(old_tree)
+            if len(self._retired_models) > 8:
+                self._retired_models.pop(0).deleteLater()
+                self._retired_trees.pop(0).deleteLater()
         finally:
             self._updating_model = False
         total = len(self._findings)

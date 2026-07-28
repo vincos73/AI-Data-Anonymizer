@@ -19,7 +19,7 @@ const restorePassphraseInput = document.querySelector("#restore-passphrase-input
 const restoreButton = document.querySelector("#restore-btn");
 const restoreStatus = document.querySelector("#restore-status");
 let modeNotes = {
-  standard: "Standard conserva iniziali e date: per testo da condividere con chatbot valuta Massima protezione.",
+  standard: "Standard mantiene leggibili struttura e contesto, conservando iniziali e date. Per documenti ad alto rischio valuta Massima protezione.",
   maximum: "Massima protezione usa segnaposto completi e redige anche date comuni riconosciute.",
   reversible: "Reversibile sostituisce i dati con segnaposto numerati: conserva la mappa cifrata per poterli ricostruire.",
 };

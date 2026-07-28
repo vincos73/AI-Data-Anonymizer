@@ -4,6 +4,37 @@ Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
 ## [In sviluppo]
 
+## [0.6.5] - 2026-07-28
+
+### Modificato
+- Desktop e web app selezionano ora **Standard** come modalità iniziale, per mantenere più leggibili struttura, ruoli e contesto dei documenti destinati a un LLM.
+- Testi di aiuto e checklist distinguono con maggiore chiarezza la modalità Standard dalla Massima protezione, consigliata per documenti ad alto rischio.
+
+## [0.6.4] - 2026-07-28
+
+### Corretto
+- Enti territoriali e riferimenti catastali ora terminano prima dell'etichetta successiva: espressioni come `Provincia di Potenza. CAP 85100` e `subalterno 6. Email:` non inglobano più `CAP` o `Email` nel dato precedente.
+- Nel testo originale, Tab sposta il focus e `Cmd/Ctrl+Invio` esegue il passaggio corrente senza inserire caratteri nel documento.
+- Nomi, descrizioni e avvisi esposti alle tecnologie assistive seguono ora lo stato reale dell'analisi, della conferma e del risultato.
+- La tabella di revisione non forza più focus e scorrimento sulla prima riga: VoiceOver e le API di accessibilità macOS possono leggerla senza arresti, mentre la selezione resta sotto il controllo dell'utente.
+
+### Migliorato
+- Dopo l'analisi la revisione dei dati diventa l'area principale e il pulsante finale rende esplicita la conferma delle spunte, senza sottrarre il focus al testo.
+- Eliminata la seconda azione visibile di copia; il report finale presenta conteggi, modalità, formato e stato di salvataggio in una struttura più leggibile.
+- I filtri mostrano solo categorie presenti nel documento e distinguono Persone, Contatti, Finanziari, Documenti, Luoghi, Date ed Enti senza nasconderli sotto “Altro”.
+- La barra laterale concentra lo stato locale di regole e NER in un solo avviso e mostra la sezione della mappa esclusivamente quando è pertinente.
+- Aggiunta una guida in-app alla revisione con significato delle spunte, affidabilità, origine, selezione manuale e scorciatoie.
+
+## [0.6.3] - 2026-07-28
+
+### Migliorato
+- Le build desktop includono il modello italiano spaCy `it_core_news_sm` al posto di `it_core_news_lg`, mantenendo il NER locale pronto all'uso con un download molto più leggero.
+- Aggiunto un benchmark end-to-end ripetibile tra modello small e large: entrambi coprono 25/25 casi centrali italiani e amministrativi senza i falsi positivi controllati; il large resta migliore sui nomi internazionali più complessi.
+
+### Corretto
+- Gli script di build preparano esplicitamente `pip`, `setuptools` e `wheel` nei nuovi ambienti virtuali e interrompono subito la build Windows quando un comando nativo fallisce.
+- Il workflow di release usa Python 3.12 anche su macOS e accetta lo ZIP firmato come alternativa al DMG quando il runner non può creare il volume.
+
 ## [0.6.2] - 2026-07-28
 
 ### Aggiunto

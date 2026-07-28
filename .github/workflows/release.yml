@@ -68,6 +68,10 @@ jobs:
         with:
           ref: ${{ env.RELEASE_TAG }}
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Importa certificato Apple se configurato
         env:
           APPLE_DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_BASE64 }}
@@ -101,7 +105,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: OMISSIS-macOS
-          path: dist/OMISSIS-macOS-Apple-Silicon.dmg
+          path: |
+            dist/OMISSIS-macOS-Apple-Silicon.dmg
+            dist/OMISSIS-macOS-Apple-Silicon-v*.zip
           if-no-files-found: error
 
   build-windows:
@@ -140,7 +146,7 @@ jobs:
 
       - name: Genera checksum
         working-directory: release-assets
-        run: sha256sum OMISSIS-macOS-Apple-Silicon.dmg OMISSIS-Windows.zip > SHA256SUMS.txt
+        run: sha256sum OMISSIS-* > SHA256SUMS.txt
 
       - name: Crea o aggiorna la release
         env:

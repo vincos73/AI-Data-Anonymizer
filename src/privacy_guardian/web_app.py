@@ -56,7 +56,7 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 class TextPayload(BaseModel):
     text: str
-    mode: AnonymizationMode = "maximum"
+    mode: AnonymizationMode = "standard"
     passphrase: str | None = None
 
 
@@ -179,7 +179,7 @@ async def anonymize(payload: TextPayload):
 
 @app.post("/api/anonymize-document")
 async def anonymize_document(
-    mode: AnonymizationMode = Form("maximum"),
+    mode: AnonymizationMode = Form("standard"),
     passphrase: str = Form(""),
     file: UploadFile = File(...),
 ):
@@ -223,7 +223,7 @@ async def anonymize_document(
 
 @app.post("/api/analyze-document")
 async def analyze_document(
-    mode: AnonymizationMode = Form("maximum"),
+    mode: AnonymizationMode = Form("standard"),
     file: UploadFile = File(...),
 ):
     _reject_web_reversible(mode)
