@@ -185,7 +185,7 @@ http://127.0.0.1:8080
 
 The web app supports pasted text and supported document uploads, then downloads the anonymized file. By default it accepts up to **100,000 characters** of extracted text and **10 MB** per file.
 
-The web app also defaults to **maximum protection** and shows a short final checklist before sharing.
+The web app also defaults to **Standard** and shows a short final checklist before sharing. Choose maximum protection when minimizing identifying details matters more than readability.
 
 Reversible mode and encrypted-map restoration are available only in the desktop app. The web app exposes Standard and Maximum protection only, avoiding the transmission of passphrases and maps to a server. A future version may add encryption fully in the browser.
 
