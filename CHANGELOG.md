@@ -13,10 +13,24 @@ Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
 ### Corretto
 - Selezioni manuali non redatte su DOCX e PDF: un dato aggiunto con "Aggiungi selezione" compariva nel pannello come "sarà anonimizzato" ma restava visibile nel documento esportato, perché la pipeline DOCX/PDF ri-analizza il testo per parte (nodi XML o pagine) e non teneva conto delle selezioni manuali. Ora ogni occorrenza letterale del valore selezionato viene redatta ovunque compaia nel documento, sia in modalità normale sia reversibile. Il bottone "Aggiungi selezione" è quindi ora disponibile anche su DOCX e PDF (resta escluso solo il formato legacy .doc).
+- Titolo abbreviato "Sig." (o "Sig") non riconosciuto: "Il Sig. Mario Rossi" non faceva scattare il rilevamento della persona e il nome restava in chiaro; funzionavano solo "signor", "sig.ra" e simili.
+- La "e commerciale" (&) spezzava le ragioni sociali: di "Rossi & Figli S.r.l." veniva anonimizzata solo la parte dopo la &, lasciando leggibile metà del nome aziendale.
+- Collisione dei segnaposto in modalità Reversibile: se il testo conteneva già una stringa come `<PERSONA_1>`, lo stesso segnaposto veniva assegnato a un dato reale e la ricostruzione sostituiva entrambe le occorrenze, producendo un testo diverso dall'originale. Ora gli indici già presenti nel testo vengono saltati.
+- OCR non funzionante su Windows: il file immagine temporaneo veniva riaperto per nome mentre era ancora bloccato dal sistema; ora viene scritto e riletto in modo compatibile con Windows.
+- "Salva risultato" scartava le correzioni fatte a mano nel pannello di output per i risultati testuali; ora salva ciò che si vede nel pannello.
+- I file `.csv` anonimizzati venivano salvati come `.txt`; ora mantengono l'estensione `.csv`.
+- Doppia registrazione nel registro attività: l'anonimizzazione di testo incollato registrava anche una voce "Analisi" oltre a quella "Anonimizzazione".
 
 ### Aggiunto
 - Riconoscimento del codice fiscale preceduto dall'etichetta "C.F." o "codice fiscale" anche quando i 16 caratteri sono separati da spazi (es. "C.F. RSS MRA 80A01 H501U"), anche se il checksum formale non è valido: la presenza dell'etichetta è considerata un contesto sufficientemente forte.
 - Riconoscimento di enti/amministrazioni territoriali legati a un luogo: "amministrazione provinciale/comunale/regionale", prefettura, questura, procura (della Repubblica), tribunale e camera di commercio, ad esempio "amministrazione provinciale di Potenza" o "Prefettura di Matera".
+- Riconoscimento degli IBAN internazionali (70 paesi), con verifica del checksum mod-97 e della lunghezza ufficiale per paese; prima venivano rilevati solo gli IBAN italiani.
+- Riconoscimento dei numeri di telefono internazionali con prefisso `+` (es. +44, +1), validati sulla lunghezza E.164; nessun falso positivo su temperature, importi o percentuali.
+- Riconoscimento degli indirizzi scritti in minuscolo (es. "via giuseppe garibaldi 12") quando è presente il numero civico, con lista di esclusione per i modi di dire come "in via preliminare".
+- Riconoscimento NER locale opzionale basato su spaCy per i nomi senza contesto: si installa con l'extra `ner` più un modello italiano, gira interamente offline e si disattiva con `OMISSIS_NER=0`.
+
+### Sicurezza
+- Web app: aggiunti gli header `Content-Security-Policy` e `X-Frame-Options`; le richieste API senza `Content-Length` (body chunked) vengono rifiutate per non aggirare il limite di dimensione.
 
 ## [0.5.0]
 
