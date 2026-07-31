@@ -98,6 +98,20 @@ class DesktopMainWindowTests(unittest.TestCase):
             "Istruzioni per la revisione",
         )
 
+    def test_text_editors_keep_light_text_on_dark_background_across_native_styles(self) -> None:
+        for editor in (self.window.input_text, self.window.output_text):
+            with self.subTest(editor=editor.accessibleName()):
+                self.assertFalse(editor.acceptRichText())
+                self.assertEqual(editor.palette().color(QPalette.Base).name(), "#12181f")
+                self.assertEqual(editor.palette().color(QPalette.Text).name(), "#e8edf2")
+                self.assertEqual(editor.viewport().palette().color(QPalette.Base).name(), "#12181f")
+                self.assertEqual(editor.viewport().palette().color(QPalette.Text).name(), "#e8edf2")
+
+                editor.setPlainText("Testo leggibile")
+                cursor = editor.textCursor()
+                cursor.select(cursor.SelectionType.Document)
+                self.assertEqual(cursor.charFormat().foreground().color().name(), "#e8edf2")
+
     def test_tab_moves_focus_without_inserting_a_character_in_the_source(self) -> None:
         self.window.show()
         self.window.input_text.setPlainText("Mario Rossi")
@@ -471,6 +485,23 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
 
         self.assertEqual(len(self.window._checked_findings()), 2)
         self.assertEqual(self.window.primary_button.text(), "Conferma selezione e anonimizza 2 dati")
+
+    def test_entity_highlights_are_bright_and_keep_readable_text(self) -> None:
+        text = "Mario Rossi"
+        self._set_synthetic_findings(text, [Finding("PERSON", 0, len(text), 0.95)])
+
+        self.window._highlight_findings()
+        highlight_selection = self.window.input_text.extraSelections()[0]
+        highlight = highlight_selection.format
+        self.assertEqual(highlight.background().color().alpha(), 96)
+        self.assertEqual(highlight.foreground().color().name(), "#ffffff")
+
+        self.window._selected_finding_index = 0
+        self.window._highlight_findings()
+        selected_selection = self.window.input_text.extraSelections()[0]
+        selected_highlight = selected_selection.format
+        self.assertEqual(selected_highlight.background().color().alpha(), 144)
+        self.assertEqual(selected_highlight.foreground().color().name(), "#ffffff")
 
     def test_filter_pill_reduces_visible_rows_without_touching_inclusion(self) -> None:
         text = "Mario Rossi, email mario.rossi@example.com, tel 333 1234567."

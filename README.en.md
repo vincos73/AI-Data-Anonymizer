@@ -6,7 +6,7 @@ The main product is the desktop app: install it, open a document, anonymize it l
 
 The web app exists only as an advanced option for developers, local demos, or self-hosted deployments on infrastructure you control.
 
-Current source version: **v0.6.6**. Published builds may temporarily have an earlier version; use the repository [Releases page](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) and check the version shown in the app.
+Current source version: **v0.6.7**. Published builds may temporarily have an earlier version; use the repository [Releases page](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) and check the version shown in the app.
 
 ## What It Does
 

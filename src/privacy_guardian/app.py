@@ -17,6 +17,7 @@ from PySide6.QtGui import (
     QKeySequence,
     QMouseEvent,
     QPainter,
+    QPalette,
     QPixmap,
     QResizeEvent,
     QTextCharFormat,
@@ -92,7 +93,16 @@ from privacy_guardian.reversible import (
     write_encrypted_mapping,
 )
 from privacy_guardian.reporting import ENTITY_LABELS, entity_label, mode_label, mode_note, report_text
-from privacy_guardian.styles import APP_STYLE
+from privacy_guardian.styles import (
+    APP_STYLE,
+    EDITOR_BACKGROUND_COLOR,
+    EDITOR_PLACEHOLDER_COLOR,
+    EDITOR_SELECTION_BACKGROUND_COLOR,
+    EDITOR_SELECTION_TEXT_COLOR,
+    EDITOR_TEXT_COLOR,
+    FINDING_HIGHLIGHT_ALPHA,
+    FINDING_SELECTED_HIGHLIGHT_ALPHA,
+)
 from privacy_guardian.workflow_state import (
     OutputProvenance,
     selection_fingerprint,
@@ -104,6 +114,34 @@ PROJECT_REPO_URL = "https://github.com/vincos73/AI-Data-Anonymizer"
 PROJECT_RELEASES_URL = f"{PROJECT_REPO_URL}/releases"
 TESSERACT_WINDOWS_DOWNLOAD_URL = "https://github.com/UB-Mannheim/tesseract/wiki"
 PROJECT_SECURITY_URL = f"{PROJECT_REPO_URL}/blob/main/SICUREZZA.md"
+
+
+def _configure_text_editor(editor: QTextEdit) -> None:
+    """Make the dark editor palette explicit across native Qt styles.
+
+    Qt stylesheets paint the expected colors on macOS, but on Windows the
+    QTextDocument and its viewport can retain the native light-theme palette.
+    That leaves plain text black even though the editor surface is dark.
+    Setting both palettes and the document's current text format avoids that
+    platform-dependent fallback. Rich-text paste is disabled so pasted source
+    cannot reintroduce an unreadable foreground color.
+    """
+
+    palette_roles = {
+        QPalette.Base: EDITOR_BACKGROUND_COLOR,
+        QPalette.Text: EDITOR_TEXT_COLOR,
+        QPalette.PlaceholderText: EDITOR_PLACEHOLDER_COLOR,
+        QPalette.Highlight: EDITOR_SELECTION_BACKGROUND_COLOR,
+        QPalette.HighlightedText: EDITOR_SELECTION_TEXT_COLOR,
+    }
+    for target in (editor, editor.viewport()):
+        palette = target.palette()
+        for role, color in palette_roles.items():
+            palette.setColor(role, QColor(color))
+        target.setPalette(palette)
+
+    editor.setAcceptRichText(False)
+    editor.setTextColor(QColor(EDITOR_TEXT_COLOR))
 
 
 def _asset_path(filename: str) -> Path:
@@ -274,6 +312,7 @@ class MainWindow(QMainWindow):
         self.setAcceptDrops(True)
 
         self.input_text = QTextEdit()
+        _configure_text_editor(self.input_text)
         self.input_text.setAcceptDrops(False)
         self.input_text.setPlaceholderText("Incolla qui il testo da controllare oppure carica un documento.")
         self.input_text.setAccessibleName("Testo originale")
@@ -284,6 +323,7 @@ class MainWindow(QMainWindow):
         self._input_viewport.installEventFilter(self)
 
         self.output_text = QTextEdit()
+        _configure_text_editor(self.output_text)
         self.output_text.setAcceptDrops(False)
         self.output_text.setPlaceholderText("Il testo anonimizzato apparirà qui.")
         self.output_text.setAccessibleName("Testo anonimizzato")
@@ -1954,9 +1994,14 @@ class MainWindow(QMainWindow):
             if not self._is_row_checked(row):
                 continue
             color = QColor(entity_color(finding.entity_type))
-            color.setAlpha(72 if row == self._selected_finding_index else 40)
+            color.setAlpha(
+                FINDING_SELECTED_HIGHLIGHT_ALPHA
+                if row == self._selected_finding_index
+                else FINDING_HIGHLIGHT_ALPHA
+            )
             char_format = QTextCharFormat()
             char_format.setBackground(color)
+            char_format.setForeground(QColor(EDITOR_SELECTION_TEXT_COLOR))
             cursor = QTextCursor(self.input_text.document())
             cursor.setPosition(finding.start)
             cursor.setPosition(finding.end, QTextCursor.KeepAnchor)
