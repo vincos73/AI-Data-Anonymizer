@@ -4,6 +4,14 @@ Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
 ## [In sviluppo]
 
+## [0.6.7] - 2026-07-31
+
+### Corretto
+- Su Windows il testo originale e il risultato mantengono esplicitamente testo chiaro su fondo scuro, senza dipendere dalla palette nativa di Qt o dai colori incorporati nel testo incollato.
+
+### Migliorato
+- Le parole rilevate nel testo originale usano evidenziazioni più luminose e distinguono con maggiore decisione il dato attivo, conservando testo bianco leggibile.
+
 ## [0.6.6] - 2026-07-28
 
 ### Corretto

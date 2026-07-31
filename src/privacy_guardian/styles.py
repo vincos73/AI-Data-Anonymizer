@@ -12,6 +12,19 @@
 #   step-done bg  #1A2E24   step-done border #2E6B4A  step-done text #7DD8A8
 #   mode-selected bg #14202B   mode-selected border #2B6D8F
 
+EDITOR_BACKGROUND_COLOR = "#12181F"
+EDITOR_TEXT_COLOR = "#E8EDF2"
+EDITOR_PLACEHOLDER_COLOR = "#8899AA"
+EDITOR_SELECTION_BACKGROUND_COLOR = "#2B6D8F"
+EDITOR_SELECTION_TEXT_COLOR = "#FFFFFF"
+
+# Inline entity highlights sit over the dark editor background. Keep the
+# ordinary state clearly visible and make the active finding decisively
+# brighter without sacrificing white-text contrast for any category color.
+FINDING_HIGHLIGHT_ALPHA = 96
+FINDING_SELECTED_HIGHLIGHT_ALPHA = 144
+
+
 APP_STYLE = """
 QMainWindow {
     background: #12181F;
