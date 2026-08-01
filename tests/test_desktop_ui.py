@@ -58,6 +58,7 @@ class DesktopMainWindowTests(unittest.TestCase):
         self.window = MainWindow()
 
     def tearDown(self) -> None:
+        self.window.clear_all(force=True)
         self.window.close()
         self.window.deleteLater()
 
@@ -77,11 +78,146 @@ class DesktopMainWindowTests(unittest.TestCase):
         self.assertEqual(self.window.primary_button.text(), "Analizza dati")
         self.assertTrue(self.window.primary_button.isEnabled())
 
+    def test_guided_primary_starts_with_load_and_keeps_paste_available(self) -> None:
+        self.assertEqual(self.window.primary_button.text(), "Carica documento")
+        self.assertTrue(self.window.primary_button.isEnabled())
+        self.assertTrue(self.window.load_button.isHidden())
+        self.assertTrue(self.window.save_button.isHidden())
+        self.assertTrue(self.window.clear_button.isHidden())
+        self.assertTrue(self.window.add_selection_button.isHidden())
+        self.assertEqual(
+            [row.objectName() for row in self.window.step_rows],
+            ["StepRowCurrent"] + ["StepRowPending"] * 4,
+        )
+
+        with mock.patch.object(self.window, "open_file") as open_file:
+            self.window._primary_action()
+
+        open_file.assert_called_once_with()
+        self.window.input_text.setPlainText("Testo incollato nell'Originale.")
+        self.assertEqual(self.window.input_text.toPlainText(), "Testo incollato nell'Originale.")
+        self.assertEqual(self.window.primary_button.text(), "Analizza dati")
+        self.assertTrue(self.window.load_button.isHidden())
+        self.assertFalse(self.window.clear_button.isHidden())
+        self.assertTrue(self.window.save_button.isHidden())
+        self.assertTrue(self.window.add_selection_button.isHidden())
+
+    def test_loaded_document_populates_original_before_analysis(self) -> None:
+        document = LoadedDocument(
+            path=Path("documento-prova.docx"),
+            text="Mario Rossi scrive a mario@example.com.",
+            extension=".docx",
+        )
+
+        self.window._apply_loaded_document(document)
+
+        self.assertEqual(self.window.input_text.toPlainText(), document.text)
+        self.assertEqual(self.window.document_label.text(), "Documento caricato: documento-prova.docx")
+        self.assertEqual(self.window.primary_button.text(), "Analizza dati")
+        self.assertTrue(self.window.report_label.isHidden())
+        self.assertEqual(
+            [row.objectName() for row in self.window.step_rows],
+            ["StepRowDone", "StepRowCurrent", "StepRowPending", "StepRowPending", "StepRowPending"],
+        )
+
+    def test_guided_review_preserves_original_and_highlights_before_protection(self) -> None:
+        text = "Mario Rossi scrive a mario@example.com."
+        self.window.input_text.setPlainText(text)
+        person = Finding("PERSON", 0, len("Mario Rossi"), 0.95)
+
+        with mock.patch.object(self.window.engine, "analyze", return_value=[person]):
+            self.window._primary_action()
+
+        self.assertEqual(self.window.input_text.toPlainText(), text)
+        self.assertEqual(len(self.window.input_text.extraSelections()), 1)
+        self.assertTrue(self.window._analysis_preview_active)
+        self.assertTrue(self.window.output_text.toPlainText())
+        self.assertNotIn("Mario Rossi", self.window.output_text.toPlainText())
+        self.assertEqual(self.window.output_panel_title.text(), "Anteprima anonimizzata")
+        self.assertFalse(self.window.output_preview_notice.isHidden())
+        self.assertTrue(self.window.output_text.isReadOnly())
+        self.assertEqual(self.window.primary_button.text(), "Ho controllato, continua")
+        self.assertFalse(self.window.add_selection_button.isHidden())
+        self.assertFalse(self.window.add_selection_button.isEnabled())
+        self.assertEqual(
+            [row.objectName() for row in self.window.step_rows],
+            ["StepRowDone", "StepRowDone", "StepRowCurrent", "StepRowPending", "StepRowPending"],
+        )
+
+        self.window._primary_action()
+
+        self.assertEqual(self.window.input_text.toPlainText(), text)
+        self.assertEqual(len(self.window.input_text.extraSelections()), 1)
+        self.assertTrue(self.window._analysis_preview_active)
+        self.assertTrue(self.window.output_text.toPlainText())
+        self.assertEqual(self.window.primary_button.text(), "Crea copia protetta")
+        self.assertFalse(self.window.add_selection_button.isHidden())
+        self.assertTrue(self.window.add_selection_button.isEnabled())
+        self.assertEqual(self.window.add_selection_button.text(), "Torna alla revisione")
+        self.assertEqual(
+            [row.objectName() for row in self.window.step_rows],
+            ["StepRowDone", "StepRowDone", "StepRowDone", "StepRowCurrent", "StepRowPending"],
+        )
+
+        self.window._primary_action()
+
+        self.assertEqual(self.window.input_text.toPlainText(), text)
+        self.assertTrue(self.window.output_text.toPlainText())
+        self.assertFalse(self.window._analysis_preview_active)
+        self.assertEqual(self.window.output_panel_title.text(), "Testo anonimizzato")
+        self.assertTrue(self.window.output_preview_notice.isHidden())
+        self.assertFalse(self.window.output_text.isReadOnly())
+        self.assertEqual(self.window.primary_button.text(), "Copia per ChatGPT")
+        self.assertFalse(self.window.save_button.isHidden())
+        self.assertEqual(self.window.save_button.text(), "Salva anche come file")
+        self.assertEqual(
+            [row.objectName() for row in self.window.step_rows],
+            ["StepRowDone"] * 4 + ["StepRowCurrent"],
+        )
+        self.window.clear_all(force=True)
+
+    def test_review_can_be_reopened_before_creating_the_protected_copy(self) -> None:
+        text = "Mario Rossi"
+        self.window.input_text.setPlainText(text)
+        with mock.patch.object(
+            self.window.engine,
+            "analyze",
+            return_value=[Finding("PERSON", 0, len(text), 0.95)],
+        ):
+            self.window.analyze_text()
+
+        self.window._primary_action()
+        self.assertEqual(self.window.primary_button.text(), "Crea copia protetta")
+        self.window._review_secondary_action()
+
+        self.assertEqual(self.window.primary_button.text(), "Ho controllato, continua")
+        self.assertEqual(self.window.add_selection_button.text(), "Aggiungi dato mancante")
+        self.assertFalse(self.window.add_selection_button.isEnabled())
+        self.assertIn("Revisione riaperta", self.window.statusBar().currentMessage())
+
+    def test_primary_attention_is_brief(self) -> None:
+        self.window.input_text.setPlainText("Mario Rossi")
+        QApplication.processEvents()
+        self.assertTrue(self.window.primary_button.property("attention"))
+
+        QTest.qWait(800)
+
+        self.assertFalse(self.window.primary_button.property("attention"))
+
     def test_toolbar_adapts_and_main_actions_have_shortcuts(self) -> None:
         self.window.show()
         self.window.resize(960, 640)
+        self.window.input_text.setPlainText("Testo di prova")
         QApplication.processEvents()
         self.assertTrue(self.window.document_toolbar._compact)
+        self.assertFalse(self.window.clear_button.isHidden())
+        clear_right = self.window.clear_button.mapToGlobal(
+            self.window.clear_button.rect().bottomRight()
+        ).x()
+        primary_right = self.window.primary_button.mapToGlobal(
+            self.window.primary_button.rect().bottomRight()
+        ).x()
+        self.assertLessEqual(abs(clear_right - primary_right), 2)
         self.window.resize(1400, 760)
         QApplication.processEvents()
         self.assertFalse(self.window.document_toolbar._compact)
@@ -156,17 +292,28 @@ class DesktopMainWindowTests(unittest.TestCase):
 
         self.assertEqual(
             self.window.primary_button.accessibleName(),
-            "Conferma selezione e anonimizza 1 dato",
+            "Ho controllato, continua",
         )
-        self.assertIn("Conferma le spunte", self.window.primary_button.accessibleDescription())
+        self.assertIn("evidenziazioni", self.window.primary_button.accessibleDescription())
+
+        self.window._primary_action()
+        self.assertEqual(self.window.primary_button.accessibleName(), "Crea copia protetta")
 
         self.window.anonymize_text()
-        self.assertEqual(self.window.report_label.accessibleName(), "Verifica finale")
+        self.assertEqual(
+            self.window.result_frame.accessibleName(),
+            "Riepilogo della copia protetta",
+        )
+        self.assertTrue(self.window.result_frame.accessibleDescription())
+        self.assertEqual(
+            self.window.report_label.accessibleName(),
+            "Controlli prima di condividere",
+        )
         self.assertEqual(
             self.window.report_label.accessibleDescription(),
             self.window.report_label.text(),
         )
-        self.assertEqual(self.window.primary_button.accessibleName(), "Copia risultato")
+        self.assertEqual(self.window.primary_button.accessibleName(), "Copia per ChatGPT")
         self.window.clear_all(force=True)
 
     def test_message_box_text_has_contrast_on_native_light_surface(self) -> None:
@@ -191,7 +338,7 @@ class DesktopMainWindowTests(unittest.TestCase):
             self.window.analyze_text()
 
         self.assertFalse(self.window.findings_stale)
-        self.assertEqual(self.window.primary_button.text(), "Conferma e genera senza sostituzioni")
+        self.assertEqual(self.window.primary_button.text(), "Ho controllato, continua")
 
     def test_analysis_prioritizes_the_review_workspace(self) -> None:
         text = "Mario Rossi"
@@ -213,7 +360,7 @@ class DesktopMainWindowTests(unittest.TestCase):
         self.assertFalse(self.window.findings_panel.tree.currentIndex().isValid())
         self.assertEqual(
             self.window.primary_button.text(),
-            "Conferma selezione e anonimizza 1 dato",
+            "Ho controllato, continua",
         )
         self.window.clear_all(force=True)
 
@@ -225,6 +372,7 @@ class OutputSafetyTests(unittest.TestCase):
         self.window = MainWindow()
 
     def tearDown(self) -> None:
+        self.window.clear_all(force=True)
         self.window.close()
         self.window.deleteLater()
 
@@ -250,17 +398,133 @@ class OutputSafetyTests(unittest.TestCase):
         self._prepare_output(exclude_email=True)
 
         self.assertIsNotNone(self.window._output_provenance)
+        self.assertFalse(self.window.result_frame.isHidden())
         self.assertFalse(self.window.output_panel.isHidden())
-        self.assertGreater(self.window.report_label.maximumHeight(), 0)
         self.assertGreater(self.window.text_splitter.sizes()[1], 0)
-        self.assertIn("Verifica finale", self.window.report_label.text())
-        self.assertIn("Modalità: Standard", self.window.report_label.text())
-        self.assertIn("Anonimizzati: 1/2", self.window.report_label.text())
-        self.assertIn("Esclusi: 1", self.window.report_label.text())
+        self.assertEqual(self.window.result_title_label.text(), "Copia protetta pronta")
+        self.assertIn("testo di partenza", self.window.result_subtitle_label.text())
+        self.assertEqual(self.window.result_metric_label.text(), "1 dato protetto")
+        self.assertIn("Modalità Standard", self.window.result_meta_label.text())
+        self.assertIn("Formato TXT", self.window.result_meta_label.text())
+        self.assertIn("1 persona", self.window.result_categories_label.text())
+        self.assertIn("1 rilevamento resterà leggibile", self.window.report_label.text())
+        self.assertEqual(self.window.result_state_label.text(), "PRONTA DA COPIARE")
         self.assertTrue(self.window.copy_button.isEnabled())
         self.assertTrue(self.window.copy_button.isHidden())
-        self.assertEqual(self.window.primary_button.text(), "Copia risultato")
+        self.assertEqual(self.window.primary_button.text(), "Copia per ChatGPT")
         self.assertTrue(self.window.save_button.isEnabled())
+        self.assertFalse(self.window.save_button.isHidden())
+        self.assertTrue(self.window.findings_panel.isHidden())
+        self.assertFalse(self.window.add_selection_button.isHidden())
+        self.assertEqual(self.window.add_selection_button.text(), "Modifica selezioni")
+
+        self.window.copy_output()
+
+        self.assertEqual(self.window.result_state_label.text(), "COPIATA")
+        self.assertIn("ChatGPT", self.window.statusBar().currentMessage())
+
+    def test_document_result_uses_save_as_the_single_primary_action(self) -> None:
+        self._prepare_output()
+        self.window.anonymized_document = AnonymizedDocument(
+            filename="documento_anonimizzato.docx",
+            data=b"PK",
+            text=self.window.output_text.toPlainText(),
+            findings=[],
+        )
+        self.window.output_text_dirty = False
+        self.window._sync_action_state()
+
+        self.assertEqual(self.window.primary_button.text(), "Salva copia protetta")
+        self.assertTrue(self.window.primary_button.isEnabled())
+        self.assertTrue(self.window.save_button.isHidden())
+
+        with mock.patch.object(self.window, "save_output") as save_output:
+            self.window._primary_action()
+
+        save_output.assert_called_once_with()
+
+        self.window._result_used = True
+        self.window._sync_action_state()
+        self.assertEqual(self.window.primary_button.text(), "Salva di nuovo")
+        self.assertEqual(
+            [row.objectName() for row in self.window.step_rows],
+            ["StepRowDone"] * 5,
+        )
+
+    def test_final_result_can_reopen_the_review_without_reusing_stale_output(self) -> None:
+        self._prepare_output()
+
+        self.assertTrue(self.window.findings_panel.isHidden())
+
+        self.window._review_secondary_action()
+
+        self.assertFalse(self.window.findings_panel.isHidden())
+        self.assertTrue(self.window._managed_output_is_stale())
+        self.assertEqual(self.window.result_title_label.text(), "Risultato da rigenerare")
+        self.assertEqual(self.window.primary_button.text(), "Ho controllato, continua")
+        self.assertIn("revisione riaperta", self.window.result_subtitle_label.text())
+
+    def test_pdf_result_explains_original_format_ocr_and_save_state(self) -> None:
+        text = "Mario Rossi"
+        finding = Finding("PERSON", 0, len(text), 0.95)
+        self.window.loaded_document = LoadedDocument(
+            path=Path("scansione.pdf"),
+            text=text,
+            extension=".pdf",
+            ocr_pages=(1,),
+        )
+        self.window.input_text.setPlainText(text)
+        self.window.document_text_dirty = False
+        self.window.findings = [finding]
+        self.window.findings_stale = False
+        self.window._findings_source_text = text
+        self.window._findings_mode = self.window._selected_mode()
+        self.window._fill_table()
+
+        document = AnonymizedDocument(
+            filename="scansione_anonimizzato.pdf",
+            data=b"%PDF-1.4",
+            text="M. R.",
+            findings=[finding],
+        )
+        with mock.patch(
+            "privacy_guardian.desktop_workflows.anonymize_loaded_document",
+            return_value=document,
+        ):
+            self.window.anonymize_text()
+
+        self.assertEqual(self.window.result_title_label.text(), "Copia protetta pronta")
+        self.assertIn("documento originale", self.window.result_subtitle_label.text())
+        self.assertEqual(self.window.result_metric_label.text(), "1 dato protetto")
+        self.assertIn("PDF rasterizzato", self.window.result_meta_label.text())
+        self.assertIn("OCR locale", self.window.report_label.text())
+        self.assertEqual(self.window.report_label.objectName(), "ResultAttentionWarning")
+        self.assertEqual(self.window.result_state_label.text(), "DA SALVARE")
+        self.assertEqual(self.window.primary_button.text(), "Salva copia protetta")
+
+        with mock.patch(
+            "privacy_guardian.app.QFileDialog.getSaveFileName",
+            return_value=("/tmp/scansione_anonimizzato.pdf", ""),
+        ), mock.patch("privacy_guardian.app.atomic_write_bytes"):
+            self.window.save_output()
+
+        self.assertEqual(self.window.result_state_label.text(), "SALVATA")
+
+    def test_zero_findings_final_state_requires_extra_attention(self) -> None:
+        text = "Testo senza dati riconosciuti."
+        self.window.input_text.setPlainText(text)
+        self.window.findings = []
+        self.window.findings_stale = False
+        self.window._findings_source_text = text
+        self.window._findings_mode = self.window._selected_mode()
+        self.window._fill_table()
+
+        self.window.anonymize_text()
+
+        self.assertEqual(self.window.result_metric_label.text(), "0 dati protetti")
+        self.assertTrue(self.window.result_categories_label.isHidden())
+        self.assertIn("Nessun dato", self.window.report_label.text())
+        self.assertEqual(self.window.report_label.objectName(), "ResultAttentionWarning")
 
     def test_default_rail_hides_reversible_map_status(self) -> None:
         self.assertTrue(self.window.map_section_label.isHidden())
@@ -278,7 +542,9 @@ class OutputSafetyTests(unittest.TestCase):
         self.assertFalse(self.window.save_button.isEnabled())
         self.assertFalse(self.window.output_text.isEnabled())
         self.assertEqual(self.window.primary_button.text(), "Rianalizza dati")
-        self.assertIn("Risultato da rigenerare", self.window.report_label.text())
+        self.assertEqual(self.window.result_title_label.text(), "Risultato da rigenerare")
+        self.assertEqual(self.window.result_state_label.text(), "NON UTILIZZABILE")
+        self.assertIn("modalità di protezione", self.window.result_subtitle_label.text())
 
     def test_source_change_makes_existing_output_unusable(self) -> None:
         self._prepare_output()
@@ -288,7 +554,7 @@ class OutputSafetyTests(unittest.TestCase):
         self.assertTrue(self.window._managed_output_is_stale())
         self.assertFalse(self.window.copy_button.isEnabled())
         self.assertFalse(self.window.save_button.isEnabled())
-        self.assertIn("testo sorgente", self.window.report_label.text())
+        self.assertIn("testo sorgente", self.window.result_subtitle_label.text())
 
     def test_selection_change_requires_regeneration(self) -> None:
         self._prepare_output()
@@ -296,7 +562,7 @@ class OutputSafetyTests(unittest.TestCase):
         self.window.findings_panel._index_to_item[0].setCheckState(Qt.Unchecked)
 
         self.assertTrue(self.window._managed_output_is_stale())
-        self.assertEqual(self.window.primary_button.text(), "Conferma e rigenera 1 dato")
+        self.assertEqual(self.window.primary_button.text(), "Ho controllato, continua")
         self.assertFalse(self.window.copy_button.isEnabled())
         self.assertFalse(self.window.save_button.isEnabled())
 
@@ -321,7 +587,7 @@ class OutputSafetyTests(unittest.TestCase):
         self.assertFalse(self.window.map_section_label.isHidden())
         self.assertFalse(self.window.map_status_label.isHidden())
         self.assertFalse(self.window._reversible_map_saved)
-        self.assertIn("Mappa reversibile ancora da salvare", self.window.report_label.text())
+        self.assertIn("Salva la mappa cifrata", self.window.report_label.text())
         self.assertEqual(self.window.map_status_label.objectName(), "MapStatusWarning")
 
         with mock.patch(
@@ -333,7 +599,7 @@ class OutputSafetyTests(unittest.TestCase):
             self.window.save_reversible_map()
 
         self.assertTrue(self.window._reversible_map_saved)
-        self.assertIn("Mappa reversibile salvata", self.window.report_label.text())
+        self.assertNotIn("Salva la mappa cifrata", self.window.report_label.text())
         self.assertEqual(self.window.map_status_label.objectName(), "MapStatusReady")
 
     def test_failed_regeneration_preserves_previous_output(self) -> None:
@@ -454,6 +720,7 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         self.window = MainWindow()
 
     def tearDown(self) -> None:
+        self.window.clear_all(force=True)
         self.window.close()
         self.window.deleteLater()
 
@@ -477,14 +744,14 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         self._set_synthetic_findings(text, findings)
         self.window._sync_action_state()
         self.assertEqual(len(self.window._checked_findings()), 3)
-        self.assertEqual(self.window.primary_button.text(), "Conferma selezione e anonimizza 3 dati")
+        self.assertEqual(self.window.primary_button.text(), "Ho controllato, continua")
 
         email_index = next(i for i, f in enumerate(findings) if f.entity_type == "EMAIL_ADDRESS")
         item = self.window.findings_panel._index_to_item[email_index]
         item.setCheckState(Qt.Unchecked)
 
         self.assertEqual(len(self.window._checked_findings()), 2)
-        self.assertEqual(self.window.primary_button.text(), "Conferma selezione e anonimizza 2 dati")
+        self.assertEqual(self.window.primary_button.text(), "Ho controllato, continua")
 
     def test_entity_highlights_are_bright_and_keep_readable_text(self) -> None:
         text = "Mario Rossi"
@@ -543,6 +810,27 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         panel._pill_buttons["Luoghi"].setChecked(True)
         self.assertEqual(panel._model.rowCount(), 1)
         self.assertEqual(panel._model.item(0, 1).text(), "Potenza")
+
+    def test_filters_appear_only_when_results_make_them_useful(self) -> None:
+        panel = self.window.findings_panel
+        self.assertTrue(panel.pill_scroll.isHidden())
+        self.assertTrue(panel.search_edit.isHidden())
+
+        self._set_synthetic_findings(
+            "Mario Rossi",
+            [Finding("PERSON", 0, 11, 0.95)],
+        )
+        self.assertFalse(panel.pill_scroll.isHidden())
+        self.assertTrue(panel.search_edit.isHidden())
+
+        text = " ".join(f"Nome{i}" for i in range(8))
+        findings: list[Finding] = []
+        start = 0
+        for value in text.split():
+            findings.append(Finding("PERSON", start, start + len(value), 0.95))
+            start += len(value) + 1
+        self._set_synthetic_findings(text, findings)
+        self.assertFalse(panel.search_edit.isHidden())
 
     def test_search_filters_rows_by_value(self) -> None:
         text = "Mario Rossi, email mario.rossi@example.com, tel 333 1234567."
@@ -708,18 +996,45 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         self.assertIn("PDF convertito in testo", self.window.document_label.text())
         self.assertTrue(self.window.findings_panel.notice_frame.isHidden())
 
-    def test_pdf_notice_offers_text_conversion(self) -> None:
+    def test_pdf_choice_persists_after_analysis_and_explains_the_tradeoff(self) -> None:
         self._load_fake_document_with_findings(
             ".pdf",
             "Mario Rossi",
             [Finding("PERSON", 0, 11, 0.9)],
         )
 
-        self.assertFalse(self.window.findings_panel.notice_frame.isHidden())
-        self.assertEqual(
-            self.window.findings_panel.notice_button.text(),
-            "Converti PDF in testo →",
+        self.assertTrue(self.window.findings_panel.notice_frame.isHidden())
+        self.assertFalse(self.window.pdf_choice_frame.isHidden())
+        self.assertTrue(self.window.pdf_choice_radios["pdf"].isChecked())
+        self.assertTrue(self.window._analysis_preview_active)
+        self.assertTrue(self.window.output_text.toPlainText())
+        self.assertNotIn("Mario Rossi", self.window.output_text.toPlainText())
+        self.assertEqual(self.window.output_panel_title.text(), "Anteprima anonimizzata")
+        self.assertIn(
+            "PDF rasterizzato",
+            self.window.pdf_choice_radios["pdf"].accessibleDescription(),
         )
+        self.assertIn(
+            "può migliorare il riconoscimento",
+            self.window.pdf_choice_radios["text"].accessibleDescription(),
+        )
+
+        finding_item = self.window.findings_panel._index_to_item[0]
+        finding_item.setCheckState(Qt.Unchecked)
+        self.assertIn("Mario Rossi", self.window.output_text.toPlainText())
+        finding_item.setCheckState(Qt.Checked)
+        self.assertNotIn("Mario Rossi", self.window.output_text.toPlainText())
+
+        self.window.pdf_choice_radios["text"].setChecked(True)
+
+        self.assertEqual(self.window.primary_button.text(), "Trasforma e analizza")
+        self.assertFalse(self.window.pdf_choice_frame.isHidden())
+        with mock.patch.object(self.window, "_extract_document_as_text") as extract_as_text:
+            self.window._primary_action()
+        extract_as_text.assert_called_once_with()
+
+        self.window.pdf_choice_radios["pdf"].setChecked(True)
+        self.assertEqual(self.window.primary_button.text(), "Ho controllato, continua")
 
     def _load_fake_document_with_findings(
         self, extension: str, text: str, findings: list[Finding]
@@ -736,6 +1051,7 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         self.window._findings_source_text = text
         self.window._findings_mode = self.window._selected_mode()
         self.window._fill_table()
+        self.window._refresh_analysis_preview()
         self.window._sync_action_state()
 
     def test_docx_value_level_toggle_propagates_to_same_value_rows(self) -> None:
@@ -754,7 +1070,7 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
         self.assertTrue(self.window._value_level_selection_active())
         first_item = panel._index_to_item[0]
         self.assertTrue(first_item.flags() & Qt.ItemIsUserCheckable)
-        self.assertEqual(self.window.primary_button.text(), "Conferma selezione e anonimizza 3 dati")
+        self.assertEqual(self.window.primary_button.text(), "Ho controllato, continua")
         # Il .docx supporta sia le esclusioni sia le selezioni manuali: l'avviso (riservato
         # ai formati non supportati come .doc) resta nascosto.
         self.assertTrue(panel.notice_frame.isHidden())
@@ -763,7 +1079,7 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
 
         self.assertEqual(panel.included_mask(), [False, True, False])
         self.assertEqual(len(self.window._checked_findings()), 1)
-        self.assertEqual(self.window.primary_button.text(), "Conferma selezione e anonimizza 1 dato")
+        self.assertEqual(self.window.primary_button.text(), "Ho controllato, continua")
 
     def test_plain_text_toggle_stays_per_occurrence(self) -> None:
         email = "mario@example.com"
@@ -837,7 +1153,9 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
 
         self.assertIsNone(captured.get("extra_values"))
 
-    def test_add_selection_button_enabled_for_pdf_and_docx(self) -> None:
+    def test_add_missing_data_is_available_during_review_for_pdf_and_docx(self) -> None:
+        from PySide6.QtGui import QTextCursor
+
         for extension in (".pdf", ".docx"):
             with self.subTest(extension=extension):
                 self.window.loaded_document = LoadedDocument(
@@ -845,8 +1163,25 @@ class FindingsPanelIntegrationTests(unittest.TestCase):
                 )
                 self.window.document_text_dirty = False
                 self.window.input_text.setPlainText("Testo di prova")
+                self.window.findings = []
+                self.window.findings_stale = False
+                self.window._findings_source_text = "Testo di prova"
+                self.window._findings_mode = self.window._selected_mode()
+                self.window._fill_table()
                 self.window._sync_action_state()
+
+                self.assertEqual(self.window.primary_button.text(), "Ho controllato, continua")
+                self.assertFalse(self.window.add_selection_button.isHidden())
+                self.assertFalse(self.window.add_selection_button.isEnabled())
+
+                cursor = self.window.input_text.textCursor()
+                cursor.setPosition(0)
+                cursor.setPosition(len("Testo"), QTextCursor.KeepAnchor)
+                self.window.input_text.setTextCursor(cursor)
+
                 self.assertTrue(self.window.add_selection_button.isEnabled())
+                self.assertEqual(self.window.add_selection_button.text(), "Aggiungi dato mancante")
+                self.window.clear_all(force=True)
 
     def test_manual_selection_expands_to_every_occurrence_in_plain_text(self) -> None:
         from PySide6.QtGui import QTextCursor

@@ -6,7 +6,7 @@ The main product is the desktop app: install it, open a document, anonymize it l
 
 The web app exists only as an advanced option for developers, local demos, or self-hosted deployments on infrastructure you control.
 
-Current source version: **v0.6.7**. Published builds may temporarily have an earlier version; use the repository [Releases page](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) and check the version shown in the app.
+Current source version: **v0.6.11**. Published builds may temporarily have an earlier version; use the repository [Releases page](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) and check the version shown in the app.
 
 ## What It Does
 
@@ -19,6 +19,8 @@ Current source version: **v0.6.7**. Published builds may temporarily have an ear
 - In maximum-protection mode, replaces detected personal data with full placeholders and also redacts common date formats.
 - Keeps `.docx` formatting as much as possible while replacing sensitive text.
 - Can convert PDF extraction into normalized text for stronger recognition and LLM-oriented `.txt` output.
+- Uses a guided five-step workflow with one primary action at a time, from loading through final use.
+- Shows a structured final safety report with protected-data counts, categories, mode, format, save state, and review warnings.
 - Provides a desktop app, with a self-hosted web app for advanced use cases.
 
 Detected data includes:
@@ -99,15 +101,17 @@ Typical workflow:
 2. Load a supported document, drag it into the window, or paste text.
 3. Choose the protection mode and analyze the content.
 4. Review every detected value. Checked means “will be anonymized”; unchecked means “will remain visible”. Search, filter, or add a missing selection manually.
-5. Confirm the selection and generate the anonymized result.
-6. Review the structured final report with counts, mode, format, save state, and safety warnings.
-7. Read the result before sharing it, then save or copy it.
+5. Click **Ho controllato, continua**, then **Crea copia protetta**. The side workflow always shows the current step.
+6. Review the structured final report with protected categories, mode, format, save state, and safety warnings. The detections list closes to focus on the original/protected comparison and can be reopened with **Modifica selezioni**.
+7. Read the result before sharing it, then use **Copia per ChatGPT** for text or **Salva copia protetta** for a document. The original text or file is not modified.
 8. If you need an audit trail, open **Strumenti > Registro attività**.
 9. If you use reversible mode, save the local encrypted map from **Strumenti > Salva mappa reversibile**.
 
 The desktop and web apps default to Standard mode to preserve more of the document structure, roles, and context. Choose maximum protection for high-risk documents or when redacting as many identifying details as possible matters more than readability.
 
 Document loading, OCR, analysis, and anonymization show progress and can be cancelled. A cancelled or failed operation preserves the previous result. Converting a PDF to normalized text automatically starts a fresh analysis.
+
+For PDFs, users can preserve the original format as a rasterized PDF with permanent redactions or convert it to normalized text. Text conversion drops the original layout but makes the result easier to review, copy, and use with ChatGPT or another AI tool.
 
 Main shortcuts: `Cmd/Ctrl+O` loads a document, `Cmd/Ctrl+Enter` runs the current step, `Cmd/Ctrl+F` searches detected data, `Space` includes or excludes the selected row, and `Cmd/Ctrl+S` saves the result. The full review guide is available from the Help menu.
 

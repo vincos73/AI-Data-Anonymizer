@@ -119,9 +119,19 @@ class WebGuardrailsTest(unittest.TestCase):
     def test_static_ui_hides_reversible_flow_and_uses_safe_processing_fallback(self) -> None:
         html = asgi_request("GET", "/")[1].decode()
         javascript = asgi_request("GET", "/static/app.js")[1].decode()
+        stylesheet = asgi_request("GET", "/static/styles.css")[1].decode()
 
         self.assertNotIn('value="reversible"', html)
         self.assertIn('Elaborazione sul server OMISSIS configurato.', html)
         self.assertIn("location.hostname", javascript)
         self.assertIn("i dati restano sul dispositivo", javascript)
         self.assertIn("i dati vengono inviati a questo server", javascript)
+        self.assertEqual(html.count('id="primary-action"'), 1)
+        self.assertNotIn('id="analyze-btn"', html)
+        self.assertNotIn('id="anonymize-btn"', html)
+        for step in ("load", "analyze", "review", "protect", "use"):
+            self.assertIn(f'data-step="{step}"', html)
+        self.assertIn("prefers-reduced-motion: reduce", stylesheet)
+        self.assertIn(".action-stage.is-compact", stylesheet)
+        self.assertIn(".workflow-steps {\n    grid-template-columns: 1fr;", stylesheet)
+        self.assertIn("findingsSection.scrollIntoView", javascript)

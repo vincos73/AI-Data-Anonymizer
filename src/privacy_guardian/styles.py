@@ -375,22 +375,167 @@ QLabel#DocumentNotice {
     font-size: 12.5px;
 }
 
-QLabel#ReportNotice {
+QFrame#PdfChoice {
     background: #161D25;
-    color: #AABBCB;
-    border: 1px solid #232D38;
+    border: 1px solid #2B6D8F;
     border-radius: 10px;
-    padding: 10px 12px;
+}
+
+QLabel#PdfChoiceTitle {
+    background: transparent;
+    color: #E8EDF2;
+    border: 0;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+QLabel#PdfChoiceHelp {
+    background: transparent;
+    color: #AABBCB;
+    border: 0;
+    font-size: 11.5px;
+}
+
+QFrame#PdfChoiceCard {
+    background: #12181F;
+    border: 1px solid #232D38;
+    border-radius: 8px;
+}
+
+QFrame#PdfChoiceCard:hover {
+    border-color: #35414E;
+}
+
+QFrame#PdfChoiceCardSelected {
+    background: #14202B;
+    border: 1px solid #4FB8E7;
+    border-radius: 8px;
+}
+
+QRadioButton#PdfChoiceRadio {
+    color: #E8EDF2;
+    background: transparent;
+    font-size: 12.5px;
+    font-weight: 700;
+    spacing: 8px;
+}
+
+QRadioButton#PdfChoiceRadio::indicator {
+    width: 14px;
+    height: 14px;
+    border-radius: 8px;
+    border: 1px solid #50606C;
+    background: #0D1218;
+}
+
+QRadioButton#PdfChoiceRadio::indicator:checked {
+    border-color: #4FB8E7;
+    background: #4FB8E7;
+}
+
+QLabel#PdfChoiceDescription {
+    background: transparent;
+    color: #AABBCB;
+    border: 0;
+    font-size: 11.5px;
+    line-height: 1.4;
+    padding-left: 22px;
+}
+
+QFrame#ResultSummary {
+    background: #12251E;
+    border: 1px solid #2E6B4A;
+    border-radius: 12px;
+}
+
+QFrame#ResultSummaryStale, QFrame#ResultSummaryRestored {
+    background: #241B0C;
+    border: 1px solid #6A4E16;
+    border-radius: 12px;
+}
+
+QLabel#ResultIcon {
+    background: #4CC38A;
+    color: #0D1A14;
+    border: 0;
+    border-radius: 15px;
+    font-size: 17px;
+    font-weight: 800;
+}
+
+QLabel#ResultIconWarning {
+    background: #D9A13B;
+    color: #241B0C;
+    border: 0;
+    border-radius: 15px;
+    font-size: 17px;
+    font-weight: 800;
+}
+
+QLabel#ResultTitle {
+    background: transparent;
+    color: #F2FFF8;
+    border: 0;
+    font-size: 16px;
+    font-weight: 750;
+}
+
+QLabel#ResultSubtitle {
+    background: transparent;
+    color: #B7D7C7;
+    border: 0;
+    font-size: 11.5px;
     line-height: 1.35;
 }
 
-QLabel#ReportNoticeStale {
-    background: #241B0C;
-    color: #F0C66B;
-    border: 1px solid #6A4E16;
+QLabel#ResultState, QLabel#ResultStateWarning {
+    background: #173B2A;
+    color: #8EE0B2;
+    border: 1px solid #2E6B4A;
     border-radius: 10px;
-    padding: 10px 12px;
+    padding: 5px 9px;
+    font-size: 10px;
+    font-weight: 750;
+}
+
+QLabel#ResultStateWarning {
+    background: #35270D;
+    color: #F0C66B;
+    border-color: #6A4E16;
+}
+
+QLabel#ResultMetric {
+    background: transparent;
+    color: #FFFFFF;
+    border: 0;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+QLabel#ResultMeta, QLabel#ResultCategories {
+    background: transparent;
+    color: #AABBCB;
+    border: 0;
+    font-size: 11px;
+}
+
+QLabel#ResultCategories {
+    padding-left: 40px;
+}
+
+QLabel#ResultAttention, QLabel#ResultAttentionWarning {
+    background: transparent;
+    color: #B7D7C7;
+    border: 0;
+    border-top: 1px solid #2E5943;
+    padding: 7px 0 0 40px;
+    font-size: 11.5px;
     line-height: 1.35;
+}
+
+QLabel#ResultAttentionWarning {
+    color: #F0C66B;
+    border-top-color: #5A4315;
     font-weight: 600;
 }
 
@@ -432,6 +577,15 @@ QLabel#SectionTitle {
     color: #FFFFFF;
     font-size: 14px;
     font-weight: 700;
+}
+
+QLabel#OutputPreviewNotice {
+    background: transparent;
+    color: #9EDCF7;
+    border: 0;
+    padding: 0;
+    font-size: 11.5px;
+    line-height: 1.35;
 }
 
 QFrame#Panel {
@@ -502,6 +656,11 @@ QPushButton#PrimaryButton {
 
 QPushButton#PrimaryButton:hover {
     background: #6bc5ec;
+}
+
+QPushButton#PrimaryButton[attention="true"] {
+    background: #7DD8FF;
+    border: 2px solid #C9EAF8;
 }
 
 QPushButton#PrimaryButton:pressed {

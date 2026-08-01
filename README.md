@@ -10,7 +10,7 @@ La web app esiste solo come opzione avanzata per sviluppatori, demo locali o ins
 
 ## Scarica App Desktop
 
-Versione del codice: **v0.6.7**. Le build già pubblicate possono avere un numero precedente: usa la pagina Releases e controlla il numero mostrato nell'app.
+Versione del codice: **v0.6.11**. Le build già pubblicate possono avere un numero precedente: usa la pagina Releases e controlla il numero mostrato nell'app.
 
 | Sistema | Download |
 | --- | --- |
@@ -47,13 +47,15 @@ Su Windows i vecchi file `.doc` non sono supportati direttamente: convertili pri
 2. Carica un documento, trascinalo nella finestra o incolla un testo.
 3. Scegli la modalità di protezione e clicca **Analizza dati**.
 4. Rivedi i dati rilevati: spuntato significa “sarà anonimizzato”, non spuntato significa “resterà visibile”. Puoi cercare, filtrare o aggiungere manualmente ciò che manca.
-5. Clicca **Conferma selezione e anonimizza**. Il pulsante indica quanti dati verranno sostituiti.
-6. Leggi il report finale con conteggi, modalità, formato, stato di salvataggio e avvisi di controllo.
-7. Controlla il risultato prima di condividerlo, quindi salvalo o copialo.
+5. Clicca **Ho controllato, continua**, quindi **Crea copia protetta**. Il flusso laterale indica sempre il passaggio corrente.
+6. Leggi il report finale con conteggi, categorie protette, modalità, formato, stato di salvataggio e avvisi di controllo. In questa fase l'elenco dei rilevamenti si chiude per lasciare spazio al confronto tra originale e copia protetta; puoi riaprirlo con **Modifica selezioni**.
+7. Controlla il risultato prima di condividerlo, quindi usa **Copia per ChatGPT** per il testo oppure **Salva copia protetta** per un documento. Il file o testo originale non viene modificato.
 8. Se ti serve tracciare l'operazione, apri **Strumenti > Registro attività**.
 9. Se usi la modalità Reversibile, salva anche la mappa locale cifrata da **Strumenti > Salva mappa reversibile**.
 
 Caricamento, OCR, analisi e anonimizzazione mostrano l'avanzamento e possono essere annullati. Un'operazione interrotta o fallita non sostituisce il risultato precedente. La conversione di un PDF in testo avvia automaticamente una nuova analisi sul testo normalizzato.
+
+Per i PDF puoi mantenere il formato originale, ottenendo un PDF rasterizzato con oscuramenti permanenti, oppure trasformarlo in testo: il testo perde l'impaginazione originale ma diventa più facile da rileggere, copiare e usare con ChatGPT o altri strumenti di IA.
 
 Scorciatoie principali: `Cmd/Ctrl+O` carica un documento, `Cmd/Ctrl+Invio` esegue il passaggio corrente, `Cmd/Ctrl+F` cerca nei dati rilevati, `Spazio` include o esclude la riga selezionata e `Cmd/Ctrl+S` salva il risultato. La guida completa è disponibile in **Aiuto > Come rivedere i dati rilevati**.
 
