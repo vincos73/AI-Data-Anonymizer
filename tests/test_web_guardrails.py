@@ -119,7 +119,9 @@ class WebGuardrailsTest(unittest.TestCase):
     def test_static_ui_hides_reversible_flow_and_uses_safe_processing_fallback(self) -> None:
         html = asgi_request("GET", "/")[1].decode()
         javascript = asgi_request("GET", "/static/app.js")[1].decode()
-        stylesheet = asgi_request("GET", "/static/styles.css")[1].decode()
+        stylesheet = "\n".join(
+            asgi_request("GET", "/static/styles.css")[1].decode().splitlines()
+        )
 
         self.assertNotIn('value="reversible"', html)
         self.assertIn('Elaborazione sul server OMISSIS configurato.', html)
