@@ -41,6 +41,7 @@ from privacy_guardian.reporting import entity_label, source_label
 
 
 GROUP_THRESHOLD = 30
+SEARCH_THRESHOLD = 8
 ROW_HEIGHT = 33
 
 # Custom item-data roles used to carry finding state alongside the display text.
@@ -250,14 +251,14 @@ class FindingsPanel(QFrame):
 
         pill_widget = QWidget()
         pill_widget.setLayout(pill_row)
-        pill_scroll = QScrollArea()
-        pill_scroll.setObjectName("FilterScroll")
-        pill_scroll.setWidget(pill_widget)
-        pill_scroll.setWidgetResizable(True)
-        pill_scroll.setFrameShape(QFrame.NoFrame)
-        pill_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        pill_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        pill_scroll.setFixedHeight(42)
+        self.pill_scroll = QScrollArea()
+        self.pill_scroll.setObjectName("FilterScroll")
+        self.pill_scroll.setWidget(pill_widget)
+        self.pill_scroll.setWidgetResizable(True)
+        self.pill_scroll.setFrameShape(QFrame.NoFrame)
+        self.pill_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.pill_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.pill_scroll.setFixedHeight(42)
 
         self.selection_help_label = QLabel(
             "Spuntato = sarà anonimizzato · Non spuntato = resterà visibile"
@@ -270,7 +271,7 @@ class FindingsPanel(QFrame):
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(8)
         header_layout.addLayout(top_row)
-        header_layout.addWidget(pill_scroll)
+        header_layout.addWidget(self.pill_scroll)
         header_layout.addWidget(self.selection_help_label)
 
         # ---- Document conversion notice ----
@@ -309,6 +310,7 @@ class FindingsPanel(QFrame):
         self.setLayout(self._panel_layout)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self._update_pill_labels()
+        self._update_filter_visibility()
 
     def _create_tree(self, model: QStandardItemModel) -> QTreeView:
         tree = QTreeView(self)
@@ -362,6 +364,7 @@ class FindingsPanel(QFrame):
         self._pill_buttons["Tutti"].setChecked(True)
         self._pill_buttons["Tutti"].blockSignals(pill_blocker)
         self._update_pill_labels()
+        self._update_filter_visibility()
         self._rebuild_model()
         self.notice_frame.setVisible(False)
         if not checkable:
@@ -395,6 +398,7 @@ class FindingsPanel(QFrame):
         self._pill_buttons["Tutti"].setChecked(True)
         self._pill_buttons["Tutti"].blockSignals(pill_blocker)
         self._update_pill_labels()
+        self._update_filter_visibility()
         self._rebuild_model()
         self.notice_frame.setVisible(False)
         self.selection_help_label.setText(
@@ -507,6 +511,11 @@ class FindingsPanel(QFrame):
             relevant = category == "Tutti" or count > 0
             button.setEnabled(relevant)
             button.setMaximumWidth(16_777_215 if relevant else 0)
+
+    def _update_filter_visibility(self) -> None:
+        has_findings = bool(self._findings)
+        self.pill_scroll.setVisible(has_findings)
+        self.search_edit.setVisible(len(self._findings) >= SEARCH_THRESHOLD)
 
     def _value_text(self, index: int) -> str:
         finding = self._findings[index]

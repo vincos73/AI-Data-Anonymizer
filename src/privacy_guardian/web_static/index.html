@@ -1,121 +1,193 @@
 <!doctype html>
+<!--
+THESIS: Il flusso non spiega soltanto il lavoro: governa l'unica azione primaria disponibile.
+OWN-WORLD: Banco scuro, fogli chiari, bordi netti e ciano riservato al passaggio attivo.
+STORY: L'utente carica o incolla, analizza, controlla, protegge e usa il risultato senza cercare il tasto giusto.
+FIRST VIEWPORT: Rail operativa a sinistra; stato e grande azione contestuale sopra il documento al centro.
+FORM: Estensione mirata del banco di ispezione OMISSIS, modalità Operate; nessun concept seed necessario.
+-->
 <html lang="it">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="referrer" content="no-referrer" />
-    <title>OMISSIS</title>
+    <title>OMISSIS — Flusso guidato</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <main class="shell">
-      <header class="brand-panel">
-        <div class="brand-row">
-          <img class="brand-mark" src="/static/omissis-logo.svg" alt="" aria-hidden="true" />
-          <img class="brand-logo" src="/static/omissis-logotype.svg" alt="OMISSIS" />
+    <a class="skip-link" href="#workspace">Vai all'area di lavoro</a>
+
+    <div class="app-frame">
+      <aside class="workflow-rail" aria-label="Flusso di anonimizzazione">
+        <header class="brand-block">
+          <div class="brand-row">
+            <img class="brand-mark" src="/static/omissis-logo.svg" alt="" aria-hidden="true" />
+            <img class="brand-logo" src="/static/omissis-logotype.svg" alt="OMISSIS" />
+          </div>
           <span class="byline">by vincos</span>
-        </div>
-        <div class="brand-meta">
-          <span id="processing-notice" class="local-pill">Elaborazione sul server OMISSIS configurato.</span>
-          <span id="engine-status" class="version-pill">avvio...</span>
-        </div>
-      </header>
+        </header>
 
-      <nav class="command-row" aria-label="Azioni principali">
-        <label class="workflow-button" for="file-input">01&nbsp;&nbsp;Carica o trascina file</label>
-        <input id="file-input" type="file" accept=".txt,.md,.csv,.doc,.docx,.pdf" aria-hidden="true" tabindex="-1" />
-        <button id="analyze-btn" type="button" class="workflow-button">02&nbsp;&nbsp;Analizza dati</button>
-        <button id="anonymize-btn" type="button" class="primary">03&nbsp;&nbsp;Anonimizza</button>
-        <select id="mode-select" aria-label="Modalità protezione">
-          <option value="standard">Standard (più leggibile)</option>
-          <option value="maximum">Massima protezione</option>
-        </select>
-        <span class="command-spacer"></span>
-        <span class="command-separator" aria-hidden="true"></span>
-        <button id="copy-btn" type="button" class="secondary">Copia risultato</button>
-        <button id="save-btn" type="button" class="secondary">Salva risultato</button>
-        <button id="clear-btn" type="button" class="secondary">Pulisci</button>
-      </nav>
+        <section class="rail-section" aria-labelledby="workflow-label">
+          <h2 id="workflow-label" class="rail-label">FLUSSO GUIDATO</h2>
+          <ol id="workflow-steps" class="workflow-steps">
+            <li class="workflow-step" data-step="load">
+              <span class="step-marker" aria-hidden="true">1</span>
+              <span class="step-copy">
+                <strong>Carica o incolla</strong>
+                <small>Porta il contenuto in OMISSIS</small>
+              </span>
+            </li>
+            <li class="workflow-step" data-step="analyze">
+              <span class="step-marker" aria-hidden="true">2</span>
+              <span class="step-copy">
+                <strong>Analizza i dati</strong>
+                <small>Trova gli elementi personali</small>
+              </span>
+            </li>
+            <li class="workflow-step" data-step="review">
+              <span class="step-marker" aria-hidden="true">3</span>
+              <span class="step-copy">
+                <strong>Rivedi i risultati</strong>
+                <small>Controlla ciò che è stato trovato</small>
+              </span>
+            </li>
+            <li class="workflow-step" data-step="protect">
+              <span class="step-marker" aria-hidden="true">4</span>
+              <span class="step-copy">
+                <strong>Crea la copia protetta</strong>
+                <small>Applica le sostituzioni</small>
+              </span>
+            </li>
+            <li class="workflow-step" data-step="use">
+              <span class="step-marker" aria-hidden="true">5</span>
+              <span class="step-copy">
+                <strong>Usa il risultato</strong>
+                <small>Copia il testo o scarica il file</small>
+              </span>
+            </li>
+          </ol>
+        </section>
 
-      <section class="document-notice" aria-label="Documento caricato">
-        <p id="file-status">Nessun documento caricato. Puoi incollare testo o trascinare un file nella finestra.</p>
-      </section>
+        <section class="rail-section protection-section" aria-labelledby="protection-label">
+          <h2 id="protection-label" class="rail-label">PROTEZIONE</h2>
+          <label class="select-label" for="mode-select">Modalità</label>
+          <select id="mode-select" aria-describedby="mode-note">
+            <option value="standard">Standard — più leggibile</option>
+            <option value="maximum">Massima protezione</option>
+          </select>
+          <p id="mode-note" class="mode-note"></p>
+        </section>
 
-      <section id="reversible-panel" class="reversible-panel" aria-labelledby="reversible-heading" hidden>
-        <div>
-          <h2 id="reversible-heading">Mappa reversibile</h2>
-          <p class="field-note">La passphrase è necessaria per creare la mappa cifrata.</p>
-        </div>
-        <label class="field-label" for="passphrase-input">
-          Passphrase
-          <input id="passphrase-input" type="password" autocomplete="new-password" spellcheck="false" />
-        </label>
-        <button id="save-map-btn" type="button" class="secondary" disabled>Scarica mappa cifrata</button>
-      </section>
+        <footer class="rail-footer">
+          <p id="processing-notice" class="local-notice">Elaborazione sul server OMISSIS configurato.</p>
+          <span id="engine-status" class="engine-status">avvio...</span>
+        </footer>
+      </aside>
 
-      <section class="report" aria-label="Report anonimizzazione">
-        <p id="report-summary">Standard mantiene leggibili struttura e contesto, conservando iniziali e date. Per documenti ad alto rischio valuta Massima protezione.</p>
-        <ul id="report-checklist" class="report-checklist"></ul>
-      </section>
-
-      <section class="workspace" aria-label="Editor anonimizzazione">
-        <div class="pane">
-          <div class="pane-header">
-            <h2>Testo originale</h2>
-          </div>
-          <textarea id="source" spellcheck="false" placeholder="Incolla qui il testo da controllare oppure carica un documento."></textarea>
-        </div>
-
-        <div class="pane">
-          <div class="pane-header">
-            <h2>Testo anonimizzato</h2>
-          </div>
-          <textarea id="result" spellcheck="false" readonly placeholder="Il testo anonimizzato apparirà qui."></textarea>
-        </div>
-      </section>
-
-      <section class="findings" aria-label="Dati rilevati">
-        <div class="findings-header">
-          <h2>Dati rilevati</h2>
-          <span id="counter">0 elementi</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Tipo</th>
-                <th>Valore trovato</th>
-                <th>Intervallo</th>
-                <th title="Affidabilità della regola locale, non probabilità statistica">Affidabilità</th>
-                <th>Origine</th>
-              </tr>
-            </thead>
-            <tbody id="findings-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="restore-panel" aria-labelledby="restore-heading" hidden>
-        <div class="restore-heading">
+      <main id="workspace" class="workspace-main">
+        <header class="workspace-header">
           <div>
-            <h2 id="restore-heading">Ricostruisci testo</h2>
-            <p class="field-note">Carica la mappa cifrata usata per l'anonimizzazione.</p>
+            <p class="workspace-kicker">SESSIONE DI PROTEZIONE</p>
+            <h1>Prepara una copia protetta</h1>
           </div>
-          <button id="restore-btn" type="button" class="secondary">Ricostruisci</button>
-        </div>
-        <div class="restore-fields">
-          <label class="field-label" for="map-input">
-            Mappa cifrata
-            <input id="map-input" type="file" accept=".omissis-map,application/json" />
-          </label>
-          <label class="field-label" for="restore-passphrase-input">
-            Passphrase della mappa
-            <input id="restore-passphrase-input" type="password" autocomplete="current-password" spellcheck="false" />
-          </label>
-        </div>
-        <p id="restore-status" class="restore-status" role="status" aria-live="polite"></p>
-      </section>
-    </main>
+          <button id="clear-btn" class="quiet-button" type="button" hidden>Nuova sessione</button>
+        </header>
+
+        <section id="action-stage" class="action-stage" aria-labelledby="action-title">
+          <div class="action-copy">
+            <p id="step-eyebrow" class="step-eyebrow">PASSAGGIO 1 DI 5</p>
+            <h2 id="action-title">Porta qui ciò che vuoi proteggere</h2>
+            <p id="action-description">Carica un documento dal computer oppure incolla direttamente il testo nel riquadro sottostante.</p>
+          </div>
+          <button id="primary-action" class="primary-action" type="button">
+            <span id="primary-label">Carica documento</span>
+            <span class="button-arrow" aria-hidden="true">→</span>
+          </button>
+          <input id="file-input" type="file" accept=".txt,.md,.csv,.doc,.docx,.pdf" tabindex="-1" aria-hidden="true" />
+        </section>
+
+        <p id="live-status" class="sr-only" role="status" aria-live="polite"></p>
+
+        <section id="document-notice" class="document-notice" aria-label="Contenuto della sessione">
+          <span class="document-glyph" aria-hidden="true">▱</span>
+          <p>
+            <strong id="file-status-title">Nessun documento caricato</strong>
+            <span id="file-status">Puoi anche trascinare un file in questa finestra o incollare del testo.</span>
+          </p>
+        </section>
+
+        <section id="error-notice" class="error-notice" role="alert" hidden>
+          <strong>Non posso completare il passaggio.</strong>
+          <span id="error-message"></span>
+        </section>
+
+        <section class="document-workbench" aria-label="Editor anonimizzazione">
+          <div class="document-pane">
+            <div class="pane-header">
+              <h2>Originale</h2>
+              <span id="source-state" class="pane-state">In attesa</span>
+            </div>
+            <textarea id="source" spellcheck="false" placeholder="Incolla qui il testo da controllare, oppure usa “Carica documento”."></textarea>
+          </div>
+
+          <div class="document-pane">
+            <div class="pane-header">
+              <h2>Copia protetta</h2>
+              <span id="result-state" class="pane-state">Non ancora creata</span>
+            </div>
+            <textarea id="result" spellcheck="false" readonly placeholder="Il risultato apparirà qui dopo il controllo."></textarea>
+            <div id="document-result" class="document-result" hidden>
+              <span class="result-file-mark" aria-hidden="true">✓</span>
+              <div>
+                <strong id="result-filename">Documento protetto pronto</strong>
+                <span>Il file è pronto per essere scaricato sul computer.</span>
+              </div>
+            </div>
+            <button id="secondary-save-btn" class="text-button" type="button" hidden>Scarica anche come file TXT</button>
+          </div>
+        </section>
+
+        <section id="findings-section" class="findings" aria-labelledby="findings-heading">
+          <header class="findings-header">
+            <div>
+              <p class="section-kicker">CONTROLLO UMANO</p>
+              <h2 id="findings-heading" tabindex="-1">Dati rilevati</h2>
+            </div>
+            <span id="counter">0 elementi</span>
+          </header>
+          <p id="review-guidance" class="review-guidance">Dopo l'analisi, verifica qui i dati individuati prima di creare la copia protetta.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Valore trovato</th>
+                  <th>Affidabilità</th>
+                  <th>Origine</th>
+                </tr>
+              </thead>
+              <tbody id="findings-body">
+                <tr class="empty-row">
+                  <td colspan="4">I dati trovati appariranno qui.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="report" class="report" aria-labelledby="report-heading" hidden>
+          <div>
+            <p class="section-kicker">VERIFICA FINALE</p>
+            <h2 id="report-heading">Prima di condividere</h2>
+          </div>
+          <div class="report-copy">
+            <p id="report-summary"></p>
+            <ul id="report-checklist" class="report-checklist"></ul>
+          </div>
+        </section>
+      </main>
+    </div>
+
     <script src="/static/app.js"></script>
   </body>
 </html>

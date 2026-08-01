@@ -5,7 +5,7 @@ import platform
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QSignalBlocker, QSize, QThreadPool, Qt, QUrl, Slot
+from PySide6.QtCore import QEvent, QSignalBlocker, QSize, QThreadPool, QTimer, Qt, QUrl, Slot
 from PySide6.QtGui import (
     QAction,
     QColor,
@@ -92,7 +92,14 @@ from privacy_guardian.reversible import (
     restore_text,
     write_encrypted_mapping,
 )
-from privacy_guardian.reporting import ENTITY_LABELS, entity_label, mode_label, mode_note, report_text
+from privacy_guardian.reporting import (
+    ENTITY_LABELS,
+    entity_label,
+    finding_counts,
+    mode_label,
+    mode_note,
+    report_text,
+)
 from privacy_guardian.styles import (
     APP_STYLE,
     EDITOR_BACKGROUND_COLOR,
@@ -215,15 +222,24 @@ class _AdaptiveToolbar(QFrame):
     ) -> None:
         super().__init__()
         self.setObjectName("DocumentToolbar")
-        self._widgets = (
-            load_button,
-            document_label,
-            copy_button,
-            save_button,
-            clear_button,
-            add_selection_button,
-            primary_button,
-        )
+        self._document_label = document_label
+        self._primary_button = primary_button
+        self._secondary_buttons = (save_button, clear_button, add_selection_button)
+        # These legacy shortcuts remain available through menu actions, but their
+        # duplicate toolbar buttons stay hidden and owned by the toolbar.
+        load_button.setParent(self)
+        copy_button.setParent(self)
+        load_button.setVisible(False)
+        copy_button.setVisible(False)
+
+        self._secondary_widget = QWidget(self)
+        secondary_layout = QHBoxLayout()
+        secondary_layout.setContentsMargins(0, 0, 0, 0)
+        secondary_layout.setSpacing(8)
+        for button in self._secondary_buttons:
+            secondary_layout.addWidget(button)
+        self._secondary_widget.setLayout(secondary_layout)
+
         self._grid = QGridLayout()
         self._grid.setContentsMargins(16, 8, 16, 8)
         self._grid.setHorizontalSpacing(8)
@@ -240,34 +256,34 @@ class _AdaptiveToolbar(QFrame):
         if self._compact == compact:
             return
         self._compact = compact
-        for widget in self._widgets:
+        for widget in (self._document_label, self._secondary_widget, self._primary_button):
             self._grid.removeWidget(widget)
 
-        load_button, document_label, copy_button, save_button, clear_button, add_button, primary_button = self._widgets
-        copy_button.setVisible(False)
+        for column in range(3):
+            self._grid.setColumnStretch(column, 0)
         if compact:
-            save_button.setMaximumWidth(112)
-            clear_button.setMaximumWidth(96)
-            add_button.setMaximumWidth(180)
-            self._grid.addWidget(load_button, 0, 0, 1, 1, Qt.AlignVCenter)
-            self._grid.addWidget(document_label, 0, 1, 1, 4, Qt.AlignVCenter)
-            self._grid.addWidget(primary_button, 0, 5, 1, 1, Qt.AlignVCenter)
-            self._grid.addWidget(save_button, 1, 2, 1, 1, Qt.AlignRight | Qt.AlignVCenter)
-            self._grid.addWidget(clear_button, 1, 3, 1, 1, Qt.AlignRight | Qt.AlignVCenter)
-            self._grid.addWidget(add_button, 1, 4, 1, 2, Qt.AlignRight | Qt.AlignVCenter)
-            self.setMinimumHeight(96)
+            self._grid.addWidget(self._document_label, 0, 0, 1, 1, Qt.AlignVCenter)
+            self._grid.addWidget(self._primary_button, 0, 1, 1, 1, Qt.AlignRight | Qt.AlignVCenter)
+            self._grid.addWidget(
+                self._secondary_widget,
+                1,
+                0,
+                1,
+                2,
+                Qt.AlignRight | Qt.AlignVCenter,
+            )
         else:
-            save_button.setMaximumWidth(16_777_215)
-            clear_button.setMaximumWidth(16_777_215)
-            add_button.setMaximumWidth(16_777_215)
-            self._grid.addWidget(load_button, 0, 0, 1, 1, Qt.AlignVCenter)
-            self._grid.addWidget(document_label, 0, 1, 1, 1, Qt.AlignVCenter)
-            self._grid.addWidget(save_button, 0, 2, 1, 1, Qt.AlignVCenter)
-            self._grid.addWidget(clear_button, 0, 3, 1, 1, Qt.AlignVCenter)
-            self._grid.addWidget(add_button, 0, 4, 1, 1, Qt.AlignVCenter)
-            self._grid.addWidget(primary_button, 0, 5, 1, 1, Qt.AlignVCenter)
-            self.setMinimumHeight(56)
-        self._grid.setColumnStretch(1, 1)
+            self._grid.addWidget(self._document_label, 0, 0, 1, 1, Qt.AlignVCenter)
+            self._grid.addWidget(self._secondary_widget, 0, 1, 1, 1, Qt.AlignVCenter)
+            self._grid.addWidget(self._primary_button, 0, 2, 1, 1, Qt.AlignVCenter)
+        self._grid.setColumnStretch(0, 1)
+        self.sync_secondary_visibility()
+
+    def sync_secondary_visibility(self) -> None:
+        has_visible_secondary = any(not button.isHidden() for button in self._secondary_buttons)
+        self._secondary_widget.setVisible(has_visible_secondary)
+        self.setMinimumHeight(96 if self._compact and has_visible_secondary else 56)
+        self.updateGeometry()
 
 
 class MainWindow(QMainWindow):
@@ -284,6 +300,7 @@ class MainWindow(QMainWindow):
         self.output_text_dirty = False
         self._loading_document_text = False
         self._updating_output_text = False
+        self._analysis_preview_active = False
         self.reversible_mapping: tuple[ReversibleMapEntry, ...] = ()
         self.loaded_reversible_entries: tuple[ReversibleMapEntry, ...] = ()
         self._selected_finding_index: int | None = None
@@ -293,6 +310,9 @@ class MainWindow(QMainWindow):
         self._output_saved = True
         self._reversible_map_saved = True
         self._review_dirty = False
+        self._review_confirmed = False
+        self._result_used = False
+        self._last_primary_phase = ""
         self._last_selected_mode: AnonymizationMode = "standard"
         self._thread_pool = QThreadPool.globalInstance()
         self._active_job: DesktopJob | None = None
@@ -318,6 +338,7 @@ class MainWindow(QMainWindow):
         self.input_text.setAccessibleName("Testo originale")
         self.input_text.setAccessibleDescription("Testo o contenuto del documento da analizzare e anonimizzare.")
         self.input_text.textChanged.connect(self._handle_input_text_changed)
+        self.input_text.selectionChanged.connect(self._sync_action_state)
         self._input_viewport = self.input_text.viewport()
         self.input_text.installEventFilter(self)
         self._input_viewport.installEventFilter(self)
@@ -325,12 +346,23 @@ class MainWindow(QMainWindow):
         self.output_text = QTextEdit()
         _configure_text_editor(self.output_text)
         self.output_text.setAcceptDrops(False)
-        self.output_text.setPlaceholderText("Il testo anonimizzato apparirà qui.")
+        self.output_text.setPlaceholderText(
+            "Dopo l’analisi vedrai qui un’anteprima dei dati anonimizzati."
+        )
         self.output_text.setAccessibleName("Testo anonimizzato")
         self.output_text.setAccessibleDescription(
             "Risultato prodotto da OMISSIS. Se diventa obsoleto viene disabilitato fino alla rigenerazione."
         )
         self.output_text.textChanged.connect(self._handle_output_text_changed)
+
+        self.output_preview_notice = QLabel(
+            "Anteprima di controllo: il documento definitivo verrà creato solo con "
+            "«Crea copia protetta»."
+        )
+        self.output_preview_notice.setObjectName("OutputPreviewNotice")
+        self.output_preview_notice.setWordWrap(True)
+        self.output_preview_notice.setAccessibleName("Stato dell’anteprima")
+        self.output_preview_notice.setVisible(False)
 
         self.findings_panel = FindingsPanel()
         self.findings_panel.finding_selected.connect(self._scroll_editor_to_finding)
@@ -377,10 +409,69 @@ class MainWindow(QMainWindow):
         self.ner_notice.setWordWrap(True)
         self.ner_notice.setVisible(not self.engine.ner_active)
 
+        self.result_icon_label = QLabel("✓")
+        self.result_icon_label.setObjectName("ResultIcon")
+        self.result_icon_label.setAlignment(Qt.AlignCenter)
+        self.result_icon_label.setFixedSize(30, 30)
+        self.result_icon_label.setAccessibleName("Operazione completata")
+
+        self.result_title_label = QLabel("Copia protetta pronta")
+        self.result_title_label.setObjectName("ResultTitle")
+        self.result_subtitle_label = QLabel()
+        self.result_subtitle_label.setObjectName("ResultSubtitle")
+        self.result_subtitle_label.setWordWrap(True)
+
+        result_heading = QVBoxLayout()
+        result_heading.setContentsMargins(0, 0, 0, 0)
+        result_heading.setSpacing(2)
+        result_heading.addWidget(self.result_title_label)
+        result_heading.addWidget(self.result_subtitle_label)
+
+        self.result_state_label = QLabel("PRONTA")
+        self.result_state_label.setObjectName("ResultState")
+        self.result_state_label.setAlignment(Qt.AlignCenter)
+
+        result_top_row = QHBoxLayout()
+        result_top_row.setContentsMargins(0, 0, 0, 0)
+        result_top_row.setSpacing(10)
+        result_top_row.addWidget(self.result_icon_label, 0, Qt.AlignTop)
+        result_top_row.addLayout(result_heading, 1)
+        result_top_row.addWidget(self.result_state_label, 0, Qt.AlignTop)
+
+        self.result_metric_label = QLabel()
+        self.result_metric_label.setObjectName("ResultMetric")
+        self.result_meta_label = QLabel()
+        self.result_meta_label.setObjectName("ResultMeta")
+        self.result_meta_label.setWordWrap(True)
+
+        result_metrics_row = QHBoxLayout()
+        result_metrics_row.setContentsMargins(40, 0, 0, 0)
+        result_metrics_row.setSpacing(10)
+        result_metrics_row.addWidget(self.result_metric_label)
+        result_metrics_row.addWidget(self.result_meta_label, 1)
+
+        self.result_categories_label = QLabel()
+        self.result_categories_label.setObjectName("ResultCategories")
+        self.result_categories_label.setWordWrap(True)
+
         self.report_label = QLabel()
-        self.report_label.setObjectName("ReportNotice")
+        self.report_label.setObjectName("ResultAttention")
         self.report_label.setWordWrap(True)
-        self.report_label.setAccessibleName("Verifica finale")
+        self.report_label.setAccessibleName("Controlli prima di condividere")
+
+        result_layout = QVBoxLayout()
+        result_layout.setContentsMargins(14, 13, 14, 13)
+        result_layout.setSpacing(7)
+        result_layout.addLayout(result_top_row)
+        result_layout.addLayout(result_metrics_row)
+        result_layout.addWidget(self.result_categories_label)
+        result_layout.addWidget(self.report_label)
+
+        self.result_frame = QFrame()
+        self.result_frame.setObjectName("ResultSummary")
+        self.result_frame.setLayout(result_layout)
+        self.result_frame.setAccessibleName("Riepilogo della copia protetta")
+        self.result_frame.setVisible(False)
 
         self.load_button = QPushButton("Carica")
         self.load_button.clicked.connect(self.open_file)
@@ -396,7 +487,7 @@ class MainWindow(QMainWindow):
             "Copia il risultato solo se è ancora coerente con testo, modalità e selezioni correnti."
         )
 
-        self.save_button = QPushButton("Salva")
+        self.save_button = QPushButton("Salva anche come file")
         self.save_button.clicked.connect(self.save_output)
         self.save_button.setObjectName("SecondaryButton")
         self.save_button.setToolTip("Salva il risultato corrente sul dispositivo.")
@@ -404,14 +495,16 @@ class MainWindow(QMainWindow):
             "Salva il risultato nel formato prodotto oppure come testo se è stato modificato."
         )
 
-        self.clear_button = QPushButton("Pulisci")
+        self.clear_button = QPushButton("Nuova sessione")
         self.clear_button.clicked.connect(self.clear_all)
         self.clear_button.setObjectName("SecondaryButton")
-        self.clear_button.setToolTip("Pulisce la sessione dopo una conferma se esiste lavoro non salvato.")
-        self.clear_button.setAccessibleDescription("Azzera la sessione senza eliminare lavoro non salvato per errore.")
+        self.clear_button.setToolTip("Avvia una nuova sessione dopo una conferma se esiste lavoro non salvato.")
+        self.clear_button.setAccessibleDescription(
+            "Azzera la sessione corrente senza eliminare lavoro non salvato per errore."
+        )
 
-        self.add_selection_button = QPushButton("Aggiungi selezione")
-        self.add_selection_button.clicked.connect(self.add_manual_finding)
+        self.add_selection_button = QPushButton("Aggiungi dato mancante")
+        self.add_selection_button.clicked.connect(self._review_secondary_action)
         self.add_selection_button.setObjectName("SecondaryButton")
         self.add_selection_button.setToolTip(
             "Seleziona una parola o frase nel pannello «Testo originale» non rilevata "
@@ -422,8 +515,85 @@ class MainWindow(QMainWindow):
         self.primary_button.setObjectName("PrimaryButton")
         self.primary_button.clicked.connect(self._primary_action)
         self.primary_button.setAccessibleDescription(
-            "Esegue il passaggio successivo: analisi, anonimizzazione oppure copia del risultato."
+            "Esegue il solo passaggio disponibile nel flusso guidato."
         )
+        self._primary_attention_timer = QTimer(self)
+        self._primary_attention_timer.setSingleShot(True)
+        self._primary_attention_timer.setInterval(760)
+        self._primary_attention_timer.timeout.connect(lambda: self._set_primary_attention(False))
+
+        self.pdf_choice_group = QButtonGroup(self)
+        self.pdf_choice_group.setExclusive(True)
+        self.pdf_choice_radios: dict[str, QRadioButton] = {}
+        self.pdf_choice_cards: dict[str, QFrame] = {}
+        pdf_choice_options = (
+            (
+                "pdf",
+                "Mantieni il PDF",
+                "Conserva impaginazione e pagine. La copia protetta sarà un PDF rasterizzato: "
+                "oscuramenti permanenti, ma testo non ricercabile né copiabile.",
+            ),
+            (
+                "text",
+                "Trasforma in testo",
+                "Ricompone righe e parole spezzate: può migliorare il riconoscimento e rende "
+                "il contenuto più comodo da rileggere o usare con l’IA. L’uscita sarà .txt e "
+                "perderà il layout originale.",
+            ),
+        )
+        pdf_options_layout = QHBoxLayout()
+        pdf_options_layout.setContentsMargins(0, 0, 0, 0)
+        pdf_options_layout.setSpacing(10)
+        for choice, title, description_text in pdf_choice_options:
+            radio = QRadioButton(title)
+            radio.setObjectName("PdfChoiceRadio")
+            radio.setProperty("choice", choice)
+            radio.setAccessibleDescription(description_text)
+
+            description = QLabel(description_text)
+            description.setObjectName("PdfChoiceDescription")
+            description.setWordWrap(True)
+
+            card = _ClickableCard(radio)
+            card.setObjectName("PdfChoiceCard")
+            card_layout = QVBoxLayout()
+            card_layout.setContentsMargins(12, 10, 12, 10)
+            card_layout.setSpacing(5)
+            card_layout.addWidget(radio)
+            card_layout.addWidget(description)
+            card.setLayout(card_layout)
+            card.setAccessibleName(title)
+            card.setAccessibleDescription(description_text)
+
+            self.pdf_choice_group.addButton(radio)
+            self.pdf_choice_radios[choice] = radio
+            self.pdf_choice_cards[choice] = card
+            pdf_options_layout.addWidget(card, 1)
+
+        self.pdf_choice_radios["pdf"].setChecked(True)
+        for radio in self.pdf_choice_radios.values():
+            radio.toggled.connect(self._handle_pdf_choice_toggled)
+
+        pdf_choice_title = QLabel("Come vuoi usare questo PDF?")
+        pdf_choice_title.setObjectName("PdfChoiceTitle")
+        pdf_choice_help = QLabel(
+            "La scelta resta modificabile fino alla creazione della copia protetta."
+        )
+        pdf_choice_help.setObjectName("PdfChoiceHelp")
+        pdf_choice_help.setWordWrap(True)
+
+        pdf_choice_layout = QVBoxLayout()
+        pdf_choice_layout.setContentsMargins(14, 12, 14, 14)
+        pdf_choice_layout.setSpacing(8)
+        pdf_choice_layout.addWidget(pdf_choice_title)
+        pdf_choice_layout.addWidget(pdf_choice_help)
+        pdf_choice_layout.addLayout(pdf_options_layout)
+
+        self.pdf_choice_frame = QFrame()
+        self.pdf_choice_frame.setObjectName("PdfChoice")
+        self.pdf_choice_frame.setLayout(pdf_choice_layout)
+        self.pdf_choice_frame.setAccessibleName("Scelta del formato PDF")
+        self.pdf_choice_frame.setVisible(False)
 
         self.job_status_label = QLabel("Elaborazione in corso")
         self.job_status_label.setObjectName("JobStatus")
@@ -464,11 +634,13 @@ class MainWindow(QMainWindow):
 
         # ---- Rail: vertical workflow stepper ----
         self.step_rows: list[QFrame] = []
+        self.step_dots: list[QLabel] = []
         step_definitions = [
-            "Carica documento",
+            "Carica o incolla",
             "Analizza dati",
-            "Rivedi selezione",
-            "Anonimizza",
+            "Rivedi i risultati",
+            "Crea la copia protetta",
+            "Usa il risultato",
         ]
         stepper_column = QVBoxLayout()
         stepper_column.setSpacing(6)
@@ -569,8 +741,12 @@ class MainWindow(QMainWindow):
             self.primary_button,
         )
 
-        self.input_panel = self._panel("Testo originale", self.input_text)
-        self.output_panel = self._panel("Testo anonimizzato", self.output_text)
+        self.input_panel, self.input_panel_title = self._panel("Testo originale", self.input_text)
+        self.output_panel, self.output_panel_title = self._panel(
+            "Testo anonimizzato",
+            self.output_text,
+            helper=self.output_preview_notice,
+        )
 
         self.text_splitter = QSplitter(Qt.Horizontal)
         self.text_splitter.setHandleWidth(14)
@@ -595,8 +771,9 @@ class MainWindow(QMainWindow):
         main_area_layout.setContentsMargins(22, 18, 22, 16)
         main_area_layout.setSpacing(14)
         main_area_layout.addWidget(self.document_toolbar)
+        main_area_layout.addWidget(self.pdf_choice_frame)
         main_area_layout.addWidget(self.job_frame)
-        main_area_layout.addWidget(self.report_label)
+        main_area_layout.addWidget(self.result_frame)
         main_area_layout.addWidget(self.workspace_splitter, 1)
 
         main_area = QWidget()
@@ -625,11 +802,13 @@ class MainWindow(QMainWindow):
     def _build_step_row(self, index: int, title: str) -> QFrame:
         row = QFrame()
         row.setObjectName("StepRowPending")
+        row.setAccessibleName(f"Passaggio {index}: {title}")
 
         dot = QLabel(str(index))
         dot.setObjectName("StepDot")
         dot.setAlignment(Qt.AlignCenter)
         dot.setFixedSize(20, 20)
+        self.step_dots.append(dot)
 
         title_label = QLabel(title)
         title_label.setObjectName("StepTitle")
@@ -643,18 +822,26 @@ class MainWindow(QMainWindow):
         row.setLayout(row_layout)
         return row
 
-    def _panel(self, title: str, widget: QTextEdit) -> QWidget:
+    def _panel(
+        self,
+        title: str,
+        widget: QTextEdit,
+        *,
+        helper: QLabel | None = None,
+    ) -> tuple[QWidget, QLabel]:
         label = QLabel(title)
         label.setObjectName("SectionTitle")
         layout = QVBoxLayout()
         layout.setContentsMargins(12, 10, 12, 12)
         layout.setSpacing(8)
         layout.addWidget(label)
+        if helper is not None:
+            layout.addWidget(helper)
         layout.addWidget(widget)
         panel = QFrame()
         panel.setObjectName("Panel")
         panel.setLayout(layout)
-        return panel
+        return panel, label
 
     def _build_menu(self) -> None:
         self.open_action = QAction("Carica documento...", self)
@@ -665,11 +852,11 @@ class MainWindow(QMainWindow):
         quit_action.setShortcut(QKeySequence.Quit)
         quit_action.triggered.connect(self.close)
 
-        self.copy_output_action = QAction("Copia risultato", self)
+        self.copy_output_action = QAction("Copia per ChatGPT", self)
         self.copy_output_action.setShortcut(QKeySequence("Ctrl+Shift+C"))
         self.copy_output_action.triggered.connect(self.copy_output)
 
-        self.save_output_action = QAction("Salva risultato...", self)
+        self.save_output_action = QAction("Salva copia protetta...", self)
         self.save_output_action.setShortcut(QKeySequence.Save)
         self.save_output_action.triggered.connect(self.save_output)
 
@@ -737,10 +924,10 @@ class MainWindow(QMainWindow):
 
     def _configure_accessibility(self) -> None:
         self.load_button.setAccessibleName("Carica documento")
-        self.copy_button.setAccessibleName("Copia risultato")
-        self.save_button.setAccessibleName("Salva risultato")
-        self.clear_button.setAccessibleName("Pulisci sessione")
-        self.add_selection_button.setAccessibleName("Aggiungi selezione manuale")
+        self.copy_button.setAccessibleName("Copia per ChatGPT")
+        self.save_button.setAccessibleName("Salva anche come file")
+        self.clear_button.setAccessibleName("Nuova sessione")
+        self.add_selection_button.setAccessibleName("Aggiungi dato mancante")
         self.primary_button.setAccessibleName("Esegui passaggio corrente")
         self.setTabOrder(self.load_button, self.input_text)
         self.setTabOrder(self.input_text, self.add_selection_button)
@@ -752,6 +939,8 @@ class MainWindow(QMainWindow):
         self.setTabOrder(self.save_button, self.clear_button)
 
     def focus_findings_search(self) -> None:
+        if self.findings:
+            self.findings_panel.search_edit.setVisible(True)
         self.findings_panel.search_edit.setFocus(Qt.ShortcutFocusReason)
         self.findings_panel.search_edit.selectAll()
 
@@ -782,7 +971,7 @@ class MainWindow(QMainWindow):
             "forte la regola che ha trovato il valore, non è una probabilità statistica. "
             "Origine distingue regole locali, NER e selezioni manuali.<br><br>"
             "<b>3. Correggi le mancanze.</b> Seleziona una parola nel testo originale e usa "
-            "«Aggiungi selezione». Puoi cercare o filtrare l'elenco senza cambiare le spunte.<br><br>"
+            "«Aggiungi dato mancante». Puoi cercare o filtrare l'elenco senza cambiare le spunte.<br><br>"
             "<b>4. Conferma.</b> Il pulsante principale indica quanti dati verranno anonimizzati. "
             "Dopo ogni modifica il vecchio risultato viene bloccato finché non lo rigeneri.<br><br>"
             "<b>Tastiera:</b> Tab sposta il focus, Spazio include o esclude una riga, "
@@ -827,7 +1016,7 @@ class MainWindow(QMainWindow):
             "estensione, dimensione e hash dei file. Non salva testo originale, testo anonimizzato "
             "o valori trovati.<br><br>"
             "<b>PDF:</b> puoi conservarne il layout come pagine rasterizzate con oscuramenti "
-            "permanenti oppure scegliere Converti PDF in testo per ricomporre righe e sillabazioni, "
+            "permanenti oppure scegliere Trasforma in testo per ricomporre righe e sillabazioni, "
             "migliorare il riconoscimento e ottenere un file .txt per un LLM. I PDF scansionati "
             "possono essere letti con Tesseract OCR locale; non vengono usati servizi esterni.<br><br>"
             f'<a style="color:#4FB8E7;" href="{PROJECT_SECURITY_URL}">Apri la pagina sicurezza su GitHub</a>'
@@ -1342,6 +1531,8 @@ class MainWindow(QMainWindow):
         self._output_stale_reason = ""
         self._output_saved = True
         self._review_dirty = False
+        self._review_confirmed = False
+        self._result_used = False
         self._workflow_revision += 1
         self.document_text_dirty = False
         self.output_text_dirty = False
@@ -1365,6 +1556,7 @@ class MainWindow(QMainWindow):
         self._update_mode_notice()
         self._update_report()
         if self.loaded_document.extension == ".pdf":
+            self.pdf_choice_radios["pdf"].setChecked(True)
             if self.loaded_document.ocr_pages:
                 pages = ", ".join(str(page) for page in self.loaded_document.ocr_pages)
                 self.document_label.setText(
@@ -1384,7 +1576,7 @@ class MainWindow(QMainWindow):
                 )
                 self.statusBar().showMessage(
                     "PDF caricato. L'anonimizzazione salverà una copia redatta non selezionabile. "
-                    "Per migliorare il riconoscimento usa Converti PDF in testo nel pannello dei dati.",
+                    "Se vuoi un testo più comodo da rileggere o usare con l’IA, scegli Trasforma in testo.",
                     7000,
                 )
         elif self.loaded_document.extension == ".docx":
@@ -1407,9 +1599,7 @@ class MainWindow(QMainWindow):
                 5000,
             )
         self.findings_panel.set_document_notice(
-            "pdf"
-            if self.loaded_document.extension == ".pdf"
-            else "unsupported"
+            "unsupported"
             if not self._manual_add_supported()
             else None
         )
@@ -1556,10 +1746,12 @@ class MainWindow(QMainWindow):
     def _apply_analysis_outcome(self, outcome: AnalysisOutcome) -> None:
         self.findings = list(outcome.findings)
         self.findings_stale = False
+        self._review_confirmed = False
         self._findings_source_text = outcome.source_text
         self._findings_mode = outcome.mode
         self._fill_table()
         self._highlight_findings()
+        self._refresh_analysis_preview()
         self._focus_review_workspace()
         self._update_report()
         self._sync_action_state()
@@ -1707,7 +1899,13 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Anonimizza prima un testo o un documento.", 4000)
             return
         QApplication.clipboard().setText(self.output_text.toPlainText())
-        self.statusBar().showMessage("Risultato copiato negli appunti.", 3000)
+        self._result_used = True
+        self._update_report()
+        self._sync_action_state()
+        self.statusBar().showMessage(
+            "Copia protetta negli appunti: ora puoi incollarla in ChatGPT o in un altro strumento di IA.",
+            5000,
+        )
 
     def save_output(self) -> None:
         if self._managed_output_is_stale():
@@ -1760,12 +1958,14 @@ class MainWindow(QMainWindow):
             return
 
         self._output_saved = True
+        self._result_used = True
         self._record_activity(
             "save",
             output_path=target_path,
             mode=self._output_provenance.mode if self._output_provenance is not None else None,
         )
         self._update_report()
+        self._sync_action_state()
         self.statusBar().showMessage(f"Salvato: {target_path}", 4000)
 
     def save_reversible_map(self) -> None:
@@ -1879,6 +2079,8 @@ class MainWindow(QMainWindow):
         self._output_saved = True
         self._reversible_map_saved = True
         self._review_dirty = False
+        self._review_confirmed = False
+        self._result_used = False
         self._workflow_revision += 1
         self.input_text.clear()
         self._set_output_text("")
@@ -1965,7 +2167,9 @@ class MainWindow(QMainWindow):
         self._fill_table()
         self._highlight_findings()
         self._review_dirty = True
+        self._review_confirmed = False
         self._mark_workflow_changed("le selezioni manuali")
+        self._refresh_analysis_preview()
         self._update_report()
         self._sync_action_state()
         self.statusBar().showMessage(f"Aggiunto manualmente: {entity_label(entity_type)}.", 4000)
@@ -1982,9 +2186,7 @@ class MainWindow(QMainWindow):
         self.setTabOrder(self.findings_panel.tree, self.primary_button)
         notice_kind = None
         if self.loaded_document is not None and not self.document_text_dirty:
-            if self.loaded_document.extension == ".pdf":
-                notice_kind = "pdf"
-            elif not self._manual_add_supported():
+            if not self._manual_add_supported():
                 notice_kind = "unsupported"
         self.findings_panel.set_document_notice(notice_kind)
 
@@ -2049,7 +2251,9 @@ class MainWindow(QMainWindow):
 
     def _handle_inclusion_changed(self) -> None:
         self._review_dirty = True
+        self._review_confirmed = False
         self._mark_workflow_changed("i dati selezionati")
+        self._refresh_analysis_preview()
         self._sync_action_state()
         self._highlight_findings()
 
@@ -2079,6 +2283,8 @@ class MainWindow(QMainWindow):
         self._output_stale_reason = ""
         self._output_saved = True
         self._review_dirty = False
+        self._review_confirmed = False
+        self._result_used = False
         self._workflow_revision += 1
         self.findings = []
         self.findings_stale = True
@@ -2119,7 +2325,7 @@ class MainWindow(QMainWindow):
         return self.loaded_document.extension in {".txt", ".md", ".csv", ".docx", ".pdf"}
 
     def _manual_add_supported(self) -> bool:
-        """Il bottone "Aggiungi selezione" è supportato per i formati testuali e per
+        """Il bottone "Aggiungi dato mancante" è supportato per i formati testuali e per
         .docx/.pdf: la pipeline documento redige ogni occorrenza letterale del valore
         selezionato tramite extra_values. Resta escluso il solo .doc legacy."""
         if self.loaded_document is None or self.document_text_dirty:
@@ -2147,6 +2353,8 @@ class MainWindow(QMainWindow):
         return selection_fingerprint(self.findings, self.findings_panel.included_mask())
 
     def _has_output(self) -> bool:
+        if self._analysis_preview_active:
+            return False
         if self.output_text.toPlainText().strip():
             return True
         return self.anonymized_document is not None and not self.output_text_dirty
@@ -2206,6 +2414,7 @@ class MainWindow(QMainWindow):
             or self.reversible_mapping == self.loaded_reversible_entries
         )
         self._review_dirty = False
+        self._result_used = False
         self._update_report()
         self._sync_action_state()
 
@@ -2213,6 +2422,7 @@ class MainWindow(QMainWindow):
         self._output_provenance = None
         self._output_stale_reason = ""
         self._output_saved = True
+        self._result_used = False
         self.anonymized_document = None
         self._set_output_text("")
         self._update_report()
@@ -2229,7 +2439,10 @@ class MainWindow(QMainWindow):
         selected_mode = self._selected_mode()
         if selected_mode != self._last_selected_mode:
             self._last_selected_mode = selected_mode
+            self._review_confirmed = False
+            self._result_used = False
             self._mark_workflow_changed("la modalità di protezione")
+        self._refresh_analysis_preview()
         self._update_mode_notice()
         self._sync_action_state()
 
@@ -2246,92 +2459,301 @@ class MainWindow(QMainWindow):
     def _update_mode_notice(self, *args) -> None:
         self._refresh_mode_cards()
         if self._output_provenance is None:
-            self.report_label.setText(mode_note(self._selected_mode()))
+            self.result_frame.setVisible(False)
 
     def _update_report(self) -> None:
         provenance = self._output_provenance
         if provenance is None or not self._has_output():
-            self.report_label.setObjectName("ReportNotice")
             self.report_label.setText("")
-            self.report_label.setAccessibleName("Verifica finale")
             self.report_label.setAccessibleDescription("")
+            self.report_label.setVisible(False)
+            self.result_frame.setVisible(False)
             return
 
         if self._managed_output_is_stale():
             reason = self._output_stale_reason or "i dati di partenza"
-            self.report_label.setObjectName("ReportNoticeStale")
-            self.report_label.setAccessibleName("Risultato da rigenerare")
-            self.report_label.setText(
-                f"Risultato da rigenerare: hai modificato {reason}. "
-                "Questa anteprima non può essere copiata o salvata finché non esegui di nuovo "
-                "l'analisi e l'anonimizzazione."
+            self._set_result_style("stale")
+            self.result_title_label.setText("Risultato da rigenerare")
+            self.result_subtitle_label.setText(
+                f"Hai modificato {reason}. La copia precedente non è più coerente con le scelte correnti."
             )
+            self.result_state_label.setText("NON UTILIZZABILE")
+            self.result_metric_label.setVisible(False)
+            self.result_meta_label.setVisible(False)
+            self.result_categories_label.setVisible(False)
+            self.report_label.setText(
+                "Rianalizza i dati e crea una nuova copia protetta prima di copiarla o salvarla."
+            )
+            self.report_label.setVisible(True)
         elif provenance.kind == "restored":
-            self.report_label.setObjectName("ReportNotice")
-            self.report_label.setAccessibleName("Testo ricostruito")
-            self.report_label.setText(
-                "Testo ricostruito localmente con una mappa cifrata. "
-                "Contiene nuovamente i dati originali: conservalo e condividilo con cautela."
+            self._set_result_style("restored")
+            self.result_title_label.setText("Testo ricostruito")
+            self.result_subtitle_label.setText(
+                "La mappa locale ha reinserito i dati originali nel testo."
             )
+            self.result_state_label.setText("DATI RIPRISTINATI")
+            self.result_metric_label.setText("Mappa locale applicata")
+            self.result_meta_label.setText("Modalità Reversibile")
+            self.result_metric_label.setVisible(True)
+            self.result_meta_label.setVisible(True)
+            self.result_categories_label.setVisible(False)
+            self.report_label.setText(
+                "Questo testo contiene nuovamente informazioni personali: conservalo e condividilo con cautela."
+            )
+            self.report_label.setVisible(True)
         else:
-            excluded = provenance.excluded_findings
-            details: list[str] = []
-            if provenance.map_required:
-                details.append(
-                    "Mappa reversibile salvata"
-                    if self._reversible_map_saved
-                    else "Mappa reversibile ancora da salvare"
-                )
-            if provenance.used_ocr:
-                details.append("OCR locale usato: verifica anche il testo riconosciuto")
-            if self.output_text_dirty:
-                details.append("Risultato modificato manualmente: il salvataggio sarà in TXT")
-            state_label = "salvato" if self._output_saved else "da salvare"
-            self.report_label.setObjectName("ReportNotice")
-            self.report_label.setAccessibleName("Verifica finale")
-            detail_line = f"\nAttenzione: {' · '.join(details)}." if details else ""
-            self.report_label.setText(
-                "Verifica finale\n"
-                f"Anonimizzati: {provenance.included_findings}/{provenance.total_findings} "
-                f"· Esclusi: {excluded} · Modalità: {mode_label(provenance.mode)} "
-                f"· Formato: {provenance.output_format} · Stato: {state_label}."
-                f"{detail_line}\n"
-                "Rileggi il risultato prima di condividerlo."
+            self._set_result_style("ready")
+            source_label = (
+                "Il documento originale non è stato modificato."
+                if self.loaded_document is not None and not self.document_text_dirty
+                else "Il testo di partenza è rimasto invariato."
             )
+            self.result_title_label.setText("Copia protetta pronta")
+            self.result_subtitle_label.setText(
+                f"{source_label} Elaborazione completata interamente sul tuo computer."
+            )
+            use_document_binary = self.anonymized_document is not None and not self.output_text_dirty
+            if self._output_saved:
+                result_state = "SALVATA"
+            elif self._result_used:
+                result_state = "COPIATA"
+            elif use_document_binary:
+                result_state = "DA SALVARE"
+            else:
+                result_state = "PRONTA DA COPIARE"
+            self.result_state_label.setText(result_state)
+            included = provenance.included_findings
+            protected_label = "dato protetto" if included == 1 else "dati protetti"
+            self.result_metric_label.setText(f"{included} {protected_label}")
+            current_format = self._output_format_label() if self.output_text_dirty else provenance.output_format
+            self.result_meta_label.setText(
+                f"Modalità {mode_label(provenance.mode)} · Formato {current_format}"
+            )
+            self.result_metric_label.setVisible(True)
+            self.result_meta_label.setVisible(True)
+            categories_text = self._result_categories_text()
+            self.result_categories_label.setText(categories_text)
+            self.result_categories_label.setVisible(bool(categories_text))
+            attention_text, needs_attention = self._result_attention_text(provenance)
+            self._set_styled_object_name(
+                self.report_label,
+                "ResultAttentionWarning" if needs_attention else "ResultAttention",
+            )
+            self.report_label.setText(attention_text)
+            self.report_label.setVisible(bool(attention_text))
+
+        accessible_summary = " ".join(
+            part
+            for part in (
+                self.result_title_label.text(),
+                self.result_subtitle_label.text(),
+                self.result_metric_label.text() if not self.result_metric_label.isHidden() else "",
+                self.result_meta_label.text() if not self.result_meta_label.isHidden() else "",
+                self.result_categories_label.text() if not self.result_categories_label.isHidden() else "",
+                self.report_label.text() if not self.report_label.isHidden() else "",
+            )
+            if part
+        )
+        self.result_frame.setAccessibleDescription(accessible_summary)
         self.report_label.setAccessibleDescription(self.report_label.text())
-        self.report_label.style().unpolish(self.report_label)
-        self.report_label.style().polish(self.report_label)
+        self.result_frame.setVisible(True)
+
+    def _set_styled_object_name(self, widget: QWidget, object_name: str) -> None:
+        if widget.objectName() == object_name:
+            return
+        widget.setObjectName(object_name)
+        widget.style().unpolish(widget)
+        widget.style().polish(widget)
+
+    def _set_result_style(self, state: str) -> None:
+        warning = state in {"stale", "restored"}
+        self._set_styled_object_name(
+            self.result_frame,
+            "ResultSummaryStale"
+            if state == "stale"
+            else "ResultSummaryRestored"
+            if state == "restored"
+            else "ResultSummary",
+        )
+        self._set_styled_object_name(
+            self.result_icon_label,
+            "ResultIconWarning" if warning else "ResultIcon",
+        )
+        self._set_styled_object_name(
+            self.result_state_label,
+            "ResultStateWarning" if warning else "ResultState",
+        )
+        self._set_styled_object_name(
+            self.report_label,
+            "ResultAttentionWarning" if warning else "ResultAttention",
+        )
+        self.result_icon_label.setText("!" if warning else "✓")
+        self.result_icon_label.setAccessibleName(
+            "Richiede attenzione" if warning else "Operazione completata"
+        )
+
+    def _result_categories_text(self) -> str:
+        counts = finding_counts(self._checked_findings())
+        if not counts:
+            return ""
+        ordered = sorted(
+            counts.items(),
+            key=lambda item: (-item[1], entity_label(item[0], item[1])),
+        )
+        visible = ordered[:5]
+        parts = [
+            f"{count} {entity_label(entity_type, count)}"
+            for entity_type, count in visible
+        ]
+        remaining = len(ordered) - len(visible)
+        if remaining:
+            category_label = "categoria" if remaining == 1 else "categorie"
+            parts.append(f"+{remaining} {category_label}")
+        return "Protetti: " + " · ".join(parts)
+
+    def _result_attention_text(self, provenance: OutputProvenance) -> tuple[str, bool]:
+        items: list[str] = []
+        needs_attention = False
+        if provenance.total_findings == 0:
+            items.append("Nessun dato è stato riconosciuto automaticamente")
+            needs_attention = True
+        if provenance.excluded_findings:
+            count = provenance.excluded_findings
+            noun = "rilevamento resterà" if count == 1 else "rilevamenti resteranno"
+            items.append(f"{count} {noun} leggibile per tua scelta")
+            needs_attention = True
+        low_confidence = sum(
+            1 for finding in self._checked_findings() if finding.score < 0.8
+        )
+        if low_confidence:
+            noun = "rilevamento ha" if low_confidence == 1 else "rilevamenti hanno"
+            items.append(f"{low_confidence} {noun} affidabilità da verificare")
+            needs_attention = True
+        if provenance.used_ocr:
+            items.append("È stato usato l’OCR locale: confronta l’anteprima con il documento")
+            needs_attention = True
+        if provenance.map_required and not self._reversible_map_saved:
+            items.append("Salva la mappa cifrata prima di usare il risultato")
+            needs_attention = True
+        if self.output_text_dirty:
+            items.append("Il risultato è stato modificato: il salvataggio sarà in TXT")
+            needs_attention = True
+        if provenance.mode == "standard":
+            items.append("Standard conserva iniziali e parte del contesto")
+        items.append("Rileggi il risultato prima di condividerlo")
+        return ". ".join(items) + ".", needs_attention
+
+    def _pdf_choice_available(self) -> bool:
+        return (
+            self.loaded_document is not None
+            and self.loaded_document.extension == ".pdf"
+            and not self.document_text_dirty
+            and not self._output_is_usable()
+        )
+
+    def _pdf_conversion_requested(self) -> bool:
+        return self._pdf_choice_available() and self.pdf_choice_radios["text"].isChecked()
+
+    def _refresh_pdf_choice_cards(self) -> None:
+        for choice, card in self.pdf_choice_cards.items():
+            object_name = (
+                "PdfChoiceCardSelected"
+                if self.pdf_choice_radios[choice].isChecked()
+                else "PdfChoiceCard"
+            )
+            if card.objectName() != object_name:
+                card.setObjectName(object_name)
+                card.style().unpolish(card)
+                card.style().polish(card)
+
+    def _handle_pdf_choice_toggled(self, checked: bool) -> None:
+        if not checked:
+            return
+        self._review_confirmed = False
+        self._result_used = False
+        self._refresh_pdf_choice_cards()
+        self._sync_action_state()
 
     def _primary_state(self) -> tuple[str, str, bool]:
         """Return (action_kind, button_label, enabled) for the single step-aware primary button."""
         input_has_text = bool(self.input_text.toPlainText().strip())
         output_has_text = bool(self.output_text.toPlainText().strip())
+        if self._pdf_conversion_requested():
+            return "convert_pdf", "Trasforma e analizza", input_has_text
         if self._output_is_usable():
-            return "copy", "Copia risultato", output_has_text
+            use_document_binary = self.anonymized_document is not None and not self.output_text_dirty
+            if use_document_binary:
+                label = "Salva di nuovo" if self._result_used else "Salva copia protetta"
+                return "save", label, True
+            label = "Copia di nuovo" if self._result_used else "Copia per ChatGPT"
+            return "copy", label, output_has_text
+        if not input_has_text:
+            return "load", "Carica documento", True
         if self._findings_ready_for_filtering() and input_has_text:
-            count = len(self._checked_findings())
-            if count == 0:
-                label = "Conferma e genera senza sostituzioni"
-            elif self._managed_output_is_stale():
-                label = f"Conferma e rigenera {count} dato" if count == 1 else f"Conferma e rigenera {count} dati"
-            else:
-                label = (
-                    f"Conferma selezione e anonimizza {count} dato"
-                    if count == 1
-                    else f"Conferma selezione e anonimizza {count} dati"
-                )
-            return "anonymize", label, input_has_text
+            if not self._review_confirmed:
+                return "review", "Ho controllato, continua", True
+            return "anonymize", "Crea copia protetta", True
         label = "Rianalizza dati" if self._managed_output_is_stale() else "Analizza dati"
         return "analyze", label, input_has_text
 
     def _primary_action(self) -> None:
         kind, _label, _enabled = self._primary_state()
-        if kind == "copy":
+        if kind == "load":
+            self.open_file()
+        elif kind == "convert_pdf":
+            self._extract_document_as_text()
+        elif kind == "save":
+            self.save_output()
+        elif kind == "copy":
             self.copy_output()
+        elif kind == "review":
+            self._review_confirmed = True
+            self.statusBar().showMessage(
+                "Revisione confermata. Ora puoi creare la copia protetta.",
+                4000,
+            )
+            self._sync_action_state()
         elif kind == "anonymize":
             self.anonymize_text()
         else:
             self.analyze_text()
+
+    def _review_secondary_action(self) -> None:
+        kind, _label, _enabled = self._primary_state()
+        if (
+            kind in {"copy", "save"}
+            and self._output_provenance is not None
+            and self._output_provenance.kind == "anonymized"
+        ):
+            self._review_confirmed = False
+            self._mark_workflow_changed("la revisione riaperta")
+            self.statusBar().showMessage(
+                "Revisione riaperta. Controlla le selezioni e crea di nuovo la copia protetta.",
+                5000,
+            )
+            self._sync_action_state()
+            return
+        if kind == "anonymize":
+            self._review_confirmed = False
+            self.statusBar().showMessage(
+                "Revisione riaperta. Controlla o aggiungi i dati mancanti.",
+                4000,
+            )
+            self._sync_action_state()
+            return
+        self.add_manual_finding()
+
+    def _set_primary_attention(self, active: bool) -> None:
+        self.primary_button.setProperty("attention", active)
+        self.primary_button.style().unpolish(self.primary_button)
+        self.primary_button.style().polish(self.primary_button)
+
+    def _cue_primary_action(self) -> None:
+        if not self.primary_button.isEnabled():
+            return
+        self._primary_attention_timer.stop()
+        self._set_primary_attention(True)
+        self._primary_attention_timer.start()
 
     def _friendly_error_message(self, exc: Exception) -> str:
         message = str(exc)
@@ -2366,25 +2788,94 @@ class MainWindow(QMainWindow):
         output_usable = self._output_is_usable()
         output_stale = self._managed_output_is_stale()
         busy = self._active_job is not None
+        pdf_choice_available = self._pdf_choice_available()
+        self.pdf_choice_frame.setVisible(pdf_choice_available)
+        self._refresh_pdf_choice_cards()
+        for radio in self.pdf_choice_radios.values():
+            radio.setEnabled(pdf_choice_available and not busy)
         kind, label, primary_enabled = self._primary_state()
         self.primary_button.setText(label)
         self.primary_button.setAccessibleName(label)
         primary_descriptions = {
+            "load": "Apre un documento locale. In alternativa puoi incollare il testo nel riquadro Originale.",
+            "convert_pdf": "Trasforma il PDF in testo normalizzato e avvia una nuova analisi locale.",
             "analyze": "Analizza il testo corrente e prepara i dati rilevati per la revisione.",
+            "review": "Conferma che hai controllato le evidenziazioni e le spunte dei dati rilevati.",
             "anonymize": "Conferma le spunte correnti e genera un nuovo risultato anonimizzato.",
-            "copy": "Copia negli appunti il risultato anonimizzato verificato.",
+            "copy": "Copia la versione protetta negli appunti per usarla con ChatGPT o un altro strumento di IA.",
+            "save": "Salva sul dispositivo una nuova copia protetta senza modificare il documento originale.",
         }
         self.primary_button.setAccessibleDescription(primary_descriptions[kind])
         if hasattr(self, "primary_action"):
             self.primary_action.setText(label)
         self.primary_button.setEnabled(primary_enabled and not busy)
         self.load_button.setEnabled(not busy)
+        self.load_button.setVisible(False)
         self.copy_button.setEnabled(output_has_text and output_usable and not busy)
-        self.save_button.setEnabled(output_usable and not busy)
+        self.save_button.setText("Salva anche come file")
+        self.save_button.setAccessibleName("Salva anche come file")
+        self.save_button.setVisible(kind == "copy" and output_usable)
+        self.save_button.setEnabled(kind == "copy" and output_usable and not busy)
+        self.clear_button.setVisible(has_anything)
         self.clear_button.setEnabled(has_anything and not busy)
-        self.add_selection_button.setEnabled(input_has_text and self._manual_add_supported() and not busy)
+        reviewing = kind == "review"
+        can_return_to_review = kind == "anonymize"
+        final_anonymized_result = (
+            kind in {"copy", "save"}
+            and output_usable
+            and self._output_provenance is not None
+            and self._output_provenance.kind == "anonymized"
+        )
+        has_manual_selection = self.input_text.textCursor().hasSelection()
+        if final_anonymized_result:
+            self.add_selection_button.setText("Modifica selezioni")
+            self.add_selection_button.setAccessibleName("Modifica selezioni")
+            self.add_selection_button.setAccessibleDescription(
+                "Riapre i dati rilevati e richiede di rigenerare la copia protetta."
+            )
+            self.add_selection_button.setToolTip(
+                "Torna ai dati rilevati per modificare le scelte e creare una nuova copia protetta."
+            )
+        elif can_return_to_review:
+            self.add_selection_button.setText("Torna alla revisione")
+            self.add_selection_button.setAccessibleName("Torna alla revisione")
+            self.add_selection_button.setAccessibleDescription(
+                "Riapre il controllo dei dati rilevati prima di creare la copia protetta."
+            )
+            self.add_selection_button.setToolTip(
+                "Torna ai dati rilevati per correggere spunte o aggiungere un dato mancante."
+            )
+        else:
+            self.add_selection_button.setText("Aggiungi dato mancante")
+            self.add_selection_button.setAccessibleName("Aggiungi dato mancante")
+            self.add_selection_button.setAccessibleDescription(
+                "Aggiunge ai dati rilevati la parola o frase selezionata nel testo originale."
+            )
+            self.add_selection_button.setToolTip(
+                "Seleziona una parola o frase nel pannello «Testo originale» non rilevata "
+                "automaticamente, poi clicca qui per aggiungerla manualmente."
+            )
+        self.add_selection_button.setVisible(
+            reviewing or can_return_to_review or final_anonymized_result
+        )
+        self.add_selection_button.setEnabled(
+            not busy
+            and (
+                final_anonymized_result
+                or can_return_to_review
+                or (
+                    reviewing
+                    and has_manual_selection
+                    and input_has_text
+                    and self._manual_add_supported()
+                )
+            )
+        )
+        self.findings_panel.setVisible(not output_usable)
+        self.document_toolbar.sync_secondary_visibility()
         self.input_text.setReadOnly(busy)
         self.output_text.setEnabled(not output_stale and not busy)
+        self.output_text.setReadOnly(self._analysis_preview_active)
         self.findings_panel.setEnabled(not busy)
         for radio in self.mode_radios.values():
             radio.setEnabled(not busy)
@@ -2401,10 +2892,15 @@ class MainWindow(QMainWindow):
             self.copy_output_action.setEnabled(output_has_text and output_usable and not busy)
             self.save_output_action.setEnabled(output_usable and not busy)
             self.primary_action.setEnabled(primary_enabled and not busy)
-            self.focus_search_action.setEnabled(input_has_text and not busy)
+            self.focus_search_action.setEnabled(
+                bool(self.findings) and self._findings_ready_for_filtering() and not busy
+            )
             self.activity_action.setEnabled(not busy)
         self._update_map_status()
         self._update_workflow_steps()
+        if kind != self._last_primary_phase and not busy:
+            self._last_primary_phase = kind
+            QTimer.singleShot(0, self._cue_primary_action)
 
     def _update_map_status(self) -> None:
         if self.reversible_mapping and not self._reversible_map_saved:
@@ -2434,31 +2930,33 @@ class MainWindow(QMainWindow):
         self.map_status_label.setVisible(show_map_status)
 
     def _workflow_step_states(self) -> list[str]:
-        step1_done = self.loaded_document is not None or bool(self.input_text.toPlainText().strip())
-        step2_done = (
-            step1_done
-            and not self.findings_stale
-            and self._findings_source_text == self.input_text.toPlainText()
-            and self._findings_mode == self._selected_mode()
-        )
-        has_manual_finding = any(finding.source == "manual" for finding in self.findings)
-        step4_done = self._output_is_usable()
-
-        def state(done: bool, reachable: bool) -> str:
-            if done:
-                return "done"
-            return "current" if reachable else "pending"
-
+        phase, _label, _enabled = self._primary_state()
+        phase_index = {
+            "load": 0,
+            "convert_pdf": 1,
+            "analyze": 1,
+            "review": 2,
+            "anonymize": 3,
+            "copy": 4,
+            "save": 4,
+        }[phase]
+        if phase in {"copy", "save"} and self._result_used:
+            return ["done"] * len(self.step_rows)
         return [
-            state(step1_done, True),
-            state(step2_done, step1_done),
-            state(has_manual_finding or step4_done, step2_done),
-            state(step4_done, step2_done),
+            "done" if index < phase_index else "current" if index == phase_index else "pending"
+            for index in range(len(self.step_rows))
         ]
 
     def _update_workflow_steps(self) -> None:
         object_names = {"pending": "StepRowPending", "current": "StepRowCurrent", "done": "StepRowDone"}
-        for row, step_state in zip(self.step_rows, self._workflow_step_states()):
+        for index, (row, step_state) in enumerate(
+            zip(self.step_rows, self._workflow_step_states()),
+            start=1,
+        ):
+            self.step_dots[index - 1].setText("✓" if step_state == "done" else str(index))
+            row.setAccessibleDescription(
+                "Completato" if step_state == "done" else "Passaggio corrente" if step_state == "current" else "Da fare"
+            )
             object_name = object_names[step_state]
             if row.objectName() != object_name:
                 row.setObjectName(object_name)
@@ -2485,7 +2983,10 @@ class MainWindow(QMainWindow):
             # formattazione e riemette textChanged senza alterare il contenuto.
             if current_text != self._findings_source_text:
                 self.findings_stale = True
+                self._review_confirmed = False
+                self._result_used = False
                 self._mark_workflow_changed("il testo sorgente")
+                self._refresh_analysis_preview()
         self._sync_action_state()
 
     def _handle_output_text_changed(self) -> None:
@@ -2499,6 +3000,8 @@ class MainWindow(QMainWindow):
         self._sync_action_state()
 
     def _set_output_text(self, text: str) -> None:
+        self._analysis_preview_active = False
+        self._set_output_presentation(preview=False)
         self._updating_output_text = True
         try:
             self.output_text.setPlainText(text)
@@ -2510,6 +3013,56 @@ class MainWindow(QMainWindow):
         elif not self._findings_ready_for_filtering():
             self._show_input_workspace()
         self._sync_action_state()
+
+    def _set_analysis_preview(self, text: str) -> None:
+        self._analysis_preview_active = True
+        self._set_output_presentation(preview=True)
+        self._updating_output_text = True
+        try:
+            self.output_text.setPlainText(text)
+        finally:
+            self._updating_output_text = False
+        self.output_text_dirty = False
+        if text.strip():
+            self._show_result_workspace()
+        self._sync_action_state()
+
+    def _refresh_analysis_preview(self) -> None:
+        if self._output_provenance is not None:
+            return
+        if not self._findings_ready_for_filtering():
+            if self._analysis_preview_active:
+                self._set_output_text("")
+            return
+        source_text = self.input_text.toPlainText()
+        if not source_text.strip():
+            if self._analysis_preview_active:
+                self._set_output_text("")
+            return
+        preview_text = self.engine.anonymize(
+            source_text,
+            self._checked_findings(),
+            self._selected_mode(),
+        )
+        self._set_analysis_preview(preview_text)
+
+    def _set_output_presentation(self, *, preview: bool) -> None:
+        if not hasattr(self, "output_panel_title"):
+            return
+        if preview:
+            self.output_panel_title.setText("Anteprima anonimizzata")
+            self.output_preview_notice.setVisible(True)
+            self.output_text.setAccessibleName("Anteprima anonimizzata")
+            self.output_text.setAccessibleDescription(
+                "Anteprima aggiornata in base ai dati selezionati. Non è ancora il documento definitivo."
+            )
+            return
+        self.output_panel_title.setText("Testo anonimizzato")
+        self.output_preview_notice.setVisible(False)
+        self.output_text.setAccessibleName("Testo anonimizzato")
+        self.output_text.setAccessibleDescription(
+            "Risultato prodotto da OMISSIS. Se diventa obsoleto viene disabilitato fino alla rigenerazione."
+        )
 
     def _record_activity(
         self,

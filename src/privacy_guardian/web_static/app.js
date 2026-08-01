@@ -1,31 +1,50 @@
 const source = document.querySelector("#source");
 const result = document.querySelector("#result");
 const findingsBody = document.querySelector("#findings-body");
+const findingsHeading = document.querySelector("#findings-heading");
 const counter = document.querySelector("#counter");
 const statusLabel = document.querySelector("#engine-status");
 const modeSelect = document.querySelector("#mode-select");
+const modeNote = document.querySelector("#mode-note");
+const report = document.querySelector("#report");
 const reportSummary = document.querySelector("#report-summary");
 const reportChecklist = document.querySelector("#report-checklist");
 const fileInput = document.querySelector("#file-input");
+const fileStatusTitle = document.querySelector("#file-status-title");
 const fileStatus = document.querySelector("#file-status");
-const saveButton = document.querySelector("#save-btn");
-const saveMapButton = document.querySelector("#save-map-btn");
-const workflowFileButton = document.querySelector(".workflow-button[for='file-input']");
 const processingNotice = document.querySelector("#processing-notice");
-const reversiblePanel = document.querySelector("#reversible-panel");
-const passphraseInput = document.querySelector("#passphrase-input");
-const mapInput = document.querySelector("#map-input");
-const restorePassphraseInput = document.querySelector("#restore-passphrase-input");
-const restoreButton = document.querySelector("#restore-btn");
-const restoreStatus = document.querySelector("#restore-status");
-let modeNotes = {
-  standard: "Standard mantiene leggibili struttura e contesto, conservando iniziali e date. Per documenti ad alto rischio valuta Massima protezione.",
-  maximum: "Massima protezione usa segnaposto completi e redige anche date comuni riconosciute.",
-  reversible: "Reversibile sostituisce i dati con segnaposto numerati: conserva la mappa cifrata per poterli ricostruire.",
-};
-let maxFileBytes = 0;
+const primaryAction = document.querySelector("#primary-action");
+const primaryLabel = document.querySelector("#primary-label");
+const clearButton = document.querySelector("#clear-btn");
+const secondarySaveButton = document.querySelector("#secondary-save-btn");
+const stepEyebrow = document.querySelector("#step-eyebrow");
+const actionTitle = document.querySelector("#action-title");
+const actionDescription = document.querySelector("#action-description");
+const liveStatus = document.querySelector("#live-status");
+const errorNotice = document.querySelector("#error-notice");
+const errorMessage = document.querySelector("#error-message");
+const documentResult = document.querySelector("#document-result");
+const resultFilename = document.querySelector("#result-filename");
+const sourceState = document.querySelector("#source-state");
+const resultState = document.querySelector("#result-state");
+const reviewGuidance = document.querySelector("#review-guidance");
+const actionStage = document.querySelector("#action-stage");
+const findingsSection = document.querySelector("#findings-section");
+const workflowSteps = Array.from(document.querySelectorAll(".workflow-step"));
+
+const phases = ["load", "analyze", "review", "protect", "use"];
+let phase = "load";
+let busy = false;
 let activeDocument = false;
-let pendingMapping = null;
+let currentFindings = [];
+let pendingDocument = null;
+let maxFileBytes = 0;
+let cueTimer = null;
+let reviewExposed = false;
+let modeNotes = {
+  standard: "Mantiene leggibili struttura e contesto, conservando iniziali e date.",
+  maximum: "Usa segnaposto completi e protegge anche le date comuni riconosciute.",
+};
 
 function updateProcessingNotice() {
   const hostname = location.hostname;
@@ -33,97 +52,6 @@ function updateProcessingNotice() {
   processingNotice.textContent = isLocalhost
     ? "Elaborazione locale · i dati restano sul dispositivo"
     : "Elaborazione sul server OMISSIS configurato · i dati vengono inviati a questo server";
-}
-
-async function postJson(path, text) {
-  const payload = {text, mode: modeSelect.value};
-  if (modeSelect.value === "reversible") {
-    payload.passphrase = passphraseInput.value;
-  }
-  const response = await fetch(path, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    cache: "no-store",
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || "Richiesta non riuscita");
-  }
-
-  return response.json();
-}
-
-async function postDocument(path) {
-  if (!fileInput.files.length) {
-    throw new Error("Scegli un documento da anonimizzare.");
-  }
-
-  const formData = new FormData();
-  formData.append("mode", modeSelect.value);
-  if (modeSelect.value === "reversible") {
-    formData.append("passphrase", passphraseInput.value);
-  }
-  formData.append("file", fileInput.files[0]);
-
-  const response = await fetch(path, {
-    method: "POST",
-    cache: "no-store",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || "Documento non elaborato");
-  }
-
-  return response.json();
-}
-
-function renderFindings(findings) {
-  findingsBody.replaceChildren();
-  counter.textContent = `${findings.length} ${findings.length === 1 ? "elemento" : "elementi"}`;
-
-  for (const finding of findings) {
-    const row = document.createElement("tr");
-    const cells = [
-      finding.label || finding.entity_type,
-      finding.preview,
-      `${finding.start}-${finding.end}`,
-      reliabilityLabel(Number(finding.score)),
-      finding.source_label || finding.source,
-    ];
-
-    for (const value of cells) {
-      const cell = document.createElement("td");
-      cell.textContent = value;
-      row.appendChild(cell);
-    }
-
-    findingsBody.appendChild(row);
-  }
-}
-
-function reliabilityLabel(score) {
-  if (score >= 0.9) return "Alta";
-  if (score >= 0.8) return "Buona";
-  return "Da verificare";
-}
-
-function renderReport(report) {
-  reportChecklist.replaceChildren();
-  if (report && report.summary) {
-    reportSummary.textContent = report.summary;
-    for (const item of report.checklist || []) {
-      const checklistItem = document.createElement("li");
-      checklistItem.textContent = item;
-      reportChecklist.appendChild(checklistItem);
-    }
-    return;
-  }
-
-  reportSummary.textContent = modeNotes[modeSelect.value] || "";
 }
 
 function hasDocument() {
@@ -134,40 +62,358 @@ function hasText() {
   return source.value.trim().length > 0;
 }
 
-function updateReversibleControls() {
-  reversiblePanel.hidden = modeSelect.value !== "reversible";
-  if (modeSelect.value !== "reversible") {
-    passphraseInput.value = "";
+function hasInput() {
+  return hasDocument() || hasText();
+}
+
+function phaseIndex() {
+  return phase === "complete" ? phases.length : phases.indexOf(phase);
+}
+
+function reviewTitle() {
+  const count = currentFindings.length;
+  if (count === 0) return "Controlla il risultato dell'analisi";
+  if (count === 1) return "Controlla il dato rilevato";
+  return `Controlla ${count} dati rilevati`;
+}
+
+function actionContent() {
+  if (busy) {
+    return {
+      eyebrow: phase === "analyze" ? "ANALISI IN CORSO" : "PROTEZIONE IN CORSO",
+      title: phase === "analyze" ? "Sto cercando i dati personali" : "Sto creando la copia protetta",
+      description: "Il documento resta in questa sessione. Attendi il completamento del passaggio.",
+      label: phase === "analyze" ? "Analisi in corso…" : "Protezione in corso…",
+    };
+  }
+
+  if (phase === "analyze") {
+    return {
+      eyebrow: "PASSAGGIO 2 DI 5",
+      title: "Il contenuto è pronto per il controllo",
+      description: "Avvia l'analisi locale per individuare nomi, contatti, codici e altri dati personali.",
+      label: "Analizza dati",
+    };
+  }
+  if (phase === "review") {
+    return {
+      eyebrow: "PASSAGGIO 3 DI 5",
+      title: reviewTitle(),
+      description: "Rileggi i valori trovati: il controllo umano resta importante anche quando l'analisi è automatica.",
+      label: "Ho controllato, continua",
+    };
+  }
+  if (phase === "protect") {
+    return {
+      eyebrow: "PASSAGGIO 4 DI 5",
+      title: "Crea ora la copia protetta",
+      description: "OMISSIS applicherà la modalità scelta senza modificare il documento originale.",
+      label: "Crea copia protetta",
+    };
+  }
+  if (phase === "use") {
+    return {
+      eyebrow: "PASSAGGIO 5 DI 5",
+      title: "La copia protetta è pronta",
+      description: pendingDocument
+        ? "Scarica il nuovo documento e rileggilo prima di condividerlo."
+        : "Copiala negli appunti e rileggila prima di usarla con un servizio di IA.",
+      label: pendingDocument ? "Scarica risultato" : "Copia risultato",
+    };
+  }
+  if (phase === "complete") {
+    return {
+      eyebrow: "FLUSSO COMPLETATO",
+      title: "Il risultato è sotto il tuo controllo",
+      description: pendingDocument
+        ? "Il documento protetto è stato scaricato. Puoi scaricarlo di nuovo oppure iniziare una nuova sessione."
+        : "Il testo protetto è stato copiato. Puoi copiarlo di nuovo oppure iniziare una nuova sessione.",
+      label: pendingDocument ? "Scarica di nuovo" : "Copia di nuovo",
+    };
+  }
+  return {
+    eyebrow: "PASSAGGIO 1 DI 5",
+    title: "Porta qui ciò che vuoi proteggere",
+    description: "Carica un documento dal computer oppure incolla direttamente il testo nel riquadro sottostante.",
+    label: "Carica documento",
+  };
+}
+
+function cuePrimaryAction() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
+  }
+  window.clearTimeout(cueTimer);
+  primaryAction.classList.remove("attention-cue");
+  void primaryAction.offsetWidth;
+  primaryAction.classList.add("attention-cue");
+  cueTimer = window.setTimeout(() => primaryAction.classList.remove("attention-cue"), 820);
+}
+
+function updateWorkflowSteps() {
+  const currentIndex = phaseIndex();
+  workflowSteps.forEach((step, index) => {
+    const marker = step.querySelector(".step-marker");
+    const isDone = index < currentIndex || phase === "complete";
+    const isCurrent = index === currentIndex && phase !== "complete";
+    step.classList.toggle("is-done", isDone);
+    step.classList.toggle("is-current", isCurrent);
+    step.classList.toggle("is-pending", !isDone && !isCurrent);
+    marker.textContent = isDone ? "✓" : String(index + 1);
+    if (isCurrent) {
+      step.setAttribute("aria-current", "step");
+    } else {
+      step.removeAttribute("aria-current");
+    }
+  });
+}
+
+function updateInterface({cue = false, announce = true} = {}) {
+  const content = actionContent();
+  document.body.dataset.phase = phase;
+  actionStage.classList.toggle("is-compact", phase !== "load");
+  stepEyebrow.textContent = content.eyebrow;
+  actionTitle.textContent = content.title;
+  actionDescription.textContent = content.description;
+  primaryLabel.textContent = content.label;
+  primaryAction.disabled = busy || (phase === "review" && !reviewExposed);
+  primaryAction.setAttribute("aria-busy", String(busy));
+  modeSelect.disabled = busy;
+  source.readOnly = busy || hasDocument();
+  clearButton.disabled = busy;
+  clearButton.hidden = !hasInput() && phase === "load";
+  modeNote.textContent = modeNotes[modeSelect.value] || "";
+  updateWorkflowSteps();
+
+  sourceState.textContent = hasDocument() ? "Documento caricato" : hasText() ? "Testo presente" : "In attesa";
+  resultState.textContent = pendingDocument || result.value.trim() ? "Pronta" : "Non ancora creata";
+  secondarySaveButton.hidden = !result.value.trim();
+  reviewGuidance.classList.toggle("is-active", phase === "review");
+
+  if (announce) {
+    liveStatus.textContent = `${content.eyebrow}. ${content.title}.`;
+  }
+  if (cue) {
+    cuePrimaryAction();
   }
 }
 
-function requirePassphrase() {
-  if (modeSelect.value === "reversible" && !passphraseInput.value.trim()) {
-    throw new Error("Per la modalità reversibile inserisci una passphrase.");
+function setPhase(nextPhase, options = {}) {
+  const changed = phase !== nextPhase;
+  phase = nextPhase;
+  if (phase !== "review") reviewExposed = false;
+  updateInterface({cue: changed && options.cue !== false, announce: options.announce !== false});
+}
+
+function exposeReviewResults() {
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.requestAnimationFrame(() => {
+    findingsSection.scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block: "start"});
+    findingsHeading.focus({preventScroll: true});
+    window.setTimeout(() => {
+      reviewExposed = true;
+      updateInterface({cue: true, announce: false});
+    }, reduceMotion ? 0 : 360);
+  });
+}
+
+function showError(message) {
+  errorMessage.textContent = message;
+  errorNotice.hidden = false;
+  liveStatus.textContent = `Errore. ${message}`;
+}
+
+function clearError() {
+  errorMessage.textContent = "";
+  errorNotice.hidden = true;
+}
+
+function renderFindings(findings, {analyzed = false} = {}) {
+  currentFindings = findings;
+  findingsBody.replaceChildren();
+  counter.textContent = `${findings.length} ${findings.length === 1 ? "elemento" : "elementi"}`;
+
+  if (!findings.length) {
+    const row = document.createElement("tr");
+    row.className = "empty-row";
+    const cell = document.createElement("td");
+    cell.colSpan = 4;
+    cell.textContent = analyzed
+      ? "Nessun dato rilevato automaticamente. Controlla comunque il contenuto originale."
+      : "I dati trovati appariranno qui dopo l'analisi.";
+    row.appendChild(cell);
+    findingsBody.appendChild(row);
+    return;
+  }
+
+  for (const finding of findings) {
+    const row = document.createElement("tr");
+    const cells = [
+      finding.label || finding.entity_type,
+      finding.preview,
+      reliabilityLabel(Number(finding.score)),
+      finding.source_label || finding.source,
+    ];
+    for (const value of cells) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    }
+    findingsBody.appendChild(row);
   }
 }
 
-function clearPendingMapping() {
-  pendingMapping = null;
-  saveMapButton.disabled = true;
+function reliabilityLabel(score) {
+  if (score >= 0.9) return "Alta";
+  if (score >= 0.8) return "Buona";
+  return "Da verificare";
 }
 
-function storeMapping(data) {
-  pendingMapping = data.mapping_base64
-    ? {
-        contentBase64: data.mapping_base64,
-        filename: data.mapping_filename || "omissis-mappa.omissis-map",
-        mediaType: data.mapping_media_type || "application/json",
-      }
-    : null;
-  saveMapButton.disabled = !pendingMapping;
+function renderReport(payload) {
+  reportChecklist.replaceChildren();
+  if (!payload || !payload.summary) {
+    report.hidden = true;
+    reportSummary.textContent = "";
+    return;
+  }
+  report.hidden = false;
+  reportSummary.textContent = payload.summary;
+  for (const item of payload.checklist || []) {
+    const checklistItem = document.createElement("li");
+    checklistItem.textContent = item;
+    reportChecklist.appendChild(checklistItem);
+  }
+}
+
+function resetGeneratedState() {
+  currentFindings = [];
+  pendingDocument = null;
+  result.value = "";
+  documentResult.hidden = true;
+  resultFilename.textContent = "Documento protetto pronto";
+  renderFindings([]);
+  renderReport(null);
+  clearError();
+}
+
+function resetSession() {
+  source.value = "";
+  result.value = "";
+  fileInput.value = "";
+  activeDocument = false;
+  pendingDocument = null;
+  currentFindings = [];
+  fileStatusTitle.textContent = "Nessun documento caricato";
+  fileStatus.textContent = "Puoi anche trascinare un file in questa finestra o incollare del testo.";
+  documentResult.hidden = true;
+  renderFindings([]);
+  renderReport(null);
+  clearError();
+  setPhase("load");
+  source.focus();
+}
+
+async function postJson(path) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    cache: "no-store",
+    body: JSON.stringify({text: source.value, mode: modeSelect.value}),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Richiesta non riuscita");
+  }
+  return response.json();
+}
+
+async function postDocument(path) {
+  if (!fileInput.files.length) {
+    throw new Error("Scegli un documento da proteggere.");
+  }
+  const formData = new FormData();
+  formData.append("mode", modeSelect.value);
+  formData.append("file", fileInput.files[0]);
+  const response = await fetch(path, {method: "POST", cache: "no-store", body: formData});
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Documento non elaborato");
+  }
+  return response.json();
+}
+
+function setBusy(isBusy) {
+  busy = isBusy;
+  updateInterface({cue: false, announce: true});
+}
+
+async function analyze() {
+  if (!hasInput()) {
+    setPhase("load");
+    return;
+  }
+  clearError();
+  setBusy(true);
+  try {
+    const data = hasDocument()
+      ? await postDocument("/api/analyze-document")
+      : await postJson("/api/analyze");
+    statusLabel.textContent = data.engine_status;
+    renderFindings(data.findings || [], {analyzed: true});
+    renderReport(data.report);
+    if (data.filename) {
+      fileStatusTitle.textContent = "Documento analizzato";
+      fileStatus.textContent = data.filename;
+    }
+    setBusy(false);
+    setPhase("review", {cue: false});
+    exposeReviewResults();
+  } catch (error) {
+    setBusy(false);
+    showError(error.message);
+    setPhase("analyze", {cue: false, announce: false});
+  }
+}
+
+async function anonymize() {
+  clearError();
+  setBusy(true);
+  try {
+    const data = hasDocument()
+      ? await postDocument("/api/anonymize-document")
+      : await postJson("/api/anonymize");
+    statusLabel.textContent = data.engine_status;
+    renderFindings(data.findings || [], {analyzed: true});
+    renderReport(data.report);
+
+    if (data.content_base64) {
+      pendingDocument = {
+        filename: data.filename,
+        contentBase64: data.content_base64,
+        mediaType: data.media_type,
+      };
+      documentResult.hidden = false;
+      resultFilename.textContent = data.filename;
+      fileStatusTitle.textContent = "Copia protetta pronta";
+      fileStatus.textContent = "Il documento originale non è stato modificato.";
+    } else {
+      pendingDocument = null;
+      result.value = data.text || "";
+      documentResult.hidden = true;
+    }
+    setBusy(false);
+    setPhase("use");
+  } catch (error) {
+    setBusy(false);
+    showError(error.message);
+    setPhase("protect", {cue: false, announce: false});
+  }
 }
 
 function downloadBase64(filename, contentBase64, mediaType) {
   const byteCharacters = atob(contentBase64);
   const byteArrays = [];
   const chunkSize = 4096;
-
   for (let offset = 0; offset < byteCharacters.length; offset += chunkSize) {
     const slice = byteCharacters.slice(offset, offset + chunkSize);
     const bytes = new Uint8Array(slice.length);
@@ -176,7 +422,6 @@ function downloadBase64(filename, contentBase64, mediaType) {
     }
     byteArrays.push(bytes);
   }
-
   const blob = new Blob(byteArrays, {type: mediaType || "application/octet-stream"});
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -200,169 +445,115 @@ function downloadText(filename, text) {
   URL.revokeObjectURL(url);
 }
 
+async function copyResult() {
+  try {
+    await navigator.clipboard.writeText(result.value);
+  } catch (_error) {
+    result.focus();
+    result.select();
+    document.execCommand("copy");
+  }
+}
+
+async function useResult() {
+  clearError();
+  if (pendingDocument) {
+    downloadBase64(pendingDocument.filename, pendingDocument.contentBase64, pendingDocument.mediaType);
+    liveStatus.textContent = `Scaricato ${pendingDocument.filename}.`;
+  } else if (result.value.trim()) {
+    await copyResult();
+    liveStatus.textContent = "Testo protetto copiato negli appunti.";
+  } else {
+    showError("Il risultato non è disponibile. Crea nuovamente la copia protetta.");
+    return;
+  }
+  setPhase("complete");
+}
+
+async function runPrimaryAction() {
+  if (busy) return;
+  if (phase === "load") {
+    fileInput.click();
+  } else if (phase === "analyze") {
+    await analyze();
+  } else if (phase === "review") {
+    setPhase("protect");
+  } else if (phase === "protect") {
+    await anonymize();
+  } else {
+    await useResult();
+  }
+}
+
 function formatBytes(value) {
-  if (value === null || value === undefined || Number.isNaN(value)) {
-    return "";
-  }
-  if (value % (1024 * 1024) === 0) {
-    return `${value / (1024 * 1024)} MB`;
-  }
-  if (value % 1024 === 0) {
-    return `${value / 1024} KB`;
-  }
+  if (!Number.isFinite(value)) return "";
+  if (value % (1024 * 1024) === 0) return `${value / (1024 * 1024)} MB`;
+  if (value % 1024 === 0) return `${value / 1024} KB`;
   return `${value} byte`;
 }
 
-function setBusy(isBusy) {
-  document.querySelectorAll("button").forEach((button) => {
-    button.disabled = isBusy;
-  });
-  if (isBusy) {
-    workflowFileButton.classList.add("disabled");
-  } else {
-    workflowFileButton.classList.remove("disabled");
-  }
-}
-
-async function analyze() {
-  setBusy(true);
-  try {
-    const data = hasDocument() && !hasText()
-      ? await postDocument("/api/analyze-document")
-      : await postJson("/api/analyze", source.value);
-    statusLabel.textContent = data.engine_status;
-    if (data.filename) {
-      fileStatus.textContent = `Documento analizzato: ${data.filename}`;
-    }
-    renderFindings(data.findings);
-    renderReport(data.report);
-  } catch (error) {
-    statusLabel.textContent = error.message;
-    reportSummary.textContent = error.message;
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function anonymize() {
-  setBusy(true);
-  try {
-    requirePassphrase();
-    const data = hasDocument() && !hasText()
-      ? await postDocument("/api/anonymize-document")
-      : await postJson("/api/anonymize", source.value);
-    storeMapping(data);
-    if (data.content_base64) {
-      downloadBase64(data.filename, data.content_base64, data.media_type);
-      result.value = "";
-      fileStatus.textContent = `Documento pronto: ${data.filename}`;
-    } else {
-      result.value = data.text;
-    }
-    statusLabel.textContent = data.engine_status;
-    if (pendingMapping) {
-      fileStatus.textContent += " Mappa cifrata pronta per il download.";
-    }
-    renderFindings(data.findings);
-    renderReport(data.report);
-  } catch (error) {
-    statusLabel.textContent = error.message;
-    reportSummary.textContent = error.message;
-  } finally {
-    setBusy(false);
-  }
-}
-
-document.querySelector("#analyze-btn").addEventListener("click", analyze);
-document.querySelector("#anonymize-btn").addEventListener("click", anonymize);
-document.querySelector("#clear-btn").addEventListener("click", () => {
+function acceptSelectedFile() {
+  if (!fileInput.files.length) return;
+  const file = fileInput.files[0];
+  activeDocument = true;
   source.value = "";
-  result.value = "";
-  fileInput.value = "";
+  resetGeneratedState();
+  const limit = maxFileBytes ? ` · limite ${formatBytes(maxFileBytes)}` : "";
+  fileStatusTitle.textContent = file.name;
+  fileStatus.textContent = `${formatBytes(file.size)}${limit} · pronto per l'analisi`;
+  setPhase("analyze");
+}
+
+primaryAction.addEventListener("click", runPrimaryAction);
+clearButton.addEventListener("click", resetSession);
+secondarySaveButton.addEventListener("click", () => {
+  if (result.value.trim()) downloadText("testo_anonimizzato.txt", result.value);
+});
+fileInput.addEventListener("change", acceptSelectedFile);
+
+source.addEventListener("input", () => {
   activeDocument = false;
-  fileStatus.textContent = "Nessun file selezionato";
-  passphraseInput.value = "";
-  mapInput.value = "";
-  restorePassphraseInput.value = "";
-  restoreStatus.textContent = "";
-  clearPendingMapping();
-  renderFindings([]);
-  renderReport(null);
-});
-document.querySelector("#copy-btn").addEventListener("click", async () => {
-  await navigator.clipboard.writeText(result.value);
-});
-saveButton.addEventListener("click", () => {
-  if (result.value.trim()) {
-    downloadText("testo_anonimizzato.txt", result.value);
-  }
-});
-saveMapButton.addEventListener("click", () => {
-  if (pendingMapping) {
-    downloadBase64(pendingMapping.filename, pendingMapping.contentBase64, pendingMapping.mediaType);
+  fileInput.value = "";
+  resetGeneratedState();
+  if (hasText()) {
+    fileStatusTitle.textContent = "Testo incollato";
+    fileStatus.textContent = "Il testo è pronto per l'analisi locale.";
+    setPhase("analyze");
+  } else {
+    fileStatusTitle.textContent = "Nessun documento caricato";
+    fileStatus.textContent = "Puoi anche trascinare un file in questa finestra o incollare del testo.";
+    setPhase("load");
   }
 });
 
-restoreButton.addEventListener("click", async () => {
-  if (!result.value.trim()) {
-    restoreStatus.textContent = "Inserisci o genera il testo anonimizzato prima di ricostruirlo.";
-    return;
-  }
-  if (!mapInput.files.length) {
-    restoreStatus.textContent = "Scegli una mappa reversibile cifrata.";
-    return;
-  }
-  if (!restorePassphraseInput.value.trim()) {
-    restoreStatus.textContent = "Inserisci la passphrase della mappa reversibile.";
-    return;
-  }
-
-  setBusy(true);
-  restoreStatus.textContent = "Ricostruzione in corso...";
-  try {
-    const formData = new FormData();
-    formData.append("text", result.value);
-    formData.append("passphrase", restorePassphraseInput.value);
-    formData.append("mapping", mapInput.files[0]);
-    const response = await fetch("/api/restore", {
-      method: "POST",
-      cache: "no-store",
-      body: formData,
-    });
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      throw new Error(data.detail || "Ricostruzione non riuscita");
-    }
-    const data = await response.json();
-    result.value = data.text;
-    statusLabel.textContent = data.engine_status;
-    restoreStatus.textContent = `Testo ricostruito: ${data.entries} ${data.entries === 1 ? "voce" : "voci"}.`;
-  } catch (error) {
-    restoreStatus.textContent = error.message;
-  } finally {
-    setBusy(false);
-  }
+modeSelect.addEventListener("change", () => {
+  resetGeneratedState();
+  setPhase(hasInput() ? "analyze" : "load");
 });
 
-const NER_NOTICE_TEXT = (
-  "Riconoscimento nomi ridotto: i nomi senza contesto (es. un nome e cognome isolati) potrebbero non essere " +
-  "rilevati. Per il riconoscimento completo installa spaCy con il modello italiano (vedi README)."
-);
+let dragDepth = 0;
+document.addEventListener("dragenter", (event) => {
+  event.preventDefault();
+  dragDepth += 1;
+  document.body.classList.add("is-dragging");
+});
+document.addEventListener("dragover", (event) => event.preventDefault());
+document.addEventListener("dragleave", () => {
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (dragDepth === 0) document.body.classList.remove("is-dragging");
+});
+document.addEventListener("drop", (event) => {
+  event.preventDefault();
+  dragDepth = 0;
+  document.body.classList.remove("is-dragging");
+  if (!event.dataTransfer.files.length) return;
+  fileInput.files = event.dataTransfer.files;
+  acceptSelectedFile();
+});
 
 updateProcessingNotice();
-
-function showNerNotice() {
-  if (document.querySelector(".ner-notice")) {
-    return;
-  }
-  const notice = document.createElement("section");
-  notice.className = "ner-notice";
-  notice.setAttribute("aria-label", "Avviso riconoscimento nomi");
-  const text = document.createElement("p");
-  text.textContent = NER_NOTICE_TEXT;
-  notice.appendChild(text);
-  document.querySelector(".command-row").insertAdjacentElement("afterend", notice);
-}
+renderFindings([]);
+updateInterface({cue: true, announce: false});
 
 fetch("/api/health", {cache: "no-store"})
   .then((response) => response.json())
@@ -370,66 +561,12 @@ fetch("/api/health", {cache: "no-store"})
     statusLabel.textContent = data.engine_status;
     modeNotes = data.mode_notes || modeNotes;
     maxFileBytes = data.max_file_bytes || 0;
+    modeNote.textContent = modeNotes[modeSelect.value] || "";
     if (data.ner_active === false) {
-      showNerNotice();
+      statusLabel.textContent = `${data.engine_status} · riconoscimento nomi ridotto`;
     }
-    renderReport(null);
-    updateReversibleControls();
   })
   .catch(() => {
-    statusLabel.textContent = "Server non raggiungibile.";
+    statusLabel.textContent = "Server non raggiungibile";
+    showError("La web app locale non risponde. Riavvia OMISSIS e riprova.");
   });
-
-fileInput.addEventListener("change", () => {
-  if (!fileInput.files.length) {
-    activeDocument = false;
-    fileStatus.textContent = "Nessun documento caricato. Puoi incollare testo o trascinare un file nella finestra.";
-    return;
-  }
-
-  const file = fileInput.files[0];
-  const limit = maxFileBytes ? `, limite ${formatBytes(maxFileBytes)}` : "";
-  activeDocument = true;
-  clearPendingMapping();
-  source.value = "";
-  result.value = "";
-  if (file.name.toLowerCase().endsWith(".pdf")) {
-    fileStatus.textContent = (
-      `PDF caricato: ${file.name} (${formatBytes(file.size)}${limit}). ` +
-      "L'export creerà un PDF rasterizzato con oscuramenti permanenti."
-    );
-  } else {
-    fileStatus.textContent = `Documento caricato: ${file.name} (${formatBytes(file.size)}${limit})`;
-  }
-  renderFindings([]);
-  renderReport(null);
-});
-
-modeSelect.addEventListener("change", () => {
-  updateReversibleControls();
-  renderReport(null);
-});
-
-source.addEventListener("input", () => {
-  clearPendingMapping();
-  if (source.value.trim() && activeDocument) {
-    activeDocument = false;
-    fileInput.value = "";
-    fileStatus.textContent = "Testo incollato. Puoi pulire e caricare un documento quando vuoi.";
-  }
-});
-
-document.addEventListener("dragover", (event) => {
-  event.preventDefault();
-});
-
-document.addEventListener("drop", (event) => {
-  event.preventDefault();
-  if (!event.dataTransfer.files.length) {
-    return;
-  }
-  fileInput.files = event.dataTransfer.files;
-  fileInput.dispatchEvent(new Event("change"));
-});
-
-updateReversibleControls();
