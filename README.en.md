@@ -131,9 +131,12 @@ Unsigned or non-notarized builds may be blocked by Gatekeeper. The GitHub releas
 The Windows build creates:
 
 - `OMISSIS.exe`
+- `OMISSIS-Setup.exe`
 - `OMISSIS-Windows.zip`
 
 The Windows desktop app supports `.txt`, `.md`, `.csv`, `.docx`, and `.pdf`.
+
+For the simplest installation, download `OMISSIS-Setup.exe`, complete the guided setup, and start OMISSIS from the Start menu. The installer works per user without administrator privileges. `OMISSIS-Windows.zip` remains available as a portable alternative. An unsigned installer can still trigger a Microsoft Defender SmartScreen warning; Authenticode signing is a separate distribution step.
 
 ## Run From Source
 
@@ -238,8 +241,11 @@ When these secrets are available, the macOS build signs the app, signs the DMG, 
 Build Windows package from PowerShell:
 
 ```powershell
+.\scripts\install_inno_setup.ps1
 .\scripts\build_windows_app.ps1
 ```
+
+The build creates `dist\OMISSIS-Setup.exe` and the portable `dist\OMISSIS-Windows.zip`. The Inno Setup bootstrap downloads the pinned official release and verifies its SHA-256 hash before running it.
 
 The unified GitHub Actions release workflow checks version alignment, builds both macOS and Windows, and publishes the release only after both artifacts are available.
 
