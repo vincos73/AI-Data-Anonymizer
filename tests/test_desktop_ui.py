@@ -26,8 +26,15 @@ os.environ["OMISSIS_ACTIVITY_SETTINGS_PATH"] = str(
 )
 
 try:
-    from PySide6.QtCore import QThread, Qt
-    from PySide6.QtGui import QCloseEvent, QKeySequence, QPalette
+    from PySide6.QtCore import QMimeData, QThread, Qt
+    from PySide6.QtGui import (
+        QColor,
+        QCloseEvent,
+        QKeySequence,
+        QPalette,
+        QTextCharFormat,
+        QTextCursor,
+    )
     from PySide6.QtTest import QTest
     from PySide6.QtWidgets import QApplication, QDialog, QLabel, QMessageBox
 
@@ -108,10 +115,14 @@ class DesktopMainWindowTests(unittest.TestCase):
             text="Mario Rossi scrive a mario@example.com.",
             extension=".docx",
         )
+        self.window.input_text.setTextColor(QColor("#000000"))
 
         self.window._apply_loaded_document(document)
 
         self.assertEqual(self.window.input_text.toPlainText(), document.text)
+        cursor = QTextCursor(self.window.input_text.document())
+        cursor.select(QTextCursor.SelectionType.Document)
+        self.assertEqual(cursor.charFormat().foreground().color().name(), "#e8edf2")
         self.assertEqual(self.window.document_label.text(), "Documento caricato: documento-prova.docx")
         self.assertEqual(self.window.primary_button.text(), "Analizza dati")
         self.assertTrue(self.window.report_label.isHidden())
@@ -238,15 +249,37 @@ class DesktopMainWindowTests(unittest.TestCase):
         for editor in (self.window.input_text, self.window.output_text):
             with self.subTest(editor=editor.accessibleName()):
                 self.assertFalse(editor.acceptRichText())
-                self.assertEqual(editor.palette().color(QPalette.Base).name(), "#12181f")
-                self.assertEqual(editor.palette().color(QPalette.Text).name(), "#e8edf2")
-                self.assertEqual(editor.viewport().palette().color(QPalette.Base).name(), "#12181f")
-                self.assertEqual(editor.viewport().palette().color(QPalette.Text).name(), "#e8edf2")
+                for group in (QPalette.Active, QPalette.Inactive, QPalette.Disabled):
+                    self.assertEqual(editor.palette().color(group, QPalette.Base).name(), "#12181f")
+                    self.assertEqual(editor.palette().color(group, QPalette.Text).name(), "#e8edf2")
+                    self.assertEqual(
+                        editor.viewport().palette().color(group, QPalette.Base).name(),
+                        "#12181f",
+                    )
+                    self.assertEqual(
+                        editor.viewport().palette().color(group, QPalette.Text).name(),
+                        "#e8edf2",
+                    )
 
                 editor.setPlainText("Testo leggibile")
                 cursor = editor.textCursor()
                 cursor.select(cursor.SelectionType.Document)
                 self.assertEqual(cursor.charFormat().foreground().color().name(), "#e8edf2")
+
+    def test_pasted_text_cannot_inherit_black_foreground(self) -> None:
+        black_format = QTextCharFormat()
+        black_format.setForeground(QColor("#000000"))
+        self.window.input_text.setCurrentCharFormat(black_format)
+        clipboard_data = QMimeData()
+        clipboard_data.setText("Testo incollato leggibile")
+        clipboard_data.setHtml('<span style="color: #000000">Testo incollato leggibile</span>')
+
+        self.window.input_text.insertFromMimeData(clipboard_data)
+
+        cursor = QTextCursor(self.window.input_text.document())
+        cursor.select(QTextCursor.SelectionType.Document)
+        self.assertEqual(self.window.input_text.toPlainText(), "Testo incollato leggibile")
+        self.assertEqual(cursor.charFormat().foreground().color().name(), "#e8edf2")
 
     def test_tab_moves_focus_without_inserting_a_character_in_the_source(self) -> None:
         self.window.show()

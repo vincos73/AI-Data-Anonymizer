@@ -5,7 +5,17 @@ import platform
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QSignalBlocker, QSize, QThreadPool, QTimer, Qt, QUrl, Slot
+from PySide6.QtCore import (
+    QEvent,
+    QMimeData,
+    QSignalBlocker,
+    QSize,
+    QThreadPool,
+    QTimer,
+    Qt,
+    QUrl,
+    Slot,
+)
 from PySide6.QtGui import (
     QAction,
     QColor,
@@ -141,14 +151,56 @@ def _configure_text_editor(editor: QTextEdit) -> None:
         QPalette.Highlight: EDITOR_SELECTION_BACKGROUND_COLOR,
         QPalette.HighlightedText: EDITOR_SELECTION_TEXT_COLOR,
     }
+    color_groups = (QPalette.Active, QPalette.Inactive, QPalette.Disabled)
     for target in (editor, editor.viewport()):
         palette = target.palette()
-        for role, color in palette_roles.items():
-            palette.setColor(role, QColor(color))
+        for group in color_groups:
+            for role, color in palette_roles.items():
+                palette.setColor(group, role, QColor(color))
         target.setPalette(palette)
 
     editor.setAcceptRichText(False)
+    editor.document().setDefaultStyleSheet(f"body {{ color: {EDITOR_TEXT_COLOR}; }}")
     editor.setTextColor(QColor(EDITOR_TEXT_COLOR))
+
+
+def _enforce_editor_text_color(editor: QTextEdit) -> None:
+    """Give every character an explicit foreground, independent of Qt's theme.
+
+    On Windows, setting the widget and viewport palettes is not sufficient in
+    every native-style configuration: ``setPlainText`` and clipboard insertion
+    can still create document fragments whose foreground resolves to black.
+    Applying the foreground to the document content removes that final native
+    palette fallback while preserving ``ExtraSelection`` review highlights.
+    """
+
+    text_format = QTextCharFormat()
+    text_format.setForeground(QColor(EDITOR_TEXT_COLOR))
+    signal_blocker = QSignalBlocker(editor)
+    try:
+        if not editor.document().isEmpty():
+            document_cursor = QTextCursor(editor.document())
+            document_cursor.select(QTextCursor.SelectionType.Document)
+            document_cursor.mergeCharFormat(text_format)
+        editor.setCurrentCharFormat(text_format)
+    finally:
+        del signal_blocker
+
+
+class ContrastSafeTextEdit(QTextEdit):
+    """Plain-text editor that cannot inherit an unreadable source color."""
+
+    def setPlainText(self, text: str) -> None:  # noqa: N802 - Qt API override
+        super().setPlainText(text)
+        _enforce_editor_text_color(self)
+
+    def insertFromMimeData(self, source: QMimeData) -> None:  # noqa: N802 - Qt API override
+        super().insertFromMimeData(source)
+        _enforce_editor_text_color(self)
+
+    def clear(self) -> None:
+        super().clear()
+        _enforce_editor_text_color(self)
 
 
 def _asset_path(filename: str) -> Path:
@@ -331,7 +383,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(960, 640))
         self.setAcceptDrops(True)
 
-        self.input_text = QTextEdit()
+        self.input_text = ContrastSafeTextEdit()
         _configure_text_editor(self.input_text)
         self.input_text.setAcceptDrops(False)
         self.input_text.setPlaceholderText("Incolla qui il testo da controllare oppure carica un documento.")
@@ -343,7 +395,7 @@ class MainWindow(QMainWindow):
         self.input_text.installEventFilter(self)
         self._input_viewport.installEventFilter(self)
 
-        self.output_text = QTextEdit()
+        self.output_text = ContrastSafeTextEdit()
         _configure_text_editor(self.output_text)
         self.output_text.setAcceptDrops(False)
         self.output_text.setPlaceholderText(
@@ -789,6 +841,11 @@ class MainWindow(QMainWindow):
         container.setLayout(root_layout)
         self.setCentralWidget(container)
         self.setStyleSheet(APP_STYLE)
+        # Applying the window stylesheet can make a native Windows style
+        # recalculate widget palettes. Reassert the editor contract afterwards.
+        for editor in (self.input_text, self.output_text):
+            _configure_text_editor(editor)
+            _enforce_editor_text_color(editor)
         self._build_menu()
         self._configure_accessibility()
         self._update_mode_notice()
