@@ -87,6 +87,17 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         findings = self.findings_for("La Sig.ra Maria Bianchi ha firmato.")
         self.assertIn(("PERSON", "Maria Bianchi"), findings)
 
+    def test_detects_person_after_notary_title(self) -> None:
+        self.engine._ner = None
+        text = "Notaio Annamaria Rastello"
+
+        findings = [
+            (finding.entity_type, text[finding.start : finding.end], finding.source)
+            for finding in self.engine.analyze(text)
+        ]
+
+        self.assertIn(("PERSON", "Annamaria Rastello", "italian_rules"), findings)
+
     def test_detects_person_when_strong_context_follows_name(self) -> None:
         findings = self.findings_for("Mario Rossi, nato a Roma il 10/01/1980.")
         self.assertIn(("PERSON", "Mario Rossi"), findings)
@@ -536,6 +547,24 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertNotIn("ADDRESS", [entity_type for entity_type, _ in findings])
         self.assertNotIn("POSTAL_CODE", [entity_type for entity_type, _ in findings])
 
+    def test_repertory_number_is_not_matched_as_postal_address_across_lines(self) -> None:
+        samples = (
+            "Repertorio 69746",
+            "Repertorio 69746 Notaio Annamaria Rastello",
+            "Repertorio 69746\nNotaio Annamaria Rastello",
+            "Repertorio n. 69746\nRaccolta n. 12345",
+        )
+        for text in samples:
+            with self.subTest(text=text):
+                findings = self.engine.analyze(text)
+                false_postal_matches = [
+                    text[finding.start : finding.end]
+                    for finding in findings
+                    if finding.entity_type in {"ADDRESS", "POSTAL_CODE"}
+                    and "69746" in text[finding.start : finding.end]
+                ]
+                self.assertEqual(false_postal_matches, [])
+
     def test_postal_code_followed_by_month_is_not_matched(self) -> None:
         findings = self.findings_for("Consegna prevista 12345 Gennaio del prossimo anno.")
         self.assertEqual(findings, [])
@@ -563,6 +592,21 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
     def test_lowercase_address_idioms_are_not_matched(self) -> None:
         self.assertEqual(self.findings_for("procediamo in via preliminare entro il 12 del mese"), [])
         self.assertEqual(self.findings_for("rispondere via email entro il 15"), [])
+
+    def test_pec_delivery_channel_is_not_matched_as_street_address(self) -> None:
+        text = "La comunicazione viene inviata via PEC o via Posta."
+
+        findings = self.findings_for(text)
+
+        self.assertNotIn(("ADDRESS", "via PEC"), findings)
+        self.assertNotIn(
+            ("ADDRESS", "Via PEC 12"),
+            self.findings_for("La comunicazione viene inviata in Via PEC 12."),
+        )
+        self.assertIn(
+            ("ADDRESS", "Via Posta 12"),
+            self.findings_for("La sede si trova in Via Posta 12."),
+        )
 
     def test_person_name_does_not_swallow_street_address(self) -> None:
         text = "Il dott. Mario Rossi Via Appia 12 chiede accesso."
@@ -710,6 +754,43 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn(("LOCATION", "Parigi", "ner_local"), values)
         self.assertIn(("LOCATION", "New York", "ner_local"), values)
         self.assertEqual(engine.anonymize(text, findings, "maximum").count("<LOCALITA>"), 2)
+
+    def test_optional_local_ner_does_not_turn_notary_name_into_location(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        text = "Notaio Annamaria Rastello"
+        for location_value in ("Annamaria Rastello", text):
+            with self.subTest(location_value=location_value):
+                def fake_nlp(value: str):
+                    start = value.index(location_value)
+                    return SimpleNamespace(
+                        ents=[
+                            SimpleNamespace(
+                                label_="LOC",
+                                text=location_value,
+                                start_char=start,
+                                end_char=start + len(location_value),
+                            )
+                        ]
+                    )
+
+                engine = PrivacyEngine()
+                engine._ner = NerPersonRecognizer(fake_nlp)
+                findings = engine.analyze(text, "standard")
+                values = [
+                    (finding.entity_type, text[finding.start : finding.end], finding.source)
+                    for finding in findings
+                ]
+
+                self.assertFalse(any(entity_type == "LOCATION" for entity_type, _, _ in values))
+                self.assertTrue(
+                    any(
+                        entity_type == "PERSON" and value == "Annamaria Rastello"
+                        for entity_type, value, _ in values
+                    )
+                )
 
     def test_optional_local_ner_does_not_treat_an_address_as_a_location(self) -> None:
         from types import SimpleNamespace
