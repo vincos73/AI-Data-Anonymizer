@@ -55,6 +55,12 @@ _LOCATION_CONTEXT = (
 _AMBIGUOUS_LOCATION_FOLLOWING = {
     "potenza": re.compile(r"^\s+(?:di|del|dello|della|dei|degli|delle)\b", re.IGNORECASE),
 }
+_NER_LOCATION_EXACT_REJECTIONS = frozenset(
+    {
+        "euro",
+        "parte venditrice",
+    }
+)
 _LOCATION_NAME_WORD = r"[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*"
 _LOCATION_NAME = (
     rf"{_LOCATION_NAME_WORD}"
@@ -220,6 +226,7 @@ def is_standalone_location_field(text: str, start: int, end: int) -> bool:
 
 
 def should_accept_ner_location(text: str, start: int, end: int, value: str) -> bool:
+    normalized = normalize_location_name(value)
     if (
         not looks_like_location_text(value)
         or contains_address_marker(value)
@@ -227,11 +234,11 @@ def should_accept_ner_location(text: str, start: int, end: int, value: str) -> b
         or _NON_LOCATION_MARKER.search(value)
         or _PERSON_TITLE_MARKER.search(value)
         or has_person_title_context(text, start)
+        or normalized in _NER_LOCATION_EXACT_REJECTIONS
         or re.search(r"\n[ \t]*\n", value)
     ):
         return False
 
-    normalized = normalize_location_name(value)
     context = has_location_context(text, start)
     standalone = is_standalone_location_field(text, start, end)
     ambiguity = _AMBIGUOUS_LOCATION_FOLLOWING.get(normalized)
