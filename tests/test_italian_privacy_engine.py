@@ -755,6 +755,41 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn(("LOCATION", "New York", "ner_local"), values)
         self.assertEqual(engine.anonymize(text, findings, "maximum").count("<LOCALITA>"), 2)
 
+    def test_optional_local_ner_rejects_currency_and_contract_role_as_locations(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        cases = (
+            ("Il corrispettivo è espresso in Euro.", "Euro"),
+            ("Parte Venditrice", "Parte Venditrice"),
+        )
+        for text, location_value in cases:
+            with self.subTest(location_value=location_value):
+                def fake_nlp(value: str):
+                    start = value.index(location_value)
+                    return SimpleNamespace(
+                        ents=[
+                            SimpleNamespace(
+                                label_="LOC",
+                                text=location_value,
+                                start_char=start,
+                                end_char=start + len(location_value),
+                            )
+                        ]
+                    )
+
+                engine = PrivacyEngine()
+                engine._ner = NerPersonRecognizer(fake_nlp)
+                findings = engine.analyze(text, "maximum")
+                values = [
+                    (finding.entity_type, text[finding.start : finding.end], finding.source)
+                    for finding in findings
+                ]
+
+                self.assertNotIn(("LOCATION", location_value, "ner_local"), values)
+                self.assertEqual(engine.anonymize(text, findings, "maximum"), text)
+
     def test_optional_local_ner_does_not_turn_notary_name_into_location(self) -> None:
         from types import SimpleNamespace
 
