@@ -25,6 +25,16 @@ _NON_LOCATION_MARKER = re.compile(
     r"\b(?:corpo|relazione|servizio|personale|ispettori|ufficio|comando)\b",
     re.IGNORECASE,
 )
+_PERSON_TITLE_MARKER = re.compile(
+    r"\b(?:sig\.?\s*ra\.?|sig\.?|signora?|dott\.?\s*ssa\.?|dott\.?|avv\.?|ing\.?|"
+    r"geom\.?|rag\.?|prof\.?\s*ssa\.?|prof\.?|notaio|notaia)\b",
+    re.IGNORECASE,
+)
+_PERSON_TITLE_CONTEXT = re.compile(
+    r"\b(?:sig\.?\s*ra\.?|sig\.?|signora?|dott\.?\s*ssa\.?|dott\.?|avv\.?|ing\.?|"
+    r"geom\.?|rag\.?|prof\.?\s*ssa\.?|prof\.?|notaio|notaia)\s*$",
+    re.IGNORECASE,
+)
 _TRIE_END = ""
 _FIELD_DELIMITERS = "\n\r\t,;|"
 _LOCATION_CONTEXT = (
@@ -192,6 +202,11 @@ def has_location_context(text: str, start: int) -> bool:
     return any(pattern.search(prefix) for pattern in _LOCATION_CONTEXT)
 
 
+def has_person_title_context(text: str, start: int) -> bool:
+    prefix = text[max(0, start - 40) : start]
+    return _PERSON_TITLE_CONTEXT.search(prefix) is not None
+
+
 def is_standalone_location_field(text: str, start: int, end: int) -> bool:
     left = max((text.rfind(delimiter, 0, start) for delimiter in _FIELD_DELIMITERS), default=-1)
     right_candidates = [
@@ -210,6 +225,8 @@ def should_accept_ner_location(text: str, start: int, end: int, value: str) -> b
         or contains_address_marker(value)
         or _INSTITUTION_MARKER.search(value)
         or _NON_LOCATION_MARKER.search(value)
+        or _PERSON_TITLE_MARKER.search(value)
+        or has_person_title_context(text, start)
         or re.search(r"\n[ \t]*\n", value)
     ):
         return False

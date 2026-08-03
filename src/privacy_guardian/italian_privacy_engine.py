@@ -149,6 +149,11 @@ class ItalianPrivacyRecognizer:
         "entro", "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "al", "allo", "alla",
         "ai", "agli", "alle", "per", "con", "presso", "ogni", "senza", "che", "numero", "corriere",
     }
+    NON_STREET_VIA = re.compile(
+        r"^via\s+(?:pec\b|p\.?\s*e\.?\s*c\.?(?=\s|$|[,;:])|"
+        r"email\b|e-mail\b|mail\b|fax\b|sms\b|telefono\b|telematica\b|corriere\b)",
+        re.IGNORECASE,
+    )
     COMPANY_SUFFIX = re.compile(
         rf"\b(?:{ORG_WORD}(?:\s+|$)){{1,8}}"
         r"(?i:s\.?\s*r\.?\s*l\.?|s\.?\s*p\.?\s*a\.?|s\.?\s*n\.?\s*c\.?|s\.?\s*a\.?\s*s\.?|"
@@ -169,7 +174,7 @@ class ItalianPrivacyRecognizer:
     PERSON = re.compile(
         rf"\b(?:(?:il|la)\s+)?"
         r"(?i:sig\.?ra|sig\.?|signora|signor|dott\.?ssa|dott\.?|avv\.?|ing\.?|geom\.?|rag\.?|"
-        r"prof\.?ssa|prof\.?|sottoscritto|sottoscritta|cliente|referente|rappresentante|"
+        r"prof\.?ssa|prof\.?|notaio|notaia|sottoscritto|sottoscritta|cliente|referente|rappresentante|"
         r"titolare|nato|nata|intestatario|intestataria|intestato\s+a|intestata\s+a|"
         r"beneficiario|beneficiaria)\s+"
         rf"(?P<name>{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}})",
@@ -190,7 +195,13 @@ class ItalianPrivacyRecognizer:
     POSTAL_CITY_STOPWORDS = {
         "Euro", "Eur", "Dollari", "Sterline", "Franchi",
         "Iva", "Netti", "Lordi", "Abitanti", "Unita", "Unità",
+        "Notaio", "Notaia", "Repertorio", "Raccolta",
     }
+    POSTAL_CODE_IDENTIFIER_PREFIX = re.compile(
+        r"\b(?:repertorio|rep\.?|raccolta)"
+        r"(?:\s+(?:n\.?|num\.?|numero))?\s*[:#;,.\-=]?\s*$",
+        re.IGNORECASE,
+    )
     PERSON_TRAILING_CONTEXT = re.compile(
         rf"\b(?P<name>{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}})\b"
         r"(?=\s*,?\s+(?i:nato|nata|residente|domiciliato|domiciliata|codice\s+fiscale|"
@@ -273,7 +284,7 @@ class ItalianPrivacyRecognizer:
         "sig", "sigra", "signora", "signor", "dott", "dottssa", "avv", "ing", "geom",
         "rag", "prof", "profssa", "sottoscritto", "sottoscritta", "cliente", "referente",
         "rappresentante", "titolare", "nato", "nata", "intestatario", "intestataria",
-        "beneficiario", "beneficiaria",
+        "beneficiario", "beneficiaria", "notaio", "notaia",
         "srl", "spa", "snc", "sas", "soccoop", "cooperativa", "onlus", "aps", "ets",
         "ditta", "societa", "società", "impresa", "azienda", "denominazione",
     }
@@ -419,6 +430,9 @@ class ItalianPrivacyRecognizer:
     def _postal_code_city_findings(self, text: str) -> list[Finding]:
         findings: list[Finding] = []
         for match in self.POSTAL_CODE_CITY.finditer(text):
+            prefix = text[max(0, match.start() - 80) : match.start()]
+            if self.POSTAL_CODE_IDENTIFIER_PREFIX.search(prefix):
+                continue
             first_word = match.group("city").split()[0]
             if (
                 first_word in self.PERSON_STOPWORDS
@@ -449,13 +463,16 @@ class ItalianPrivacyRecognizer:
             finding
             for finding in findings
             if not (
-                re.match(
-                    r"(?i:localit[aà]|frazione)\b",
-                    text[finding.start : finding.end],
-                )
-                and not any(
-                    character.isdigit()
-                    for character in text[finding.start : finding.end]
+                self.NON_STREET_VIA.match(text[finding.start : finding.end])
+                or (
+                    re.match(
+                        r"(?i:localit[aà]|frazione)\b",
+                        text[finding.start : finding.end],
+                    )
+                    and not any(
+                        character.isdigit()
+                        for character in text[finding.start : finding.end]
+                    )
                 )
             )
         ]
