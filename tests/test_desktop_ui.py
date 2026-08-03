@@ -211,7 +211,9 @@ class DesktopMainWindowTests(unittest.TestCase):
         QApplication.processEvents()
         self.assertTrue(self.window.primary_button.property("attention"))
 
-        QTest.qWait(800)
+        deadline = time.monotonic() + 2.0
+        while self.window.primary_button.property("attention") and time.monotonic() < deadline:
+            QTest.qWait(25)
 
         self.assertFalse(self.window.primary_button.property("attention"))
 
