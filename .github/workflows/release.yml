@@ -123,14 +123,23 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Costruisci ZIP
+      - name: Installa Inno Setup verificato
+        shell: pwsh
+        run: |
+          $innoDir = Join-Path $env:RUNNER_TEMP "Inno Setup 6"
+          .\scripts\install_inno_setup.ps1 -InstallDir $innoDir
+          $innoDir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Costruisci installer e ZIP portatile
         shell: pwsh
         run: .\scripts\build_windows_app.ps1
 
       - uses: actions/upload-artifact@v4
         with:
           name: OMISSIS-Windows
-          path: dist/OMISSIS-Windows.zip
+          path: |
+            dist/OMISSIS-Setup.exe
+            dist/OMISSIS-Windows.zip
           if-no-files-found: error
 
   publish:

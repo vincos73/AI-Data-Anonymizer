@@ -15,7 +15,7 @@ Versione del codice: **v0.6.11**. Le build già pubblicate possono avere un nume
 | Sistema | Download |
 | --- | --- |
 | Mac Apple Silicon, M1/M2/M3/M4 o successivi | [Apri l'ultima release](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) e scarica l'artefatto che inizia con `OMISSIS-macOS-Apple-Silicon` (`.dmg` o `.zip`) |
-| Windows | [Apri l'ultima release](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) e, quando presente, scarica `OMISSIS-Windows.zip` |
+| Windows | [Apri l'ultima release](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) e scarica `OMISSIS-Setup.exe`; lo ZIP resta disponibile come versione portatile |
 
 Tutti i file sono disponibili nella pagina [Releases](https://github.com/vincos73/AI-Data-Anonymizer/releases).
 
@@ -35,9 +35,13 @@ Le build pubblicate possono essere firmate e notarizzate quando il workflow GitH
 
 ### Windows
 
-1. Scarica il file `.zip`.
-2. Estrai lo zip in una cartella.
-3. Apri **OMISSIS.exe**.
+1. Scarica `OMISSIS-Setup.exe`.
+2. Apri il file e completa l'installazione guidata.
+3. Avvia **OMISSIS** dal menu Start. Al termine dell'installazione puoi anche aprirla subito.
+
+L'installer non richiede privilegi da amministratore e aggiunge automaticamente OMISSIS al menu Start. `OMISSIS-Windows.zip` resta disponibile per chi preferisce una versione portatile senza installazione.
+
+L'installer semplifica i passaggi, ma le build non firmate possono ancora mostrare un avviso di Microsoft Defender SmartScreen. La firma digitale Authenticode è un intervento separato.
 
 Su Windows i vecchi file `.doc` non sono supportati direttamente: convertili prima in `.docx`.
 
@@ -292,8 +296,11 @@ Quando questi secrets sono presenti, la build macOS firma l'app, firma il DMG, l
 Build Windows da PowerShell:
 
 ```powershell
+.\scripts\install_inno_setup.ps1
 .\scripts\build_windows_app.ps1
 ```
+
+La build produce `dist\OMISSIS-Setup.exe` per l'installazione guidata e `dist\OMISSIS-Windows.zip` come versione portatile. Lo script di installazione di Inno Setup scarica la release ufficiale fissata nel repository e ne verifica l'hash SHA-256 prima di eseguirla.
 
 ## Stato del Progetto
 

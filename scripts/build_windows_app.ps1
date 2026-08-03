@@ -26,6 +26,36 @@ function Invoke-NativeChecked {
     }
 }
 
+function Find-InnoSetupCompiler {
+    $Command = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
+    if ($Command) {
+        return $Command.Source
+    }
+
+    $Candidates = @(
+        (Join-Path $env:ProgramFiles "Inno Setup 7\ISCC.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 7\ISCC.exe"),
+        (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
+        (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe")
+    )
+    foreach ($Candidate in $Candidates) {
+        if ($Candidate -and (Test-Path $Candidate)) {
+            return $Candidate
+        }
+    }
+
+    throw @"
+Inno Setup non è installato. Serve per creare OMISSIS-Setup.exe.
+
+Installa la versione verificata con:
+  .\scripts\install_inno_setup.ps1
+
+Poi rilancia:
+  .\scripts\build_windows_app.ps1
+"@
+}
+
 $PythonCommand = $null
 $PythonArgs = @()
 
@@ -96,6 +126,12 @@ if ($LASTEXITCODE -ne 0) {
     )
 }
 
+$AppVersion = (& .\.venv\Scripts\python.exe -c "from privacy_guardian import __version__; print(__version__)").Trim()
+if ($AppVersion -notmatch '^\d+\.\d+\.\d+([.-][0-9A-Za-z.-]+)?$') {
+    throw "Versione OMISSIS non valida: $AppVersion"
+}
+$InnoCompiler = Find-InnoSetupCompiler
+
 if (Test-Path "build") {
     Remove-Item -Recurse -Force "build"
 }
@@ -130,4 +166,14 @@ Compress-Archive `
     -DestinationPath "dist\OMISSIS-Windows.zip" `
     -Force
 
-Write-Host "Build completata in: $ProjectDir\dist"
+Invoke-NativeChecked -Command $InnoCompiler -Arguments @(
+    "/DAppVersion=$AppVersion",
+    "scripts\omissis_installer.iss"
+)
+
+if (-not (Test-Path "dist\OMISSIS-Setup.exe")) {
+    throw "Inno Setup non ha prodotto dist\OMISSIS-Setup.exe."
+}
+
+Write-Host "Build completata: $ProjectDir\dist\OMISSIS-Setup.exe"
+Write-Host "Versione portatile: $ProjectDir\dist\OMISSIS-Windows.zip"
