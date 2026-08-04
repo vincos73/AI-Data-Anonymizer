@@ -98,6 +98,37 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
 
         self.assertIn(("PERSON", "Annamaria Rastello", "italian_rules"), findings)
 
+    def test_person_after_title_stops_before_allegato_heading(self) -> None:
+        self.engine._ner = None
+        for name in ("Filoteo Maria Sorge", "Mario Marin", "Luca Mari"):
+            with self.subTest(name=name):
+                text = f"Notaio {name}. Allegato"
+                findings = self.engine.analyze(text)
+                people = [
+                    text[finding.start : finding.end]
+                    for finding in findings
+                    if finding.entity_type == "PERSON"
+                ]
+
+                self.assertEqual(people, [name])
+                self.assertEqual(
+                    self.engine.anonymize(text, findings, "maximum"),
+                    "Notaio <PERSONA>. Allegato",
+                )
+
+    def test_person_initial_is_not_treated_as_sentence_boundary(self) -> None:
+        self.engine._ner = None
+        for name in (
+            "G. Rossi",
+            "Giov. Rossi",
+            "G. M. Rossi",
+            "Maria Giov. Rossi",
+            "Maria St. John",
+        ):
+            with self.subTest(name=name):
+                text = f"Il dott. {name}. Allegato"
+                self.assertIn(("PERSON", name), self.findings_for(text))
+
     def test_detects_person_when_strong_context_follows_name(self) -> None:
         findings = self.findings_for("Mario Rossi, nato a Roma il 10/01/1980.")
         self.assertIn(("PERSON", "Mario Rossi"), findings)
@@ -1220,6 +1251,20 @@ class DictionaryPersonTest(unittest.TestCase):
     def test_detects_person_at_start_of_sentence(self) -> None:
         findings = self.findings_for("Mario Rossi ha richiesto copia del contratto.")
         self.assertIn(("PERSON", "Mario Rossi"), findings)
+
+    def test_dictionary_person_stops_before_allegato_heading(self) -> None:
+        self.engine._ner = None
+        text = "Filoteo Maria Sorge. Allegato"
+
+        findings = [
+            (finding.entity_type, text[finding.start : finding.end], finding.source)
+            for finding in self.engine.analyze(text)
+        ]
+
+        self.assertEqual(
+            [finding for finding in findings if finding[0] == "PERSON"],
+            [("PERSON", "Filoteo Maria Sorge", "name_dictionary")],
+        )
 
     def test_detects_person_after_generic_verb(self) -> None:
         findings = self.findings_for("Ho parlato con Giulia Bianchi riguardo al preventivo.")
