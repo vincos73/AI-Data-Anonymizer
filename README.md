@@ -10,7 +10,7 @@ La web app esiste solo come opzione avanzata per sviluppatori, demo locali o ins
 
 ## Scarica App Desktop
 
-Versione del codice: **v0.6.14**. Le build già pubblicate possono avere un numero precedente: usa la pagina Releases e controlla il numero mostrato nell'app.
+Versione attuale: **v0.6.21**.
 
 | Sistema | Download |
 | --- | --- |
@@ -53,13 +53,14 @@ Su Windows i vecchi file `.doc` non sono supportati direttamente: convertili pri
 4. Rivedi i dati rilevati: spuntato significa “sarà anonimizzato”, non spuntato significa “resterà visibile”. Puoi cercare, filtrare o aggiungere manualmente ciò che manca.
 5. Clicca **Ho controllato, continua**, quindi **Crea copia protetta**. Il flusso laterale indica sempre il passaggio corrente.
 6. Leggi il report finale con conteggi, categorie protette, modalità, formato, stato di salvataggio e avvisi di controllo. In questa fase l'elenco dei rilevamenti si chiude per lasciare spazio al confronto tra originale e copia protetta; puoi riaprirlo con **Modifica selezioni**.
-7. Controlla il risultato prima di condividerlo, quindi usa **Copia per ChatGPT** per il testo oppure **Salva copia protetta** per un documento. Il file o testo originale non viene modificato.
-8. Se ti serve tracciare l'operazione, apri **Strumenti > Registro attività**.
-9. Se usi la modalità Reversibile, salva anche la mappa locale cifrata da **Strumenti > Salva mappa reversibile**.
+7. Confronta originale e anteprima: scorrono insieme e ogni dato riconosciuto è evidenziato in entrambi i pannelli. Con **Documento: Scuro / Carta chiara** puoi scegliere la superficie di lettura più comoda; la preferenza resta salvata solo sul dispositivo.
+8. Controlla il risultato prima di condividerlo, quindi usa **Copia per l’IA** per il testo oppure **Salva copia protetta** per un documento. Il file o testo originale non viene modificato.
+9. Se ti serve tracciare l'operazione, apri **Strumenti > Registro attività**.
+10. Se usi la modalità Reversibile, l'app ti guida in tre passaggi: salva il **File di ripristino**, invia soltanto la copia protetta e, quando ricevi la risposta dell'IA, incollala in OMISSIS per reinserire localmente i dati.
 
 Caricamento, OCR, analisi e anonimizzazione mostrano l'avanzamento e possono essere annullati. Un'operazione interrotta o fallita non sostituisce il risultato precedente. La conversione di un PDF in testo avvia automaticamente una nuova analisi sul testo normalizzato.
 
-Per i PDF puoi mantenere il formato originale, ottenendo un PDF rasterizzato con oscuramenti permanenti, oppure trasformarlo in testo: il testo perde l'impaginazione originale ma diventa più facile da rileggere, copiare e usare con ChatGPT o altri strumenti di IA.
+Per i PDF puoi mantenere il formato originale, ottenendo un PDF rasterizzato con oscuramenti permanenti, oppure trasformarlo in testo: il testo perde l'impaginazione originale ma diventa più facile da rileggere, copiare e usare con strumenti di IA.
 
 Scorciatoie principali: `Cmd/Ctrl+O` carica un documento, `Cmd/Ctrl+Invio` esegue il passaggio corrente, `Cmd/Ctrl+F` cerca nei dati rilevati, `Spazio` include o esclude la riga selezionata e `Cmd/Ctrl+S` salva il risultato. La guida completa è disponibile in **Aiuto > Come rivedere i dati rilevati**.
 
@@ -98,7 +99,7 @@ Seleziona questa modalità per documenti ad alto rischio o quando oscurare il ma
 
 ### Reversibile
 
-La modalità **Reversibile** usa segnaposti numerati e genera una mappa locale cifrata con password.
+La modalità **Reversibile** usa segnaposti numerati e genera un **File di ripristino** locale cifrato con password. Il file è la mappa che collega ogni segnaposto al dato originale.
 
 Esempio:
 
@@ -108,9 +109,17 @@ mario@example.com -> <EMAIL_1>
 10/01/1980 -> <DATA_1>
 ```
 
-Il testo con segnaposti può essere incollato in ChatGPT o altri strumenti. Quando ricevi una risposta che contiene gli stessi segnaposti, puoi incollarla nell'app e usare **Strumenti > Ricostruisci testo con mappa** per reinserire localmente i valori reali.
+Quando la copia è pronta, OMISSIS mostra una sequenza guidata:
 
-La mappa `.omissis-map` contiene i valori originali cifrati: resta sul tuo dispositivo, va protetta come materiale sensibile e non va caricata in chatbot o servizi cloud.
+1. **Salva il File di ripristino** e scegli una password.
+2. **Copia per l’IA** e incolla soltanto la copia protetta nello strumento che preferisci. Se vuoi, puoi anche salvarne una copia sul dispositivo.
+3. Quando ricevi la risposta, seleziona **Incolla qui la risposta dell’IA** nel terzo passaggio: si apre lo spazio dedicato in cui inserirla e ripristinare i dati sul tuo computer.
+
+Dopo il ripristino, i due pannelli affiancano la risposta dell’IA con i segnaposti e il testo ricostruito. Puoi richiamare il documento originale con **Mostra originale**, mentre un avviso segnala che il risultato contiene nuovamente dati personali.
+
+I segnaposti devono restare invariati nella risposta, per esempio `<PERSONA_1>`. Se vengono modificati o eliminati, OMISSIS non può riconoscerli.
+
+Il File di ripristino `.omissis-map` contiene i valori originali cifrati: resta sul tuo dispositivo, va protetto come materiale sensibile e non va caricato in chatbot o servizi cloud. Se perdi il file o la password, OMISSIS non può ripristinare i dati.
 
 Questa modalità è disponibile per testo incollato, `.txt` e `.docx` nell'app desktop. Per `.md`, `.csv` e PDF usa **Massima protezione**, perché questi formati producono output non reversibili.
 
@@ -179,7 +188,7 @@ Per i dettagli operativi leggi la pagina [Sicurezza e privacy](SICUREZZA.md).
 
 L'app desktop mantiene un registro attività locale consultabile dal menu **Strumenti > Registro attività**. Il registro salva solo metadati: data e ora, operazione, modalità, conteggi per categoria, estensione, dimensione e hash SHA-256 dei file quando disponibili. Non salva testo originale, testo anonimizzato, valori trovati o percorso completo dei file. Dalla stessa finestra puoi disattivarlo, scegliere quante operazioni conservare o cancellarlo.
 
-La modalità Reversibile crea una mappa locale cifrata con password. Questa mappa è l'unico posto in cui OMISSIS conserva la corrispondenza tra segnaposto e valori reali, e viene salvata solo quando lo chiedi esplicitamente. Risultati, mappe e impostazioni locali vengono sostituiti solo dopo una scrittura completa; sui sistemi compatibili i file sensibili sono accessibili soltanto all'utente.
+La modalità Reversibile crea un File di ripristino locale cifrato con password. È l'unico posto in cui OMISSIS conserva la corrispondenza tra segnaposto e valori reali, e viene salvato solo quando lo chiedi esplicitamente. Risultati, File di ripristino e impostazioni locali vengono sostituiti solo dopo una scrittura completa; sui sistemi compatibili i file sensibili sono accessibili soltanto all'utente.
 
 La web app non è necessaria per l'uso normale. Se la avvii in locale su `127.0.0.1`, resta sul tuo computer come un'interfaccia browser. Se invece la pubblichi su un server, il testo inviato alla web app arriva a quel server: per documenti sensibili usala solo su infrastruttura sotto il tuo controllo e con HTTPS.
 
@@ -215,7 +224,7 @@ La web app permette di incollare testo oppure caricare documenti supportati e sc
 
 Desktop e web app partono in modalità **Standard**, scelta per mantenere più leggibili struttura, ruoli e contesto del documento. Per atti ad alto rischio o quando la priorità è oscurare il maggior numero possibile di dettagli, seleziona **Massima protezione**. La checklist finale ricorda sempre il controllo manuale prima della condivisione.
 
-La modalità Reversibile e il ripristino tramite mappa cifrata sono disponibili solo nell'app desktop. La web app espone esclusivamente Standard e Massima protezione: questa scelta evita di inviare passphrase e mappe a un server. Una futura versione potrà aggiungere la cifratura interamente nel browser.
+La modalità Reversibile e il ripristino tramite File di ripristino cifrato sono disponibili solo nell'app desktop. La web app espone esclusivamente Standard e Massima protezione: questa scelta evita di inviare password e File di ripristino a un server. Una futura versione potrà aggiungere la cifratura interamente nel browser.
 
 Con Docker:
 

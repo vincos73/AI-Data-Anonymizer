@@ -121,7 +121,7 @@ def restore_text(text: str, mapping: Iterable[ReversibleMapEntry]) -> str:
 def encrypt_mapping(mapping: Iterable[ReversibleMapEntry], passphrase: str) -> bytes:
     passphrase = passphrase.strip()
     if not passphrase:
-        raise ReversibleMapError("Serve una password per cifrare la mappa reversibile.")
+        raise ReversibleMapError("Serve una password per cifrare il File di ripristino.")
 
     salt = secrets.token_bytes(16)
     key = _derive_key(passphrase, salt)
@@ -140,16 +140,16 @@ def encrypt_mapping(mapping: Iterable[ReversibleMapEntry], passphrase: str) -> b
 def decrypt_mapping(data: bytes | str, passphrase: str) -> tuple[ReversibleMapEntry, ...]:
     passphrase = passphrase.strip()
     if not passphrase:
-        raise ReversibleMapError("Serve la password usata per cifrare la mappa.")
+        raise ReversibleMapError("Serve la password usata per cifrare il File di ripristino.")
 
     try:
         envelope = json.loads(data.decode("utf-8") if isinstance(data, bytes) else data)
         salt = base64.urlsafe_b64decode(envelope["salt"])
         token = envelope["token"].encode("ascii")
         if envelope.get("schema_version") != MAP_SCHEMA_VERSION:
-            raise ReversibleMapError("Versione della mappa reversibile non supportata.")
+            raise ReversibleMapError("Versione del File di ripristino non supportata.")
     except (KeyError, TypeError, ValueError) as exc:
-        raise ReversibleMapError("File mappa reversibile non valido.") from exc
+        raise ReversibleMapError("File di ripristino non valido.") from exc
 
     try:
         payload = Fernet(_derive_key(passphrase, salt)).decrypt(token)
@@ -164,7 +164,7 @@ def decrypt_mapping(data: bytes | str, passphrase: str) -> tuple[ReversibleMapEn
             for entry in entries
         )
     except (InvalidToken, KeyError, TypeError, ValueError) as exc:
-        raise ReversibleMapError("Password errata o mappa reversibile danneggiata.") from exc
+        raise ReversibleMapError("Password errata o File di ripristino danneggiato.") from exc
 
 
 def write_encrypted_mapping(path: str | Path, mapping: Iterable[ReversibleMapEntry], passphrase: str) -> None:
@@ -172,14 +172,14 @@ def write_encrypted_mapping(path: str | Path, mapping: Iterable[ReversibleMapEnt
     try:
         atomic_write_bytes(target, encrypt_mapping(mapping, passphrase))
     except OSError as exc:
-        raise ReversibleMapError("Non riesco a salvare la mappa reversibile.") from exc
+        raise ReversibleMapError("Non riesco a salvare il File di ripristino.") from exc
 
 
 def read_encrypted_mapping(path: str | Path, passphrase: str) -> tuple[ReversibleMapEntry, ...]:
     try:
         data = Path(path).read_bytes()
     except OSError as exc:
-        raise ReversibleMapError("Non riesco a leggere la mappa reversibile.") from exc
+        raise ReversibleMapError("Non riesco a leggere il File di ripristino.") from exc
     return decrypt_mapping(data, passphrase)
 
 

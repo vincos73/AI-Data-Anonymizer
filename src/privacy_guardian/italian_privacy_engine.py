@@ -145,13 +145,14 @@ class ItalianPrivacyRecognizer:
     )
     ADDRESS_NAME_STOPWORDS = {
         "email", "e-mail", "mail", "pec", "fax", "sms", "telefono", "telematica", "posta",
-        "preliminare", "definitiva", "ordinaria", "breve", "libera", "eccezionale", "prioritaria",
+        "preliminare", "gradata", "definitiva", "ordinaria", "breve", "libera", "eccezionale", "prioritaria",
         "entro", "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "al", "allo", "alla",
         "ai", "agli", "alle", "per", "con", "presso", "ogni", "senza", "che", "numero", "corriere",
     }
     NON_STREET_VIA = re.compile(
         r"^via\s+(?:pec\b|p\.?\s*e\.?\s*c\.?(?=\s|$|[,;:])|"
-        r"email\b|e-mail\b|mail\b|fax\b|sms\b|telefono\b|telematica\b|corriere\b)",
+        r"email\b|e-mail\b|mail\b|fax\b|sms\b|telefono\b|telematica\b|corriere\b|"
+        r"preliminare\b|gradata\b)",
         re.IGNORECASE,
     )
     COMPANY_SUFFIX = re.compile(

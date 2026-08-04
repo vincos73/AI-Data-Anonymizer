@@ -30,6 +30,7 @@ OCR_REDACTION_PADDING = 3
 DEFAULT_TESSERACT_LANG = "ita+eng"
 ProgressCallback = Callable[[int, str], None]
 CancelCheck = Callable[[], None]
+REVERSIBLE_DOCUMENT_EXTENSIONS = frozenset({".txt", ".docx"})
 OOXML_NAMESPACES = {
     "cp": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
     "dc": "http://purl.org/dc/elements/1.1/",
@@ -181,10 +182,10 @@ def anonymize_loaded_document(
 ) -> AnonymizedDocument:
     _check_cancelled(cancel_check)
     _report_progress(progress_callback, 5, "Preparazione del documento")
-    if mode == "reversible" and document.extension == ".pdf":
+    if mode == "reversible" and document.extension not in REVERSIBLE_DOCUMENT_EXTENSIONS:
         raise ValueError(
-            "La modalità reversibile non è disponibile per i PDF: usa Massima protezione per creare un PDF redatto "
-            "oppure incolla il testo estratto per lavorare con segnaposti ricostruibili."
+            "La modalità Reversibile è disponibile per testo incollato, file TXT e DOCX. "
+            "Per questo formato usa Massima protezione oppure incolla il testo nell’app."
         )
 
     # Il filtro posizionale dei findings pre-calcolati è affidabile solo qui (testo estratto):
@@ -192,7 +193,7 @@ def anonymize_loaded_document(
     # l'esclusione avviene per valore esatto tramite excluded_values, in modo fail-closed:
     # un valore che non corrisponde esattamente resta comunque anonimizzato. Le selezioni
     # manuali (extra_values) seguono la stessa logica per valore, in senso opposto: vengono
-    # aggiunte come finding ovunque il valore compaia alla lettera in quella parte.
+    # aggiunte come finding in tutte le varianti di maiuscole/minuscole presenti nella parte.
     findings = findings if findings is not None else engine.analyze(document.text, mode)
     _check_cancelled(cancel_check)
     _report_progress(progress_callback, 25, "Dati sensibili analizzati")
@@ -272,30 +273,63 @@ def add_extra_value_findings(
     findings: list[Finding],
     extra_values: frozenset[tuple[str, str]] | None,
 ) -> list[Finding]:
-    """Aggiunge un finding per ogni occorrenza letterale dei valori inclusi manualmente.
+    """Aggiunge un finding per ogni variante di casing dei valori inclusi manualmente.
 
-    Confronto esatto e case-sensitive, come per le esclusioni; un'occorrenza che si
-    sovrappone a un finding già presente viene saltata per non duplicare la redazione.
-    Usata sia dalla pipeline documenti sia dalla selezione manuale nel percorso testo,
-    così una selezione (es. "Potenza") viene redatta in tutte le sue occorrenze."""
+    Il confronto usa ``casefold`` Unicode ma conserva gli indici e la grafia del testo
+    originale. Un'occorrenza che si sovrappone a un finding già presente viene saltata
+    per non duplicare la redazione. Le esclusioni restano invece esatte e fail-closed."""
     if not extra_values:
         return findings
     result = list(findings)
     occupied = [(finding.start, finding.end) for finding in findings]
+    processed: set[tuple[str, str]] = set()
     for entity_type, value in extra_values:
         if not value:
             continue
-        start = 0
-        while True:
-            idx = text.find(value, start)
-            if idx == -1:
-                break
-            end = idx + len(value)
+        normalized_pair = (entity_type, value.casefold())
+        if normalized_pair in processed:
+            continue
+        processed.add(normalized_pair)
+        for idx, end in casefolded_literal_spans(text, value):
             if not any(idx < occupied_end and occupied_start < end for occupied_start, occupied_end in occupied):
                 result.append(Finding(entity_type, idx, end, 1.0, source="manual"))
                 occupied.append((idx, end))
-            start = idx + 1
     return result
+
+
+def casefolded_literal_spans(text: str, value: str) -> list[tuple[int, int]]:
+    """Trova equivalenze Unicode case-insensitive restituendo offset del testo originale.
+
+    Una semplice ricerca su ``text.casefold()`` darebbe indici errati quando un carattere
+    si espande, per esempio ``ß`` in ``ss``. La mappa delle sole frontiere originali evita
+    anche di restituire una corrispondenza che tagli a metà un carattere espanso."""
+    folded_value = value.casefold()
+    if not folded_value:
+        return []
+
+    folded_parts: list[str] = []
+    original_boundaries: dict[int, int] = {0: 0}
+    folded_length = 0
+    for original_index, character in enumerate(text):
+        folded_character = character.casefold()
+        folded_parts.append(folded_character)
+        folded_length += len(folded_character)
+        original_boundaries[folded_length] = original_index + 1
+
+    folded_text = "".join(folded_parts)
+    spans: list[tuple[int, int]] = []
+    search_start = 0
+    while True:
+        folded_start = folded_text.find(folded_value, search_start)
+        if folded_start < 0:
+            break
+        folded_end = folded_start + len(folded_value)
+        original_start = original_boundaries.get(folded_start)
+        original_end = original_boundaries.get(folded_end)
+        if original_start is not None and original_end is not None:
+            spans.append((original_start, original_end))
+        search_start = folded_start + 1
+    return spans
 
 
 def excluded_value_pairs(

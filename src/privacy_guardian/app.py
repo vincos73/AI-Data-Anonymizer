@@ -5,7 +5,7 @@ import platform
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QSignalBlocker, QSize, QThreadPool, QTimer, Qt, QUrl, Slot
+from PySide6.QtCore import QEvent, QSettings, QSignalBlocker, QSize, QThreadPool, QTimer, Qt, QUrl, Slot
 from PySide6.QtGui import (
     QAction,
     QColor,
@@ -26,6 +26,7 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
+    QComboBox,
     QDialog,
     QFileDialog,
     QFrame,
@@ -41,7 +42,9 @@ from PySide6.QtWidgets import (
     QPushButton,
     QRadioButton,
     QScrollArea,
+    QSizePolicy,
     QSplitter,
+    QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
@@ -63,10 +66,12 @@ from privacy_guardian.activity_log import (
 )
 from privacy_guardian.document_service import (
     LEGACY_DOC_SUPPORTED,
+    REVERSIBLE_DOCUMENT_EXTENSIONS,
     AnonymizedDocument,
     LoadedDocument,
     OcrUnavailableError,
     add_extra_value_findings,
+    casefolded_literal_spans,
     excluded_value_pairs,
     load_document,
     normalize_pdf_text_for_llm,
@@ -86,6 +91,8 @@ from privacy_guardian.persistence import atomic_write_bytes, atomic_write_text
 from privacy_guardian.privacy_engine import PrivacyEngine
 from privacy_guardian.reversible import (
     MAP_EXTENSION,
+    PLACEHOLDER_PATTERN,
+    ReversibleAnonymizer,
     ReversibleMapEntry,
     ReversibleMapError,
     read_encrypted_mapping,
@@ -109,6 +116,13 @@ from privacy_guardian.styles import (
     EDITOR_TEXT_COLOR,
     FINDING_HIGHLIGHT_ALPHA,
     FINDING_SELECTED_HIGHLIGHT_ALPHA,
+    PAPER_EDITOR_BACKGROUND_COLOR,
+    PAPER_EDITOR_PLACEHOLDER_COLOR,
+    PAPER_EDITOR_SELECTION_BACKGROUND_COLOR,
+    PAPER_EDITOR_SELECTION_TEXT_COLOR,
+    PAPER_EDITOR_TEXT_COLOR,
+    PAPER_FINDING_HIGHLIGHT_ALPHA,
+    PAPER_FINDING_SELECTED_HIGHLIGHT_ALPHA,
 )
 from privacy_guardian.workflow_state import (
     OutputProvenance,
@@ -121,9 +135,73 @@ PROJECT_REPO_URL = "https://github.com/vincos73/AI-Data-Anonymizer"
 PROJECT_RELEASES_URL = f"{PROJECT_REPO_URL}/releases"
 TESSERACT_WINDOWS_DOWNLOAD_URL = "https://github.com/UB-Mannheim/tesseract/wiki"
 PROJECT_SECURITY_URL = f"{PROJECT_REPO_URL}/blob/main/SICUREZZA.md"
+DOCUMENT_APPEARANCE_SETTING = "document/appearance"
+DOCUMENT_APPEARANCE_DARK = "dark"
+DOCUMENT_APPEARANCE_PAPER = "paper"
+DOCUMENT_APPEARANCES = frozenset(
+    {DOCUMENT_APPEARANCE_DARK, DOCUMENT_APPEARANCE_PAPER}
+)
 
 
-def _configure_text_editor(editor: QTextEdit) -> None:
+def _ui_settings() -> QSettings:
+    override_path = os.environ.get("OMISSIS_UI_SETTINGS_PATH", "").strip()
+    if override_path:
+        return QSettings(override_path, QSettings.IniFormat)
+    return QSettings("Vincos", "OMISSIS")
+
+
+def _apply_text_editor_appearance(editor: QTextEdit, appearance: str) -> None:
+    if appearance == DOCUMENT_APPEARANCE_PAPER:
+        colors = {
+            QPalette.Base: PAPER_EDITOR_BACKGROUND_COLOR,
+            QPalette.Text: PAPER_EDITOR_TEXT_COLOR,
+            QPalette.PlaceholderText: PAPER_EDITOR_PLACEHOLDER_COLOR,
+            QPalette.Highlight: PAPER_EDITOR_SELECTION_BACKGROUND_COLOR,
+            QPalette.HighlightedText: PAPER_EDITOR_SELECTION_TEXT_COLOR,
+        }
+    else:
+        appearance = DOCUMENT_APPEARANCE_DARK
+        colors = {
+            QPalette.Base: EDITOR_BACKGROUND_COLOR,
+            QPalette.Text: EDITOR_TEXT_COLOR,
+            QPalette.PlaceholderText: EDITOR_PLACEHOLDER_COLOR,
+            QPalette.Highlight: EDITOR_SELECTION_BACKGROUND_COLOR,
+            QPalette.HighlightedText: EDITOR_SELECTION_TEXT_COLOR,
+        }
+
+    editor.setProperty("documentAppearance", appearance)
+    for target in (editor, editor.viewport()):
+        palette = target.palette()
+        for role, color in colors.items():
+            palette.setColor(role, QColor(color))
+        target.setPalette(palette)
+
+    blocker = QSignalBlocker(editor)
+    text_color = QColor(colors[QPalette.Text])
+    editor.setTextColor(text_color)
+    if not editor.document().isEmpty():
+        cursor = QTextCursor(editor.document())
+        cursor.select(QTextCursor.Document)
+        text_format = QTextCharFormat()
+        text_format.setForeground(text_color)
+        cursor.mergeCharFormat(text_format)
+    del blocker
+
+    # Dynamic QSS properties are not automatically repolished by every native
+    # Qt style. Refresh both surfaces so the change is immediate on macOS and
+    # Windows without recreating the editors or losing their scroll position.
+    for target in (editor, editor.viewport()):
+        target.style().unpolish(target)
+        target.style().polish(target)
+        target.update()
+
+
+def _configure_text_editor(
+    editor: QTextEdit,
+    *,
+    reading_text: bool = False,
+    appearance: str = DOCUMENT_APPEARANCE_DARK,
+) -> None:
     """Make the dark editor palette explicit across native Qt styles.
 
     Qt stylesheets paint the expected colors on macOS, but on Windows the
@@ -134,21 +212,13 @@ def _configure_text_editor(editor: QTextEdit) -> None:
     cannot reintroduce an unreadable foreground color.
     """
 
-    palette_roles = {
-        QPalette.Base: EDITOR_BACKGROUND_COLOR,
-        QPalette.Text: EDITOR_TEXT_COLOR,
-        QPalette.PlaceholderText: EDITOR_PLACEHOLDER_COLOR,
-        QPalette.Highlight: EDITOR_SELECTION_BACKGROUND_COLOR,
-        QPalette.HighlightedText: EDITOR_SELECTION_TEXT_COLOR,
-    }
-    for target in (editor, editor.viewport()):
-        palette = target.palette()
-        for role, color in palette_roles.items():
-            palette.setColor(role, QColor(color))
-        target.setPalette(palette)
-
     editor.setAcceptRichText(False)
-    editor.setTextColor(QColor(EDITOR_TEXT_COLOR))
+    if reading_text:
+        # These are the document panes, not general-purpose form fields: a
+        # larger type size and more leading make long legal texts practical to
+        # compare without changing the scale of the surrounding interface.
+        editor.setStyleSheet("font-size: 16px; line-height: 1.55;")
+    _apply_text_editor_appearance(editor, appearance)
 
 
 def _asset_path(filename: str) -> Path:
@@ -209,6 +279,252 @@ class _ClickableCard(QFrame):
         super().mousePressEvent(event)
 
 
+class _EntityTypeComboBox(QComboBox):
+    """Branded combo box with a platform-independent painted chevron."""
+
+    def paintEvent(self, event: QEvent) -> None:
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        pen = painter.pen()
+        pen.setColor(QColor("#D8E6F0"))
+        pen.setWidthF(2.2)
+        pen.setCapStyle(Qt.RoundCap)
+        pen.setJoinStyle(Qt.RoundJoin)
+        painter.setPen(pen)
+        center_x = self.width() - 19
+        center_y = self.height() // 2
+        painter.drawLine(center_x - 5, center_y - 3, center_x, center_y + 2)
+        painter.drawLine(center_x, center_y + 2, center_x + 5, center_y - 3)
+        painter.end()
+
+
+class _WarningBadge(QWidget):
+    """Small painted warning mark that does not depend on the native icon theme."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setObjectName("DiscardWarningIcon")
+        self.setFixedSize(42, 42)
+        self.setAccessibleName("Avviso")
+
+    def paintEvent(self, event: QEvent) -> None:
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor("#D9A13B"))
+        painter.drawEllipse(1, 1, self.width() - 2, self.height() - 2)
+        painter.setPen(QColor("#0D1218"))
+        font = painter.font()
+        font.setPixelSize(25)
+        font.setBold(True)
+        painter.setFont(font)
+        painter.drawText(self.rect(), Qt.AlignCenter, "!")
+        painter.end()
+
+
+class _EntityTypeDialog(QDialog):
+    """Compact, branded chooser for classifying a manually selected value."""
+
+    def __init__(
+        self,
+        labels: list[str],
+        selected_text: str,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setObjectName("EntityTypeDialog")
+        self.setWindowTitle("Tipo di dato")
+        self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setModal(True)
+        self.setMinimumWidth(500)
+
+        title = QLabel("Classifica il dato")
+        title.setObjectName("DialogTitle")
+
+        close_button = QPushButton("×")
+        close_button.setObjectName("DialogCloseButton")
+        close_button.setAccessibleName("Chiudi")
+        close_button.setFixedSize(30, 30)
+        close_button.clicked.connect(self.reject)
+
+        header = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(12)
+        header.addWidget(title)
+        header.addStretch(1)
+        header.addWidget(close_button)
+
+        excerpt = " ".join(selected_text.split())
+        if len(excerpt) > 64:
+            excerpt = f"{excerpt[:61].rstrip()}…"
+        description = QLabel(
+            f"Scegli come proteggere «{excerpt}». La scelta verrà applicata anche "
+            "alle occorrenze con maiuscole o minuscole diverse."
+        )
+        description.setObjectName("DialogDetails")
+        description.setTextFormat(Qt.PlainText)
+        description.setWordWrap(True)
+
+        field_label = QLabel("Tipo di dato")
+        field_label.setObjectName("FieldLabel")
+
+        self.entity_combo = _EntityTypeComboBox()
+        self.entity_combo.setObjectName("EntityTypeCombo")
+        self.entity_combo.addItems(labels)
+        self.entity_combo.setAccessibleName("Tipo di dato selezionato")
+
+        cancel_button = QPushButton("Annulla")
+        cancel_button.setObjectName("SecondaryButton")
+        cancel_button.clicked.connect(self.reject)
+
+        add_button = QPushButton("Aggiungi")
+        add_button.setObjectName("PrimaryButton")
+        add_button.setDefault(True)
+        add_button.clicked.connect(self.accept)
+
+        actions = QHBoxLayout()
+        actions.setContentsMargins(0, 4, 0, 0)
+        actions.setSpacing(10)
+        actions.addStretch(1)
+        actions.addWidget(cancel_button)
+        actions.addWidget(add_button)
+
+        content_layout = QVBoxLayout()
+        content_layout.setContentsMargins(26, 22, 26, 24)
+        content_layout.setSpacing(12)
+        content_layout.addLayout(header)
+        content_layout.addWidget(description)
+        content_layout.addSpacing(4)
+        content_layout.addWidget(field_label)
+        content_layout.addWidget(self.entity_combo)
+        content_layout.addSpacing(4)
+        content_layout.addLayout(actions)
+
+        surface = QFrame()
+        surface.setObjectName("EntityTypeDialogSurface")
+        surface.setLayout(content_layout)
+
+        window_layout = QVBoxLayout()
+        window_layout.setContentsMargins(1, 1, 1, 1)
+        window_layout.addWidget(surface)
+        self.setLayout(window_layout)
+        self.setAccessibleName("Classifica il dato selezionato")
+        self.setAccessibleDescription(description.text())
+        self.setStyleSheet(APP_STYLE)
+        self.setTabOrder(self.entity_combo, cancel_button)
+        self.setTabOrder(cancel_button, add_button)
+
+    def selected_label(self) -> str:
+        return self.entity_combo.currentText()
+
+
+class _DiscardWorkDialog(QDialog):
+    """Branded confirmation that keeps the safe action as the keyboard default."""
+
+    def __init__(
+        self,
+        action_label: str,
+        items: list[str],
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setObjectName("DiscardWorkDialog")
+        self.setWindowTitle("Modifiche non salvate")
+        self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setModal(True)
+        self.setMinimumWidth(540)
+
+        title = QLabel("Modifiche non salvate")
+        title.setObjectName("DialogTitle")
+
+        close_button = QPushButton("×")
+        close_button.setObjectName("DialogCloseButton")
+        close_button.setAccessibleName("Chiudi senza scartare")
+        close_button.setFixedSize(30, 30)
+        close_button.clicked.connect(self.reject)
+
+        header = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(12)
+        header.addWidget(title)
+        header.addStretch(1)
+        header.addWidget(close_button)
+
+        warning_mark = _WarningBadge()
+
+        message = QLabel("Questa azione eliminerebbe del lavoro non salvato.")
+        message.setObjectName("DiscardMessage")
+        message.setWordWrap(True)
+
+        items_label = QLabel("\n".join(f"• {item}" for item in items))
+        items_label.setObjectName("DiscardItems")
+        items_label.setTextFormat(Qt.PlainText)
+        items_label.setWordWrap(True)
+
+        warning_copy = QVBoxLayout()
+        warning_copy.setContentsMargins(0, 0, 0, 0)
+        warning_copy.setSpacing(8)
+        warning_copy.addWidget(message)
+        warning_copy.addWidget(items_label)
+
+        warning_row = QHBoxLayout()
+        warning_row.setContentsMargins(0, 4, 0, 4)
+        warning_row.setSpacing(16)
+        warning_row.addWidget(warning_mark, 0, Qt.AlignTop)
+        warning_row.addLayout(warning_copy, 1)
+
+        self.cancel_button = QPushButton("Annulla")
+        self.cancel_button.setObjectName("SecondaryButton")
+        self.cancel_button.setDefault(True)
+        self.cancel_button.clicked.connect(self.reject)
+        self.cancel_button.setAccessibleDescription(
+            "Chiude la finestra e conserva tutto il lavoro corrente."
+        )
+
+        self.discard_button = QPushButton(action_label)
+        self.discard_button.setObjectName("DestructiveButton")
+        self.discard_button.setAutoDefault(False)
+        self.discard_button.clicked.connect(self.accept)
+        self.discard_button.setAccessibleDescription(
+            "Conferma la perdita del lavoro non salvato elencato nella finestra."
+        )
+
+        actions = QHBoxLayout()
+        actions.setContentsMargins(0, 6, 0, 0)
+        actions.setSpacing(10)
+        actions.addStretch(1)
+        actions.addWidget(self.discard_button)
+        actions.addWidget(self.cancel_button)
+
+        content_layout = QVBoxLayout()
+        content_layout.setContentsMargins(26, 22, 26, 24)
+        content_layout.setSpacing(16)
+        content_layout.addLayout(header)
+        content_layout.addLayout(warning_row)
+        content_layout.addLayout(actions)
+
+        surface = QFrame()
+        surface.setObjectName("DiscardWorkDialogSurface")
+        surface.setLayout(content_layout)
+
+        window_layout = QVBoxLayout()
+        window_layout.setContentsMargins(1, 1, 1, 1)
+        window_layout.addWidget(surface)
+        self.setLayout(window_layout)
+        self.setAccessibleName("Conferma perdita del lavoro non salvato")
+        self.setAccessibleDescription(
+            "Lavoro che verrebbe eliminato: " + ", ".join(items) + "."
+        )
+        self.setStyleSheet(APP_STYLE)
+        self.setTabOrder(self.cancel_button, self.discard_button)
+        self.setTabOrder(self.discard_button, close_button)
+        QTimer.singleShot(0, lambda: self.cancel_button.setFocus(Qt.OtherFocusReason))
+
+
 class _AdaptiveToolbar(QFrame):
     def __init__(
         self,
@@ -218,12 +534,14 @@ class _AdaptiveToolbar(QFrame):
         save_button: QPushButton,
         clear_button: QPushButton,
         add_selection_button: QPushButton,
+        appearance_selector: QFrame,
         primary_button: QPushButton,
     ) -> None:
         super().__init__()
         self.setObjectName("DocumentToolbar")
         self._document_label = document_label
         self._primary_button = primary_button
+        self._appearance_selector = appearance_selector
         self._secondary_buttons = (save_button, clear_button, add_selection_button)
         # These legacy shortcuts remain available through menu actions, but their
         # duplicate toolbar buttons stay hidden and owned by the toolbar.
@@ -256,33 +574,47 @@ class _AdaptiveToolbar(QFrame):
         if self._compact == compact:
             return
         self._compact = compact
-        for widget in (self._document_label, self._secondary_widget, self._primary_button):
+        for widget in (
+            self._document_label,
+            self._secondary_widget,
+            self._appearance_selector,
+            self._primary_button,
+        ):
             self._grid.removeWidget(widget)
 
-        for column in range(3):
+        for column in range(4):
             self._grid.setColumnStretch(column, 0)
         if compact:
             self._grid.addWidget(self._document_label, 0, 0, 1, 1, Qt.AlignVCenter)
             self._grid.addWidget(self._primary_button, 0, 1, 1, 1, Qt.AlignRight | Qt.AlignVCenter)
             self._grid.addWidget(
-                self._secondary_widget,
+                self._appearance_selector,
                 1,
                 0,
                 1,
-                2,
+                1,
+                Qt.AlignLeft | Qt.AlignVCenter,
+            )
+            self._grid.addWidget(
+                self._secondary_widget,
+                1,
+                1,
+                1,
+                1,
                 Qt.AlignRight | Qt.AlignVCenter,
             )
         else:
             self._grid.addWidget(self._document_label, 0, 0, 1, 1, Qt.AlignVCenter)
             self._grid.addWidget(self._secondary_widget, 0, 1, 1, 1, Qt.AlignVCenter)
-            self._grid.addWidget(self._primary_button, 0, 2, 1, 1, Qt.AlignVCenter)
+            self._grid.addWidget(self._appearance_selector, 0, 2, 1, 1, Qt.AlignVCenter)
+            self._grid.addWidget(self._primary_button, 0, 3, 1, 1, Qt.AlignVCenter)
         self._grid.setColumnStretch(0, 1)
         self.sync_secondary_visibility()
 
     def sync_secondary_visibility(self) -> None:
         has_visible_secondary = any(not button.isHidden() for button in self._secondary_buttons)
         self._secondary_widget.setVisible(has_visible_secondary)
-        self.setMinimumHeight(96 if self._compact and has_visible_secondary else 56)
+        self.setMinimumHeight(94 if self._compact else 56)
         self.updateGeometry()
 
 
@@ -300,6 +632,8 @@ class MainWindow(QMainWindow):
         self.output_text_dirty = False
         self._loading_document_text = False
         self._updating_output_text = False
+        self._syncing_text_scroll = False
+        self._text_scroll_alignment_pending = False
         self._analysis_preview_active = False
         self.reversible_mapping: tuple[ReversibleMapEntry, ...] = ()
         self.loaded_reversible_entries: tuple[ReversibleMapEntry, ...] = ()
@@ -309,9 +643,15 @@ class MainWindow(QMainWindow):
         self._output_stale_reason = ""
         self._output_saved = True
         self._reversible_map_saved = True
+        self._reversible_map_path: Path | None = None
+        self._restore_mapping: tuple[ReversibleMapEntry, ...] = ()
         self._review_dirty = False
         self._review_confirmed = False
         self._result_used = False
+        self._reversible_copy_copied = False
+        self._restored_ai_response = ""
+        self._show_original_in_restored_comparison = False
+        self._compact_height = False
         self._last_primary_phase = ""
         self._last_selected_mode: AnonymizationMode = "standard"
         self._thread_pool = QThreadPool.globalInstance()
@@ -325,6 +665,18 @@ class MainWindow(QMainWindow):
             if run_jobs_synchronously is None
             else run_jobs_synchronously
         )
+        self._settings = _ui_settings()
+        saved_appearance = str(
+            self._settings.value(
+                DOCUMENT_APPEARANCE_SETTING,
+                DOCUMENT_APPEARANCE_DARK,
+            )
+        )
+        self._document_appearance = (
+            saved_appearance
+            if saved_appearance in DOCUMENT_APPEARANCES
+            else DOCUMENT_APPEARANCE_DARK
+        )
 
         self.setWindowTitle("OMISSIS")
         self.resize(1160, 760)
@@ -332,7 +684,11 @@ class MainWindow(QMainWindow):
         self.setAcceptDrops(True)
 
         self.input_text = QTextEdit()
-        _configure_text_editor(self.input_text)
+        _configure_text_editor(
+            self.input_text,
+            reading_text=True,
+            appearance=self._document_appearance,
+        )
         self.input_text.setAcceptDrops(False)
         self.input_text.setPlaceholderText("Incolla qui il testo da controllare oppure carica un documento.")
         self.input_text.setAccessibleName("Testo originale")
@@ -343,8 +699,46 @@ class MainWindow(QMainWindow):
         self.input_text.installEventFilter(self)
         self._input_viewport.installEventFilter(self)
 
+        self.ai_response_text = QTextEdit()
+        self.ai_response_text.setObjectName("AiResponseReference")
+        _configure_text_editor(
+            self.ai_response_text,
+            reading_text=True,
+            appearance=self._document_appearance,
+        )
+        self.ai_response_text.setAcceptDrops(False)
+        self.ai_response_text.setReadOnly(True)
+        self.ai_response_text.setTabChangesFocus(True)
+        self.ai_response_text.setAccessibleName("Risposta dell’IA con segnaposti")
+        self.ai_response_text.setAccessibleDescription(
+            "Risposta ricevuta dall’IA prima del ripristino locale dei dati originali."
+        )
+
+        self.source_view_stack = QStackedWidget()
+        self.source_view_stack.setObjectName("SourceViewStack")
+        self.source_view_stack.addWidget(self.input_text)
+        self.source_view_stack.addWidget(self.ai_response_text)
+
+        self.source_view_notice = QLabel()
+        self.source_view_notice.setObjectName("ComparisonSourceNotice")
+        self.source_view_notice.setWordWrap(True)
+        self.source_view_notice.setVisible(False)
+
+        self.source_view_toggle = QPushButton("Mostra originale")
+        self.source_view_toggle.setObjectName("LinkButton")
+        self.source_view_toggle.setAccessibleName("Mostra documento originale")
+        self.source_view_toggle.setAccessibleDescription(
+            "Alterna la risposta dell’IA e il documento originale nel pannello di confronto."
+        )
+        self.source_view_toggle.clicked.connect(self._toggle_restored_comparison_source)
+        self.source_view_toggle.setVisible(False)
+
         self.output_text = QTextEdit()
-        _configure_text_editor(self.output_text)
+        _configure_text_editor(
+            self.output_text,
+            reading_text=True,
+            appearance=self._document_appearance,
+        )
         self.output_text.setAcceptDrops(False)
         self.output_text.setPlaceholderText(
             "Dopo l’analisi vedrai qui un’anteprima dei dati anonimizzati."
@@ -354,6 +748,17 @@ class MainWindow(QMainWindow):
             "Risultato prodotto da OMISSIS. Se diventa obsoleto viene disabilitato fino alla rigenerazione."
         )
         self.output_text.textChanged.connect(self._handle_output_text_changed)
+        for source_editor in (self.input_text, self.ai_response_text):
+            source_scroll_bar = source_editor.verticalScrollBar()
+            source_scroll_bar.valueChanged.connect(
+                lambda _value, editor=source_editor: self._sync_text_scroll_from(editor)
+            )
+            source_scroll_bar.rangeChanged.connect(self._handle_text_scroll_range_changed)
+        output_scroll_bar = self.output_text.verticalScrollBar()
+        output_scroll_bar.valueChanged.connect(
+            lambda _value: self._sync_text_scroll_from(self.output_text)
+        )
+        output_scroll_bar.rangeChanged.connect(self._handle_text_scroll_range_changed)
 
         self.output_preview_notice = QLabel(
             "Anteprima di controllo: il documento definitivo verrà creato solo con "
@@ -363,6 +768,20 @@ class MainWindow(QMainWindow):
         self.output_preview_notice.setWordWrap(True)
         self.output_preview_notice.setAccessibleName("Stato dell’anteprima")
         self.output_preview_notice.setVisible(False)
+
+        self.output_preview_inline_notice = QLabel(
+            "· provvisoria fino a «Crea copia protetta»"
+        )
+        self.output_preview_inline_notice.setObjectName("OutputPreviewInlineNotice")
+        self.output_preview_inline_notice.setAccessibleName("Stato dell’anteprima")
+        self.output_preview_inline_notice.setAccessibleDescription(
+            "Il documento definitivo verrà creato solo con Crea copia protetta."
+        )
+        self.output_preview_inline_notice.setSizePolicy(
+            QSizePolicy.Ignored,
+            QSizePolicy.Preferred,
+        )
+        self.output_preview_inline_notice.setVisible(False)
 
         self.findings_panel = FindingsPanel()
         self.findings_panel.finding_selected.connect(self._scroll_editor_to_finding)
@@ -472,6 +891,80 @@ class MainWindow(QMainWindow):
         self.result_frame.setLayout(result_layout)
         self.result_frame.setAccessibleName("Riepilogo della copia protetta")
         self.result_frame.setVisible(False)
+
+        self.reversible_flow_title = QLabel("Modalità Reversibile")
+        self.reversible_flow_title.setObjectName("ReversibleFlowTitle")
+
+        self.reversible_flow_intro = QLabel(
+            "Completa questi passaggi nell’ordine indicato. Condividi solo la copia protetta: "
+            "il File di ripristino resta sul tuo computer."
+        )
+        self.reversible_flow_intro.setObjectName("ReversibleFlowIntro")
+        self.reversible_flow_intro.setWordWrap(True)
+
+        self.reversible_help_button = QPushButton("Come funziona?")
+        self.reversible_help_button.setObjectName("LinkButton")
+        self.reversible_help_button.setAccessibleName("Come funziona la modalità Reversibile")
+        self.reversible_help_button.setAccessibleDescription(
+            "Apre una spiegazione dei tre passaggi senza modificare il documento."
+        )
+        self.reversible_help_button.clicked.connect(self.show_reversible_help_dialog)
+
+        reversible_heading = QHBoxLayout()
+        reversible_heading.setContentsMargins(0, 0, 0, 0)
+        reversible_heading.setSpacing(12)
+        reversible_heading.addWidget(self.reversible_flow_title)
+        reversible_heading.addStretch(1)
+        reversible_heading.addWidget(self.reversible_help_button, 0, Qt.AlignTop)
+
+        self.reversible_step_frames: list[QFrame] = []
+        self.reversible_step_dots: list[QLabel] = []
+        self.reversible_step_state_labels: list[QLabel] = []
+        self.reversible_step_description_labels: list[QLabel] = []
+        reversible_steps_layout = QVBoxLayout()
+        reversible_steps_layout.setContentsMargins(0, 0, 0, 0)
+        reversible_steps_layout.setSpacing(6)
+        self.reversible_steps_layout = reversible_steps_layout
+        reversible_step_definitions = (
+            (
+                "Salva il File di ripristino",
+                "Contiene i dati originali in forma cifrata. Scegli una password che ricorderai.",
+            ),
+            (
+                "Copia la versione protetta per l’IA",
+                "Condividi il testo con i segnaposti, mai il File di ripristino o la password.",
+            ),
+            (
+                "Inserisci la risposta dell’IA",
+                "Quando l’hai ricevuta, seleziona «Incolla qui»: i dati saranno reinseriti sul tuo computer.",
+            ),
+        )
+        reversible_step_labels: list[QLabel] = []
+        for index, (title, description) in enumerate(reversible_step_definitions, start=1):
+            row, title_label = self._build_reversible_step(index, title, description)
+            self.reversible_step_frames.append(row)
+            reversible_step_labels.append(title_label)
+            reversible_steps_layout.addWidget(row)
+
+        (
+            self.reversible_step_save_label,
+            self.reversible_step_share_label,
+            self.reversible_step_restore_label,
+        ) = reversible_step_labels
+
+        reversible_flow_layout = QVBoxLayout()
+        reversible_flow_layout.setContentsMargins(14, 13, 14, 14)
+        reversible_flow_layout.setSpacing(9)
+        self.reversible_flow_layout = reversible_flow_layout
+        reversible_flow_layout.addLayout(reversible_heading)
+        reversible_flow_layout.addWidget(self.reversible_flow_intro)
+        reversible_flow_layout.addLayout(reversible_steps_layout)
+
+        self.reversible_flow_frame = QFrame()
+        self.reversible_flow_frame.setObjectName("ReversibleFlow")
+        self.reversible_flow_frame.setAccessibleName("Flusso della modalità Reversibile")
+        self.reversible_flow_frame.setLayout(reversible_flow_layout)
+        self.reversible_flow_frame.setVisible(False)
 
         self.load_button = QPushButton("Carica")
         self.load_button.clicked.connect(self.open_file)
@@ -658,7 +1151,7 @@ class MainWindow(QMainWindow):
         mode_options: list[tuple[AnonymizationMode, str]] = [
             ("standard", "Standard (più leggibile)"),
             ("maximum", "Massima protezione"),
-            ("reversible", "Reversibile con mappa locale"),
+            ("reversible", "Reversibile — ripristina i dati dopo"),
         ]
         protection_column = QVBoxLayout()
         protection_column.setSpacing(8)
@@ -669,6 +1162,7 @@ class MainWindow(QMainWindow):
 
             description = QLabel(mode_note(mode))
             description.setObjectName("ModeCardDescription")
+            description.setTextFormat(Qt.PlainText)
             description.setWordWrap(True)
 
             card = _ClickableCard(radio)
@@ -689,11 +1183,11 @@ class MainWindow(QMainWindow):
         for radio in self.mode_radios.values():
             radio.toggled.connect(self._handle_mode_toggled)
 
-        self.map_status_label = QLabel("Nessuna mappa attiva")
+        self.map_status_label = QLabel("Il File di ripristino verrà creato con la copia")
         self.map_status_label.setObjectName("MapStatus")
         self.map_status_label.setWordWrap(True)
-        self.map_status_label.setAccessibleName("Stato della mappa reversibile")
-        self.map_section_label = self._rail_section_label("MAPPA REVERSIBILE")
+        self.map_status_label.setAccessibleName("Stato del File di ripristino")
+        self.map_section_label = self._rail_section_label("FILE DI RIPRISTINO")
 
         rail_content_layout = QVBoxLayout()
         rail_content_layout.setContentsMargins(20, 20, 20, 16)
@@ -731,6 +1225,7 @@ class MainWindow(QMainWindow):
         self.rail.setLayout(rail_outer_layout)
 
         # ---- Main area: document toolbar ----
+        self.document_appearance_selector = self._build_document_appearance_selector()
         self.document_toolbar = _AdaptiveToolbar(
             self.load_button,
             self.document_label,
@@ -738,14 +1233,21 @@ class MainWindow(QMainWindow):
             self.save_button,
             self.clear_button,
             self.add_selection_button,
+            self.document_appearance_selector,
             self.primary_button,
         )
 
-        self.input_panel, self.input_panel_title = self._panel("Testo originale", self.input_text)
+        self.input_panel, self.input_panel_title = self._panel(
+            "Testo originale",
+            self.source_view_stack,
+            helper=self.source_view_notice,
+            header_action=self.source_view_toggle,
+        )
         self.output_panel, self.output_panel_title = self._panel(
             "Testo anonimizzato",
             self.output_text,
             helper=self.output_preview_notice,
+            header_note=self.output_preview_inline_notice,
         )
 
         self.text_splitter = QSplitter(Qt.Horizontal)
@@ -769,11 +1271,12 @@ class MainWindow(QMainWindow):
 
         main_area_layout = QVBoxLayout()
         main_area_layout.setContentsMargins(22, 18, 22, 16)
-        main_area_layout.setSpacing(14)
+        main_area_layout.setSpacing(13)
         main_area_layout.addWidget(self.document_toolbar)
         main_area_layout.addWidget(self.pdf_choice_frame)
         main_area_layout.addWidget(self.job_frame)
         main_area_layout.addWidget(self.result_frame)
+        main_area_layout.addWidget(self.reversible_flow_frame)
         main_area_layout.addWidget(self.workspace_splitter, 1)
 
         main_area = QWidget()
@@ -793,6 +1296,30 @@ class MainWindow(QMainWindow):
         self._configure_accessibility()
         self._update_mode_notice()
         self._sync_action_state()
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        if hasattr(self, "reversible_step_description_labels"):
+            compact_height = event.size().height() < 760
+            compact_changed = compact_height != self._compact_height
+            self._compact_height = compact_height
+            self.reversible_flow_intro.setVisible(not compact_height)
+            self.reversible_flow_layout.setContentsMargins(
+                12 if compact_height else 14,
+                8 if compact_height else 13,
+                12 if compact_height else 14,
+                8 if compact_height else 14,
+            )
+            self.reversible_flow_layout.setSpacing(5 if compact_height else 9)
+            self.reversible_steps_layout.setSpacing(3 if compact_height else 6)
+            for label in self.reversible_step_description_labels:
+                label.setVisible(not compact_height)
+            for row in self.reversible_step_frames:
+                row.setMinimumHeight(34 if compact_height else 0)
+                row.updateGeometry()
+            self.reversible_flow_frame.updateGeometry()
+            if compact_changed and hasattr(self, "result_frame"):
+                self._update_report()
+        super().resizeEvent(event)
 
     def _rail_section_label(self, text: str) -> QLabel:
         label = QLabel(text)
@@ -822,19 +1349,91 @@ class MainWindow(QMainWindow):
         row.setLayout(row_layout)
         return row
 
+    def _build_reversible_step(
+        self,
+        index: int,
+        title: str,
+        description: str,
+    ) -> tuple[QFrame, QLabel]:
+        row = QFrame()
+        row.setObjectName("ReversibleStepPending")
+
+        dot = QLabel(str(index))
+        dot.setObjectName("ReversibleStepDot")
+        dot.setAlignment(Qt.AlignCenter)
+        dot.setFixedSize(22, 22)
+        self.reversible_step_dots.append(dot)
+
+        title_label = QLabel(title)
+        title_label.setObjectName("ReversibleStepTitle")
+        title_label.setWordWrap(True)
+
+        description_label = QLabel(description)
+        description_label.setObjectName("ReversibleStepDescription")
+        description_label.setWordWrap(True)
+        self.reversible_step_description_labels.append(description_label)
+
+        copy = QVBoxLayout()
+        copy.setContentsMargins(0, 0, 0, 0)
+        copy.setSpacing(2)
+        copy.addWidget(title_label)
+        copy.addWidget(description_label)
+
+        state_label = QLabel("BLOCCATO")
+        state_label.setObjectName("ReversibleStepState")
+        state_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.reversible_step_state_labels.append(state_label)
+
+        inline_action: QPushButton | None = None
+        if index == 3:
+            inline_action = QPushButton("Incolla qui")
+            inline_action.setObjectName("ReversibleInlineAction")
+            inline_action.setAccessibleName("Incolla qui la risposta dell’IA")
+            inline_action.setAccessibleDescription(
+                "Apre lo spazio in cui incollare la risposta ricevuta dall’IA e ripristinare i dati localmente."
+            )
+            inline_action.clicked.connect(self.restore_with_reversible_map)
+            inline_action.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+            inline_action.setFixedHeight(24)
+            inline_action.setVisible(False)
+            self.reversible_restore_inline_button = inline_action
+
+        row_layout = QHBoxLayout()
+        row_layout.setContentsMargins(10, 8, 10, 8)
+        row_layout.setSpacing(10)
+        row_layout.addWidget(dot, 0, Qt.AlignTop)
+        row_layout.addLayout(copy, 1)
+        row_layout.addWidget(state_label, 0, Qt.AlignVCenter)
+        if inline_action is not None:
+            row_layout.addWidget(inline_action, 0, Qt.AlignVCenter)
+        row.setLayout(row_layout)
+        row.setAccessibleName(f"Passaggio {index}: {title}")
+        return row, title_label
+
     def _panel(
         self,
         title: str,
-        widget: QTextEdit,
+        widget: QWidget,
         *,
         helper: QLabel | None = None,
+        header_action: QWidget | None = None,
+        header_note: QLabel | None = None,
     ) -> tuple[QWidget, QLabel]:
         label = QLabel(title)
         label.setObjectName("SectionTitle")
+        header_layout = QHBoxLayout()
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(8)
+        header_layout.addWidget(label)
+        if header_note is not None:
+            header_layout.addWidget(header_note, 1)
+        header_layout.addStretch(1)
+        if header_action is not None:
+            header_layout.addWidget(header_action)
         layout = QVBoxLayout()
         layout.setContentsMargins(12, 10, 12, 12)
         layout.setSpacing(8)
-        layout.addWidget(label)
+        layout.addLayout(header_layout)
         if helper is not None:
             layout.addWidget(helper)
         layout.addWidget(widget)
@@ -842,6 +1441,83 @@ class MainWindow(QMainWindow):
         panel.setObjectName("Panel")
         panel.setLayout(layout)
         return panel, label
+
+    def _build_document_appearance_selector(self) -> QFrame:
+        label = QLabel("Documento")
+        label.setObjectName("DocumentAppearanceLabel")
+
+        self.document_dark_button = QPushButton("Scuro")
+        self.document_paper_button = QPushButton("Carta chiara")
+        for button in (self.document_dark_button, self.document_paper_button):
+            button.setObjectName("DocumentAppearanceButton")
+            button.setCheckable(True)
+            button.setAutoExclusive(True)
+
+        self.document_dark_button.setAccessibleName("Documento su fondo scuro")
+        self.document_dark_button.setAccessibleDescription(
+            "Mostra originale, risposta dell’IA e risultato con testo chiaro su fondo scuro."
+        )
+        self.document_paper_button.setAccessibleName("Documento su carta chiara")
+        self.document_paper_button.setAccessibleDescription(
+            "Mostra originale, risposta dell’IA e risultato con inchiostro scuro su carta chiara."
+        )
+        self.document_dark_button.setToolTip("Testo chiaro su fondo scuro")
+        self.document_paper_button.setToolTip("Inchiostro scuro su carta chiara")
+
+        if self._document_appearance == DOCUMENT_APPEARANCE_PAPER:
+            self.document_paper_button.setChecked(True)
+        else:
+            self.document_dark_button.setChecked(True)
+
+        self.document_dark_button.clicked.connect(
+            lambda: self._set_document_appearance(DOCUMENT_APPEARANCE_DARK)
+        )
+        self.document_paper_button.clicked.connect(
+            lambda: self._set_document_appearance(DOCUMENT_APPEARANCE_PAPER)
+        )
+
+        layout = QHBoxLayout()
+        layout.setContentsMargins(8, 2, 4, 2)
+        layout.setSpacing(4)
+        layout.addWidget(label)
+        layout.addSpacing(4)
+        layout.addWidget(self.document_dark_button)
+        layout.addWidget(self.document_paper_button)
+
+        selector = QFrame()
+        selector.setObjectName("DocumentAppearanceSelector")
+        selector.setAccessibleName("Aspetto del documento")
+        selector.setFixedHeight(32)
+        selector.setLayout(layout)
+        return selector
+
+    def _set_document_appearance(self, appearance: str, *, persist: bool = True) -> None:
+        if appearance not in DOCUMENT_APPEARANCES:
+            appearance = DOCUMENT_APPEARANCE_DARK
+        changed = appearance != self._document_appearance
+        self._document_appearance = appearance
+
+        for button, checked in (
+            (self.document_dark_button, appearance == DOCUMENT_APPEARANCE_DARK),
+            (self.document_paper_button, appearance == DOCUMENT_APPEARANCE_PAPER),
+        ):
+            blocker = QSignalBlocker(button)
+            button.setChecked(checked)
+            del blocker
+
+        for editor in (self.input_text, self.ai_response_text, self.output_text):
+            _apply_text_editor_appearance(editor, appearance)
+
+        if self.findings:
+            self._highlight_findings()
+
+        if persist:
+            self._settings.setValue(DOCUMENT_APPEARANCE_SETTING, appearance)
+            self._settings.sync()
+
+        if changed:
+            label = "Carta chiara" if appearance == DOCUMENT_APPEARANCE_PAPER else "Scuro"
+            self.statusBar().showMessage(f"Aspetto documento: {label}.", 3000)
 
     def _build_menu(self) -> None:
         self.open_action = QAction("Carica documento...", self)
@@ -852,7 +1528,7 @@ class MainWindow(QMainWindow):
         quit_action.setShortcut(QKeySequence.Quit)
         quit_action.triggered.connect(self.close)
 
-        self.copy_output_action = QAction("Copia per ChatGPT", self)
+        self.copy_output_action = QAction("Copia per l’IA", self)
         self.copy_output_action.setShortcut(QKeySequence("Ctrl+Shift+C"))
         self.copy_output_action.triggered.connect(self.copy_output)
 
@@ -885,25 +1561,26 @@ class MainWindow(QMainWindow):
         self.toggle_rail_action.setChecked(True)
         self.toggle_rail_action.toggled.connect(self.rail.setVisible)
 
-        self.save_map_action = QAction("Salva mappa reversibile...", self)
+        self.save_map_action = QAction("Salva il File di ripristino...", self)
         self.save_map_action.triggered.connect(self.save_reversible_map)
 
-        self.load_map_action = QAction("Carica mappa reversibile...", self)
+        # Conservato per compatibilità interna: il riuso tra più documenti è una
+        # funzione avanzata e non fa parte del percorso ordinario di questa build.
+        self.load_map_action = QAction("Continua con un File di ripristino esistente...", self)
         self.load_map_action.triggered.connect(self.load_reversible_map)
 
-        self.restore_map_action = QAction("Ricostruisci testo con mappa...", self)
+        self.restore_map_action = QAction("Incolla la risposta dell’IA e ripristina...", self)
         self.restore_map_action.triggered.connect(self.restore_with_reversible_map)
 
-        tools_menu = self.menuBar().addMenu("Strumenti")
-        tools_menu.addAction(self.primary_action)
-        tools_menu.addAction(self.focus_search_action)
-        tools_menu.addAction(self.toggle_rail_action)
-        tools_menu.addSeparator()
-        tools_menu.addAction(self.activity_action)
-        tools_menu.addSeparator()
-        tools_menu.addAction(self.load_map_action)
-        tools_menu.addAction(self.save_map_action)
-        tools_menu.addAction(self.restore_map_action)
+        self.tools_menu = self.menuBar().addMenu("Strumenti")
+        self.tools_menu.addAction(self.primary_action)
+        self.tools_menu.addAction(self.focus_search_action)
+        self.tools_menu.addAction(self.toggle_rail_action)
+        self.tools_menu.addSeparator()
+        self.tools_menu.addAction(self.activity_action)
+        self.tools_menu.addSeparator()
+        self.tools_menu.addAction(self.save_map_action)
+        self.tools_menu.addAction(self.restore_map_action)
 
         security_action = QAction("Sicurezza e privacy", self)
         security_action.triggered.connect(self.show_security_dialog)
@@ -912,11 +1589,15 @@ class MainWindow(QMainWindow):
         self.review_help_action.setShortcut(QKeySequence.HelpContents)
         self.review_help_action.triggered.connect(self.show_review_help_dialog)
 
+        self.reversible_help_action = QAction("Come funziona la modalità Reversibile", self)
+        self.reversible_help_action.triggered.connect(self.show_reversible_help_dialog)
+
         about_action = QAction("Informazioni su OMISSIS", self)
         about_action.triggered.connect(self.show_about_dialog)
 
         help_menu = self.menuBar().addMenu("Aiuto")
         help_menu.addAction(self.review_help_action)
+        help_menu.addAction(self.reversible_help_action)
         help_menu.addSeparator()
         help_menu.addAction(security_action)
         help_menu.addSeparator()
@@ -924,17 +1605,23 @@ class MainWindow(QMainWindow):
 
     def _configure_accessibility(self) -> None:
         self.load_button.setAccessibleName("Carica documento")
-        self.copy_button.setAccessibleName("Copia per ChatGPT")
+        self.copy_button.setAccessibleName("Copia per l’IA")
         self.save_button.setAccessibleName("Salva anche come file")
         self.clear_button.setAccessibleName("Nuova sessione")
         self.add_selection_button.setAccessibleName("Aggiungi dato mancante")
         self.primary_button.setAccessibleName("Esegui passaggio corrente")
-        self.setTabOrder(self.load_button, self.input_text)
-        self.setTabOrder(self.input_text, self.add_selection_button)
+        self.setTabOrder(self.load_button, self.document_dark_button)
+        self.setTabOrder(self.document_dark_button, self.document_paper_button)
+        self.setTabOrder(self.document_paper_button, self.input_text)
+        self.setTabOrder(self.input_text, self.source_view_toggle)
+        self.setTabOrder(self.source_view_toggle, self.ai_response_text)
+        self.setTabOrder(self.ai_response_text, self.add_selection_button)
         self.setTabOrder(self.add_selection_button, self.findings_panel.search_edit)
         self.setTabOrder(self.findings_panel.search_edit, self.findings_panel.tree)
         self.setTabOrder(self.findings_panel.tree, self.primary_button)
-        self.setTabOrder(self.primary_button, self.output_text)
+        self.setTabOrder(self.primary_button, self.reversible_help_button)
+        self.setTabOrder(self.reversible_help_button, self.reversible_restore_inline_button)
+        self.setTabOrder(self.reversible_restore_inline_button, self.output_text)
         self.setTabOrder(self.output_text, self.save_button)
         self.setTabOrder(self.save_button, self.clear_button)
 
@@ -953,6 +1640,86 @@ class MainWindow(QMainWindow):
 
     def _show_input_workspace(self) -> None:
         self.input_text.ensureCursorVisible()
+
+    def _visible_source_editor(self) -> QTextEdit:
+        if self.source_view_stack.currentWidget() is self.ai_response_text:
+            return self.ai_response_text
+        return self.input_text
+
+    def _sync_text_scroll_from(self, source_editor: QTextEdit) -> None:
+        """Keep the two visible text panes at the same relative document position."""
+        if (
+            self._syncing_text_scroll
+            or self._updating_output_text
+            or self._loading_document_text
+        ):
+            return
+
+        visible_source = self._visible_source_editor()
+        if source_editor is self.output_text:
+            target_editor = visible_source
+        elif source_editor is visible_source:
+            target_editor = self.output_text
+        else:
+            return
+
+        source_bar = source_editor.verticalScrollBar()
+        target_bar = target_editor.verticalScrollBar()
+        source_range = source_bar.maximum() - source_bar.minimum()
+        target_range = target_bar.maximum() - target_bar.minimum()
+        position = (
+            0.0
+            if source_range <= 0
+            else (source_bar.value() - source_bar.minimum()) / source_range
+        )
+        target_value = target_bar.minimum() + round(position * max(0, target_range))
+
+        self._syncing_text_scroll = True
+        try:
+            target_bar.setValue(target_value)
+        finally:
+            self._syncing_text_scroll = False
+
+    def _align_output_scroll_to_source(self) -> None:
+        source_editor = self._visible_source_editor()
+        source_bar = source_editor.verticalScrollBar()
+        output_bar = self.output_text.verticalScrollBar()
+        source_range = source_bar.maximum() - source_bar.minimum()
+        output_range = output_bar.maximum() - output_bar.minimum()
+        if source_range <= 0 < output_range:
+            return
+        self._sync_text_scroll_from(source_editor)
+
+    def _align_visible_source_scroll_to_output(self) -> None:
+        self._sync_text_scroll_from(self.output_text)
+
+    def _handle_text_scroll_range_changed(self, *_args: object) -> None:
+        """Realign immediately and once more after Qt finishes laying out text."""
+        if not (
+            self._syncing_text_scroll
+            or self._updating_output_text
+            or self._loading_document_text
+        ):
+            self._align_output_scroll_to_source()
+        self._schedule_text_scroll_alignment()
+
+    def _schedule_text_scroll_alignment(self, *_args: object) -> None:
+        """Coalesce late Qt layout changes before realigning the text panes."""
+        if self._text_scroll_alignment_pending:
+            return
+        self._text_scroll_alignment_pending = True
+        QTimer.singleShot(0, self._run_scheduled_text_scroll_alignment)
+
+    def _run_scheduled_text_scroll_alignment(self) -> None:
+        self._text_scroll_alignment_pending = False
+        if (
+            self._syncing_text_scroll
+            or self._updating_output_text
+            or self._loading_document_text
+        ):
+            self._schedule_text_scroll_alignment()
+            return
+        self._align_output_scroll_to_source()
 
     def show_review_help_dialog(self) -> None:
         dialog = QDialog(self)
@@ -996,6 +1763,58 @@ class MainWindow(QMainWindow):
         layout.addWidget(details)
         layout.addLayout(button_row)
         dialog.setLayout(layout)
+        dialog.setStyleSheet(APP_STYLE)
+        dialog.exec()
+
+    def show_reversible_help_dialog(self) -> None:
+        dialog = QDialog(self)
+        dialog.setObjectName("InfoDialog")
+        dialog.setWindowTitle("Come funziona la modalità Reversibile")
+        dialog.setModal(True)
+        dialog.setMinimumWidth(590)
+
+        title = QLabel("Proteggi, usa con l’IA, ripristina")
+        title.setObjectName("DialogTitle")
+
+        details = QLabel(
+            "La modalità Reversibile sostituisce i dati con etichette numerate, per esempio "
+            "<b>Mario Rossi → &lt;PERSONA_1&gt;</b>. OMISSIS crea anche un File di ripristino "
+            "cifrato che conserva la corrispondenza.<br><br>"
+            "<b>1. Salva il File di ripristino.</b> Resta sul tuo computer ed è protetto dalla "
+            "password che scegli. Se perdi il file o la password, OMISSIS non potrà reinserire "
+            "i dati.<br><br>"
+            "<b>2. Invia soltanto la copia protetta.</b> Non allegare mai il File di ripristino "
+            "e non comunicare la password a servizi di IA o ad altri servizi esterni.<br><br>"
+            "<b>3. Incolla la risposta nell’app.</b> Quando hai la risposta, usa il pulsante "
+            "<b>Incolla qui la risposta dell’IA</b>. OMISSIS riconosce le stesse etichette e "
+            "reinserisce localmente i dati originali.<br><br>"
+            "Reversibile è disponibile nell’app desktop per testo incollato, TXT e DOCX. "
+            "Non modificare o eliminare etichette come &lt;PERSONA_1&gt;: OMISSIS non potrà "
+            "reinserire quel dato."
+        )
+        details.setObjectName("DialogDetails")
+        details.setTextFormat(Qt.RichText)
+        details.setWordWrap(True)
+
+        close_button = QPushButton("Ho capito")
+        close_button.setObjectName("PrimaryButton")
+        close_button.clicked.connect(dialog.accept)
+
+        button_row = QHBoxLayout()
+        button_row.addStretch(1)
+        button_row.addWidget(close_button)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(24, 22, 24, 18)
+        layout.setSpacing(14)
+        layout.addWidget(title)
+        layout.addWidget(details)
+        layout.addLayout(button_row)
+        dialog.setLayout(layout)
+        dialog.setAccessibleName("Guida alla modalità Reversibile")
+        dialog.setAccessibleDescription(
+            "Spiega come salvare il File di ripristino, condividere solo la copia protetta e reinserire i dati."
+        )
         dialog.setStyleSheet(APP_STYLE)
         dialog.exec()
 
@@ -1281,9 +2100,13 @@ class MainWindow(QMainWindow):
         if include_review and self._review_dirty:
             items.append("selezioni di anonimizzazione non ancora applicate")
         if include_output and self._has_output() and not self._output_saved:
-            items.append("risultato anonimizzato non salvato")
+            items.append(
+                "testo ricostruito con dati personali non salvato"
+                if self._is_restored_output()
+                else "risultato anonimizzato non salvato"
+            )
         if include_map and self.reversible_mapping and not self._reversible_map_saved:
-            items.append("mappa reversibile non salvata")
+            items.append("File di ripristino non salvato")
         return items
 
     def _confirm_discard_work(
@@ -1304,16 +2127,8 @@ class MainWindow(QMainWindow):
         if not items:
             return True
 
-        dialog = QMessageBox(self)
-        dialog.setIcon(QMessageBox.Warning)
-        dialog.setWindowTitle("Modifiche non salvate")
-        dialog.setText("Questa azione eliminerebbe del lavoro non salvato.")
-        dialog.setInformativeText("Verranno eliminati: " + ", ".join(items) + ".")
-        cancel_button = dialog.addButton("Annulla", QMessageBox.RejectRole)
-        discard_button = dialog.addButton(action_label, QMessageBox.DestructiveRole)
-        dialog.setDefaultButton(cancel_button)
-        dialog.exec()
-        return dialog.clickedButton() is discard_button
+        dialog = _DiscardWorkDialog(action_label, items, self)
+        return dialog.exec() == QDialog.Accepted
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self._active_job is not None:
@@ -1527,12 +2342,16 @@ class MainWindow(QMainWindow):
         self.anonymized_document = None
         self.reversible_mapping = ()
         self._reversible_map_saved = True
+        self._reversible_map_path = None
+        self._restore_mapping = ()
         self._output_provenance = None
         self._output_stale_reason = ""
         self._output_saved = True
         self._review_dirty = False
         self._review_confirmed = False
         self._result_used = False
+        self._reversible_copy_copied = False
+        self._reset_restored_comparison_state()
         self._workflow_revision += 1
         self.document_text_dirty = False
         self.output_text_dirty = False
@@ -1553,6 +2372,11 @@ class MainWindow(QMainWindow):
         self._set_output_text("")
         self.document_text_dirty = False
         self.output_text_dirty = False
+        switched_from_reversible = (
+            self._selected_mode() == "reversible" and not self._reversible_mode_available()
+        )
+        if switched_from_reversible:
+            self.mode_radios["maximum"].setChecked(True)
         self._update_mode_notice()
         self._update_report()
         if self.loaded_document.extension == ".pdf":
@@ -1597,6 +2421,12 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(
                 "Documento caricato. Modalità Standard attiva: rivedi i dati rilevati prima di condividere il risultato.",
                 5000,
+            )
+        if switched_from_reversible:
+            self.statusBar().showMessage(
+                "La modalità Reversibile non è disponibile per questo formato: "
+                "è stata attivata Massima protezione. Usa testo incollato, TXT o DOCX per poter ripristinare i dati.",
+                9000,
             )
         self.findings_panel.set_document_notice(
             "unsupported"
@@ -1764,7 +2594,7 @@ class MainWindow(QMainWindow):
             return
         if self.reversible_mapping and not self._reversible_map_saved:
             if not self._confirm_discard_work(
-                "Rigenera senza la mappa",
+                "Rigenera senza il File di ripristino",
                 include_source=False,
                 include_review=False,
                 include_output=False,
@@ -1870,7 +2700,7 @@ class MainWindow(QMainWindow):
             if self.reversible_mapping:
                 self.statusBar().showMessage(
                     f"Documento pronto: {outcome.document.filename}. "
-                    f"Salva anche la mappa reversibile.{unsupported_note}",
+                    f"Salva il File di ripristino prima di usarlo con l’IA.{unsupported_note}",
                     7000,
                 )
             else:
@@ -1881,7 +2711,7 @@ class MainWindow(QMainWindow):
                 )
         elif self.reversible_mapping:
             self.statusBar().showMessage(
-                "Testo reversibile pronto. Salva la mappa locale prima di usare ChatGPT.",
+                "Copia protetta pronta. Salva il File di ripristino prima di usare l’IA.",
                 7000,
             )
         else:
@@ -1898,12 +2728,26 @@ class MainWindow(QMainWindow):
         if not self.output_text.toPlainText().strip():
             self.statusBar().showMessage("Anonimizza prima un testo o un documento.", 4000)
             return
+        if self._is_restored_output():
+            self.statusBar().showMessage(
+                "Il testo contiene nuovamente dati personali. Salvalo sul dispositivo invece di inviarlo all’IA.",
+                7000,
+            )
+            return
+        if self._is_current_reversible_output() and not self._reversible_map_saved:
+            self.statusBar().showMessage(
+                "Salva prima il File di ripristino. La copia protetta non è stata copiata.",
+                7000,
+            )
+            return
         QApplication.clipboard().setText(self.output_text.toPlainText())
+        if self._is_current_reversible_output():
+            self._reversible_copy_copied = True
         self._result_used = True
         self._update_report()
         self._sync_action_state()
         self.statusBar().showMessage(
-            "Copia protetta negli appunti: ora puoi incollarla in ChatGPT o in un altro strumento di IA.",
+            "Copia protetta negli appunti: ora puoi incollarla nello strumento di IA che preferisci.",
             5000,
         )
 
@@ -1917,8 +2761,20 @@ class MainWindow(QMainWindow):
         if not self.output_text.toPlainText().strip() and not self.anonymized_document:
             self.statusBar().showMessage("Anonimizza prima un testo o un documento.", 4000)
             return
+        if self._is_current_reversible_output() and not self._reversible_map_saved:
+            self.statusBar().showMessage(
+                "Salva prima il File di ripristino. La copia protetta non è stata salvata.",
+                7000,
+            )
+            return
         use_document_binary = self.anonymized_document is not None and not self.output_text_dirty
-        default_name = self.anonymized_document.filename if use_document_binary else "testo_anonimizzato.txt"
+        if self._is_restored_output():
+            use_document_binary = False
+            default_name = "testo_ricostruito.txt"
+            dialog_title = "Salva testo ricostruito"
+        else:
+            default_name = self.anonymized_document.filename if use_document_binary else "testo_anonimizzato.txt"
+            dialog_title = "Salva versione anonimizzata"
         expected_suffix = Path(default_name).suffix.lower() or ".txt"
         save_filters = {
             ".csv": "CSV (*.csv)",
@@ -1929,7 +2785,7 @@ class MainWindow(QMainWindow):
         save_filter = save_filters.get(expected_suffix, "Tutti i file (*.*)")
         filename, _ = QFileDialog.getSaveFileName(
             self,
-            "Salva versione anonimizzata",
+            dialog_title,
             str(Path.home() / default_name),
             save_filter,
         )
@@ -1958,7 +2814,8 @@ class MainWindow(QMainWindow):
             return
 
         self._output_saved = True
-        self._result_used = True
+        if not self._is_current_reversible_output():
+            self._result_used = True
         self._record_activity(
             "save",
             output_path=target_path,
@@ -1968,40 +2825,50 @@ class MainWindow(QMainWindow):
         self._sync_action_state()
         self.statusBar().showMessage(f"Salvato: {target_path}", 4000)
 
-    def save_reversible_map(self) -> None:
+    def save_reversible_map(self) -> bool:
         if not self.reversible_mapping:
-            self.statusBar().showMessage("Non c'è ancora una mappa reversibile da salvare.", 5000)
-            return
+            self.statusBar().showMessage("Non c’è ancora un File di ripristino da salvare.", 5000)
+            return False
 
         filename, _ = QFileDialog.getSaveFileName(
             self,
-            "Salva mappa reversibile",
+            "Salva il File di ripristino",
             str(Path.home() / self._default_map_filename()),
-            "Mappa OMISSIS (*.omissis-map)",
+            "File di ripristino OMISSIS (*.omissis-map)",
         )
         if not filename:
-            return
+            return False
         target_path = Path(filename)
         if target_path.suffix.lower() != MAP_EXTENSION:
             target_path = target_path.with_suffix(MAP_EXTENSION)
 
-        passphrase = self._ask_passphrase("Password mappa", "Scegli una password per cifrare la mappa:", confirm=True)
+        passphrase = self._ask_passphrase(
+            "Password del File di ripristino",
+            "Scegli una password per cifrare il File di ripristino:",
+            confirm=True,
+        )
         if passphrase is None:
-            return
+            return False
         try:
             write_encrypted_mapping(target_path, self.reversible_mapping, passphrase)
         except ReversibleMapError as exc:
             self.statusBar().showMessage(str(exc), 7000)
-            return
+            return False
 
         self._reversible_map_saved = True
+        self._reversible_map_path = target_path
+        self._restore_mapping = self.reversible_mapping
         self._update_report()
         self._sync_action_state()
-        self.statusBar().showMessage(f"Mappa reversibile salvata: {target_path}", 6000)
+        self.statusBar().showMessage(
+            f"File di ripristino salvato: {target_path}. Non condividerlo con servizi esterni.",
+            7000,
+        )
+        return True
 
     def load_reversible_map(self) -> None:
         if not self._confirm_discard_work(
-            "Sostituisci mappa",
+            "Sostituisci File di ripristino",
             include_source=False,
             include_review=False,
             include_output=False,
@@ -2009,14 +2876,17 @@ class MainWindow(QMainWindow):
             return
         filename, _ = QFileDialog.getOpenFileName(
             self,
-            "Carica mappa reversibile",
+            "Continua con un File di ripristino esistente",
             str(Path.home()),
-            "Mappa OMISSIS (*.omissis-map);;Tutti i file (*.*)",
+            "File di ripristino OMISSIS (*.omissis-map);;Tutti i file (*.*)",
         )
         if not filename:
             return
 
-        passphrase = self._ask_passphrase("Password mappa", "Inserisci la password della mappa:")
+        passphrase = self._ask_passphrase(
+            "Password del File di ripristino",
+            "Inserisci la password del File di ripristino:",
+        )
         if passphrase is None:
             return
         try:
@@ -2028,48 +2898,292 @@ class MainWindow(QMainWindow):
         self.loaded_reversible_entries = entries
         self.reversible_mapping = entries
         self._reversible_map_saved = True
+        self._reversible_map_path = Path(filename)
+        self._restore_mapping = entries
         if self._selected_mode() == "reversible":
-            self._mark_workflow_changed("la mappa reversibile")
+            self._mark_workflow_changed("il File di ripristino")
         self._sync_action_state()
         self.statusBar().showMessage(
-            f"Mappa reversibile caricata: {len(entries)} voci pronte per i prossimi documenti.", 7000
+            f"File di ripristino caricato: {len(entries)} voci pronte per i prossimi documenti.", 7000
         )
+
+    def _reversible_placeholder_status(
+        self,
+        text: str,
+        mapping: tuple[ReversibleMapEntry, ...],
+    ) -> tuple[int, int, tuple[str, ...]]:
+        known = {entry.placeholder for entry in mapping}
+        tokens = {match.group(0) for match in PLACEHOLDER_PATTERN.finditer(text)}
+        matched = len(tokens & known)
+        missing = len(known - tokens)
+        unknown = tuple(sorted(tokens - known))
+        return matched, missing, unknown
 
     def restore_with_reversible_map(self) -> None:
-        source_text = self.output_text.toPlainText().strip() or self.input_text.toPlainText().strip()
-        if not source_text:
-            self.statusBar().showMessage("Incolla nel risultato il testo da ricostruire, poi scegli la mappa.", 6000)
-            return
-
-        filename, _ = QFileDialog.getOpenFileName(
-            self,
-            "Apri mappa reversibile",
-            str(Path.home()),
-            "Mappa OMISSIS (*.omissis-map);;Tutti i file (*.*)",
+        dialog = QDialog(self)
+        dialog.setObjectName("InfoDialog")
+        dialog.setWindowTitle("Incolla qui la risposta dell’IA")
+        dialog.setWindowModality(Qt.WindowModal)
+        dialog.setModal(True)
+        dialog.resize(690, 560)
+        dialog.setAccessibleName("Incolla qui la risposta dell’IA")
+        dialog.setAccessibleDescription(
+            "Incolla una risposta con segnaposti e usa il File di ripristino per reinserire i dati sul computer."
         )
-        if not filename:
-            return
 
-        passphrase = self._ask_passphrase("Password mappa", "Inserisci la password della mappa:")
-        if passphrase is None:
-            return
-        try:
-            mapping = read_encrypted_mapping(filename, passphrase)
-        except ReversibleMapError as exc:
-            self.statusBar().showMessage(str(exc), 8000)
-            return
+        title = QLabel("Incolla qui la risposta dell’IA")
+        title.setObjectName("DialogTitle")
 
-        self.anonymized_document = None
-        self.reversible_mapping = ()
-        self._reversible_map_saved = True
-        self._set_output_text(restore_text(source_text, mapping))
-        self._mark_output_generated(
-            "reversible",
-            total_findings=0,
-            included_findings=0,
-            kind="restored",
+        details = QLabel(
+            "Copia la risposta ricevuta dall’IA e incollala nel riquadro qui sotto. "
+            "I dati originali saranno reinseriti soltanto sul tuo computer."
         )
-        self.statusBar().showMessage("Testo ricostruito localmente dalla mappa.", 5000)
+        details.setObjectName("DialogDetails")
+        details.setWordWrap(True)
+
+        response_label = QLabel("Risposta ricevuta dall’IA")
+        response_label.setObjectName("FieldLabel")
+        response_editor = QTextEdit()
+        response_editor.setObjectName("RestoreResponseEditor")
+        _configure_text_editor(response_editor)
+        response_editor.setPlaceholderText(
+            "Incolla qui l’intera risposta dell’IA. Lascia invariati segnaposti come <PERSONA_1>."
+        )
+        response_editor.setAccessibleName("Risposta dell’IA da ricostruire")
+        response_editor.setAccessibleDescription(
+            "Il testo resta sul computer e non viene inviato a servizi esterni."
+        )
+        response_editor.setMinimumHeight(220)
+        response_label.setBuddy(response_editor)
+
+        selected_mapping = {
+            "entries": self._restore_mapping,
+            "path": self._reversible_map_path,
+        }
+        map_label = QLabel()
+        map_label.setObjectName("RestoreMapStatus")
+        map_label.setWordWrap(True)
+        map_label.setAccessibleName("File di ripristino selezionato")
+
+        choose_map_button = QPushButton()
+        choose_map_button.setObjectName("SecondaryButton")
+        choose_map_button.setAccessibleName("Scegli il File di ripristino")
+
+        password_label = QLabel("Password del File di ripristino")
+        password_label.setObjectName("FieldLabel")
+        password_edit = QLineEdit()
+        password_edit.setObjectName("RestorePasswordEdit")
+        password_edit.setEchoMode(QLineEdit.Password)
+        password_edit.setPlaceholderText("Inserisci la password usata al salvataggio")
+        password_edit.setAccessibleName("Password del File di ripristino")
+        password_label.setBuddy(password_edit)
+
+        validation_label = QLabel()
+        validation_label.setObjectName("RestoreValidation")
+        validation_label.setWordWrap(True)
+        validation_label.setAccessibleName("Controllo dei segnaposti")
+
+        restore_button = QPushButton("Ripristina i dati")
+        restore_button.setObjectName("PrimaryButton")
+        restore_button.setAccessibleDescription(
+            "Reinserisce localmente i dati originali nei segnaposti riconosciuti."
+        )
+        cancel_button = QPushButton("Annulla")
+        cancel_button.setObjectName("SecondaryButton")
+        cancel_button.clicked.connect(dialog.reject)
+
+        def using_session_mapping() -> bool:
+            return bool(selected_mapping["entries"])
+
+        def refresh_map_controls() -> None:
+            path = selected_mapping["path"]
+            if using_session_mapping():
+                location = f" · {Path(path).name}" if path else ""
+                map_label.setText(f"File di ripristino pronto per questa sessione{location}")
+                choose_map_button.setText("Scegli un altro File di ripristino…")
+                password_label.setVisible(False)
+                password_edit.setVisible(False)
+            elif path:
+                map_label.setText(f"File selezionato: {Path(path).name}")
+                choose_map_button.setText("Scegli un altro File di ripristino…")
+                password_label.setVisible(True)
+                password_edit.setVisible(True)
+            else:
+                map_label.setText(
+                    "Per continuare, scegli il File di ripristino salvato insieme alla copia protetta."
+                )
+                choose_map_button.setText("Scegli il File di ripristino…")
+                password_label.setVisible(False)
+                password_edit.setVisible(False)
+
+        def refresh_validation() -> None:
+            text = response_editor.toPlainText()
+            entries = selected_mapping["entries"]
+            path = selected_mapping["path"]
+            ready = False
+            if not text.strip():
+                message = "Incolla la risposta dell’IA per controllare i segnaposti."
+                style = "RestoreValidation"
+            elif entries:
+                matched, missing, unknown = self._reversible_placeholder_status(text, entries)
+                if unknown:
+                    noun = "segnaposto non appartiene" if len(unknown) == 1 else "segnaposti non appartengono"
+                    message = (
+                        f"{len(unknown)} {noun} a questo File di ripristino: "
+                        f"{', '.join(unknown)}. Controlla il testo o scegli il file corretto."
+                    )
+                    style = "RestoreValidationError"
+                elif matched == 0:
+                    message = (
+                        "Non sono stati trovati segnaposti di questo File di ripristino. "
+                        "Controlla il testo o scegli il file corretto."
+                    )
+                    style = "RestoreValidationError"
+                else:
+                    total = matched + missing
+                    message = f"Segnaposti pronti: {matched} di {total}."
+                    if missing == 1:
+                        message += (
+                            " 1 elemento non compare nella risposta e non verrà ripristinato."
+                        )
+                    elif missing:
+                        message += (
+                            f" {missing} elementi non compaiono nella risposta e non verranno ripristinati."
+                        )
+                    style = "RestoreValidationReady"
+                    ready = True
+            elif path:
+                message = "Inserisci la password del File di ripristino."
+                style = "RestoreValidation"
+                ready = bool(text.strip() and password_edit.text())
+            else:
+                message = "Scegli il File di ripristino prima di continuare."
+                style = "RestoreValidation"
+            self._set_styled_object_name(validation_label, style)
+            validation_label.setText(message)
+            validation_label.setAccessibleDescription(message)
+            restore_button.setEnabled(ready)
+
+        def choose_map() -> None:
+            filename, _ = QFileDialog.getOpenFileName(
+                dialog,
+                "Scegli il File di ripristino",
+                str(Path.home()),
+                "File di ripristino OMISSIS (*.omissis-map);;Tutti i file (*.*)",
+            )
+            if not filename:
+                return
+            selected_mapping["entries"] = ()
+            selected_mapping["path"] = Path(filename)
+            password_edit.clear()
+            refresh_map_controls()
+            refresh_validation()
+            password_edit.setFocus(Qt.OtherFocusReason)
+
+        def apply_restore() -> None:
+            source_text = response_editor.toPlainText()
+            mapping = selected_mapping["entries"]
+            path = selected_mapping["path"]
+            if not mapping:
+                if not path or not password_edit.text():
+                    refresh_validation()
+                    return
+                try:
+                    mapping = read_encrypted_mapping(path, password_edit.text())
+                except ReversibleMapError:
+                    message = (
+                        "Non riesco ad aprire questo File di ripristino. "
+                        "Controlla password e file, poi riprova."
+                    )
+                    self._set_styled_object_name(validation_label, "RestoreValidationError")
+                    validation_label.setText(message)
+                    validation_label.setAccessibleDescription(message)
+                    self.statusBar().showMessage(message, 8000)
+                    password_edit.selectAll()
+                    password_edit.setFocus(Qt.OtherFocusReason)
+                    return
+                selected_mapping["entries"] = mapping
+                refresh_map_controls()
+
+            matched, missing, unknown = self._reversible_placeholder_status(source_text, mapping)
+            if matched == 0 or unknown:
+                refresh_validation()
+                return
+
+            restored = restore_text(source_text, mapping)
+            self._restore_mapping = mapping
+            self._reversible_map_path = Path(path) if path else self._reversible_map_path
+            self.anonymized_document = None
+            self.reversible_mapping = ()
+            self.loaded_reversible_entries = ()
+            self._reversible_map_saved = True
+            self._set_restored_comparison_source(source_text)
+            self._set_output_text(restored)
+            self._mark_output_generated(
+                "reversible",
+                total_findings=matched + missing,
+                included_findings=matched,
+                kind="restored",
+            )
+            dialog.accept()
+            self.primary_button.setFocus(Qt.OtherFocusReason)
+            if missing:
+                noun = "elemento non compariva" if missing == 1 else "elementi non comparivano"
+                self.statusBar().showMessage(
+                    f"Dati ripristinati sul computer. {missing} {noun} nella risposta e non "
+                    f"{'è stato reinserito' if missing == 1 else 'sono stati reinseriti'}.",
+                    9000,
+                )
+            else:
+                self.statusBar().showMessage(
+                    "Dati ripristinati sul computer. Il testo contiene nuovamente informazioni personali.",
+                    7000,
+                )
+
+        choose_map_button.clicked.connect(choose_map)
+        response_editor.textChanged.connect(refresh_validation)
+        password_edit.textChanged.connect(refresh_validation)
+        restore_button.clicked.connect(apply_restore)
+
+        map_row = QHBoxLayout()
+        map_row.setContentsMargins(0, 0, 0, 0)
+        map_row.setSpacing(10)
+        map_row.addWidget(map_label, 1)
+        map_row.addWidget(choose_map_button)
+
+        button_row = QHBoxLayout()
+        button_row.addStretch(1)
+        button_row.addWidget(cancel_button)
+        button_row.addWidget(restore_button)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(24, 22, 24, 18)
+        layout.setSpacing(11)
+        layout.addWidget(title)
+        layout.addWidget(details)
+        layout.addWidget(response_label)
+        layout.addWidget(response_editor, 1)
+        layout.addLayout(map_row)
+        layout.addWidget(password_label)
+        layout.addWidget(password_edit)
+        layout.addWidget(validation_label)
+        layout.addLayout(button_row)
+        dialog.setLayout(layout)
+        dialog.setStyleSheet(APP_STYLE)
+        dialog.setTabOrder(response_editor, choose_map_button)
+        dialog.setTabOrder(choose_map_button, password_edit)
+        dialog.setTabOrder(password_edit, cancel_button)
+        dialog.setTabOrder(cancel_button, restore_button)
+
+        refresh_map_controls()
+        refresh_validation()
+        QTimer.singleShot(
+            0,
+            lambda: response_editor.setFocus(Qt.OtherFocusReason)
+            if using_session_mapping()
+            else choose_map_button.setFocus(Qt.OtherFocusReason),
+        )
+        dialog.exec()
 
     def clear_all(self, force: bool = False) -> None:
         if not force and not self._confirm_discard_work("Pulisci e scarta"):
@@ -2078,9 +3192,13 @@ class MainWindow(QMainWindow):
         self._output_stale_reason = ""
         self._output_saved = True
         self._reversible_map_saved = True
+        self._reversible_map_path = None
+        self._restore_mapping = ()
         self._review_dirty = False
         self._review_confirmed = False
         self._result_used = False
+        self._reversible_copy_copied = False
+        self._reset_restored_comparison_state()
         self._workflow_revision += 1
         self.input_text.clear()
         self._set_output_text("")
@@ -2113,16 +3231,11 @@ class MainWindow(QMainWindow):
         entity_by_label = {singular: entity_type for entity_type, (singular, _plural) in ENTITY_LABELS.items()}
         labels = sorted(entity_by_label)
 
-        dialog = QInputDialog(self)
-        dialog.setWindowTitle("Tipo di dato")
-        dialog.setLabelText("Che tipo di dato è la selezione?")
-        dialog.setComboBoxItems(labels)
-        dialog.setStyleSheet(APP_STYLE)
-
-        ok = dialog.exec() == QInputDialog.Accepted
+        dialog = _EntityTypeDialog(labels, self.input_text.textCursor().selectedText(), self)
+        ok = dialog.exec() == QDialog.Accepted
         if not ok:
             return
-        label = dialog.textValue()
+        label = dialog.selected_label()
         entity_type = entity_by_label[label]
 
         if not self._findings_ready_for_filtering():
@@ -2138,22 +3251,15 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("La selezione non è più valida: seleziona di nuovo il testo.", 5000)
             return
         value = source_text[start:end]
-        # Espandi la selezione a ogni occorrenza letterale del valore: una selezione
-        # manuale (es. "Potenza") va redatta ovunque compaia, non solo dove è stata
-        # evidenziata. Se l'intervallo era già stato rilevato automaticamente, la
-        # scelta esplicita dell'utente prevale senza ridurre un finding più ampio.
-        exact_spans: set[tuple[int, int]] = set()
-        occurrence_start = 0
-        while True:
-            occurrence_start = source_text.find(value, occurrence_start)
-            if occurrence_start == -1:
-                break
-            exact_spans.add((occurrence_start, occurrence_start + len(value)))
-            occurrence_start += 1
+        # Espandi la selezione a ogni variante di maiuscole/minuscole del valore:
+        # "STELLANTIS", "Stellantis" e "stellantis" sono lo stesso dato scelto
+        # dall'utente. Gli span restano riferiti alla grafia originale, indispensabile
+        # per ricostruire esattamente il testo in modalità Reversibile.
+        matching_spans = set(casefolded_literal_spans(source_text, value))
         automatic_findings = [
             finding
             for finding in self.findings
-            if (finding.start, finding.end) not in exact_spans
+            if (finding.start, finding.end) not in matching_spans
         ]
         expanded = add_extra_value_findings(
             source_text,
@@ -2195,23 +3301,127 @@ class MainWindow(QMainWindow):
         for row, finding in enumerate(self.findings):
             if not self._is_row_checked(row):
                 continue
-            color = QColor(entity_color(finding.entity_type))
-            color.setAlpha(
-                FINDING_SELECTED_HIGHLIGHT_ALPHA
-                if row == self._selected_finding_index
-                else FINDING_HIGHLIGHT_ALPHA
-            )
-            char_format = QTextCharFormat()
-            char_format.setBackground(color)
-            char_format.setForeground(QColor(EDITOR_SELECTION_TEXT_COLOR))
             cursor = QTextCursor(self.input_text.document())
             cursor.setPosition(finding.start)
             cursor.setPosition(finding.end, QTextCursor.KeepAnchor)
             selection = QTextEdit.ExtraSelection()
             selection.cursor = cursor
-            selection.format = char_format
+            selection.format = self._finding_highlight_format(
+                finding,
+                selected=row == self._selected_finding_index,
+            )
             selections.append(selection)
         self.input_text.setExtraSelections(selections)
+        self._highlight_preview_findings()
+
+    def _finding_highlight_format(
+        self,
+        finding: Finding,
+        *,
+        selected: bool,
+    ) -> QTextCharFormat:
+        paper = self._document_appearance == DOCUMENT_APPEARANCE_PAPER
+        color = QColor(entity_color(finding.entity_type))
+        if paper:
+            color.setAlpha(
+                PAPER_FINDING_SELECTED_HIGHLIGHT_ALPHA
+                if selected
+                else PAPER_FINDING_HIGHLIGHT_ALPHA
+            )
+            foreground = PAPER_EDITOR_TEXT_COLOR
+        else:
+            color.setAlpha(
+                FINDING_SELECTED_HIGHLIGHT_ALPHA if selected else FINDING_HIGHLIGHT_ALPHA
+            )
+            foreground = EDITOR_SELECTION_TEXT_COLOR
+        char_format = QTextCharFormat()
+        char_format.setBackground(color)
+        char_format.setForeground(QColor(foreground))
+        return char_format
+
+    def _preview_output_spans(self) -> dict[int, tuple[int, int]]:
+        """Map every checked source finding to its replacement in the current preview."""
+        if not self._analysis_preview_active:
+            return {}
+
+        source_text = self.input_text.toPlainText()
+        if self.findings_stale or self._findings_source_text != source_text:
+            return {}
+
+        ordered_findings = sorted(
+            (
+                (row, finding)
+                for row, finding in enumerate(self.findings)
+                if self._is_row_checked(row)
+            ),
+            key=lambda item: item[1].start,
+        )
+        accepted_findings: list[tuple[int, Finding]] = []
+        source_cursor = 0
+        for row, finding in ordered_findings:
+            if finding.start < source_cursor:
+                continue
+            accepted_findings.append((row, finding))
+            source_cursor = finding.end
+        mode = self._selected_mode()
+        reversible_anonymizer = ReversibleAnonymizer() if mode == "reversible" else None
+        if reversible_anonymizer is not None:
+            reversible_anonymizer.reserve_placeholders(source_text)
+
+        chunks: list[str] = []
+        preview_spans: dict[int, tuple[int, int]] = {}
+        source_cursor = 0
+        output_cursor = 0
+        for row, finding in accepted_findings:
+            unchanged = source_text[source_cursor : finding.start]
+            chunks.append(unchanged)
+            output_cursor += len(unchanged)
+
+            value = source_text[finding.start : finding.end]
+            if reversible_anonymizer is not None:
+                replacement = reversible_anonymizer.placeholder_for(
+                    finding.entity_type,
+                    value,
+                )
+            else:
+                replacement = self.engine._recognizer._replacement(
+                    value,
+                    finding.entity_type,
+                    mode,
+                )
+            replacement_start = output_cursor
+            chunks.append(replacement)
+            output_cursor += len(replacement)
+            preview_spans[row] = (replacement_start, output_cursor)
+            source_cursor = finding.end
+            if (
+                reversible_anonymizer is None
+                and replacement.endswith(".")
+                and source_cursor < len(source_text)
+                and source_text[source_cursor] == "."
+            ):
+                source_cursor += 1
+
+        chunks.append(source_text[source_cursor:])
+        if "".join(chunks) != self.output_text.toPlainText():
+            return {}
+        return preview_spans
+
+    def _highlight_preview_findings(self) -> None:
+        selections: list[QTextEdit.ExtraSelection] = []
+        for index, output_span in self._preview_output_spans().items():
+            finding = self.findings[index]
+            cursor = QTextCursor(self.output_text.document())
+            cursor.setPosition(output_span[0])
+            cursor.setPosition(output_span[1], QTextCursor.KeepAnchor)
+            selection = QTextEdit.ExtraSelection()
+            selection.cursor = cursor
+            selection.format = self._finding_highlight_format(
+                finding,
+                selected=index == self._selected_finding_index,
+            )
+            selections.append(selection)
+        self.output_text.setExtraSelections(selections)
 
     def _is_row_checked(self, row: int) -> bool:
         mask = self.findings_panel.included_mask()
@@ -2279,12 +3489,16 @@ class MainWindow(QMainWindow):
         self.output_text_dirty = False
         self.reversible_mapping = ()
         self._reversible_map_saved = True
+        self._reversible_map_path = None
+        self._restore_mapping = ()
         self._output_provenance = None
         self._output_stale_reason = ""
         self._output_saved = True
         self._review_dirty = False
         self._review_confirmed = False
         self._result_used = False
+        self._reversible_copy_copied = False
+        self._reset_restored_comparison_state()
         self._workflow_revision += 1
         self.findings = []
         self.findings_stale = True
@@ -2369,6 +3583,24 @@ class MainWindow(QMainWindow):
     def _output_is_usable(self) -> bool:
         return self._has_output() and not self._managed_output_is_stale()
 
+    def _is_current_reversible_output(self) -> bool:
+        provenance = self._output_provenance
+        return bool(
+            provenance is not None
+            and provenance.mode == "reversible"
+            and provenance.kind == "anonymized"
+            and self.reversible_mapping
+            and self._output_is_usable()
+        )
+
+    def _is_restored_output(self) -> bool:
+        provenance = self._output_provenance
+        return bool(
+            provenance is not None
+            and provenance.kind == "restored"
+            and self._output_is_usable()
+        )
+
     def _mark_workflow_changed(self, reason: str) -> None:
         self._workflow_revision += 1
         if self._output_provenance is not None and self._has_output():
@@ -2404,17 +3636,23 @@ class MainWindow(QMainWindow):
             included_findings=included_findings,
             output_format=self._output_format_label(),
             used_ocr=used_ocr,
-            map_required=bool(self.reversible_mapping),
+            map_required=bool(self.reversible_mapping) and kind == "anonymized",
             kind=kind,
         )
         self._output_stale_reason = ""
         self._output_saved = False
+        if kind != "restored":
+            self._reset_restored_comparison_state()
         self._reversible_map_saved = (
             not bool(self.reversible_mapping)
             or self.reversible_mapping == self.loaded_reversible_entries
         )
+        if kind == "anonymized" and self.reversible_mapping and not self._reversible_map_saved:
+            self._reversible_map_path = None
+            self._restore_mapping = ()
         self._review_dirty = False
         self._result_used = False
+        self._reversible_copy_copied = False
         self._update_report()
         self._sync_action_state()
 
@@ -2423,7 +3661,9 @@ class MainWindow(QMainWindow):
         self._output_stale_reason = ""
         self._output_saved = True
         self._result_used = False
+        self._reversible_copy_copied = False
         self.anonymized_document = None
+        self._reset_restored_comparison_state()
         self._set_output_text("")
         self._update_report()
 
@@ -2441,20 +3681,30 @@ class MainWindow(QMainWindow):
             self._last_selected_mode = selected_mode
             self._review_confirmed = False
             self._result_used = False
+            self._reversible_copy_copied = False
             self._mark_workflow_changed("la modalità di protezione")
         self._refresh_analysis_preview()
         self._update_mode_notice()
         self._sync_action_state()
 
     def _refresh_mode_cards(self) -> None:
+        reversible_available = self._reversible_mode_available()
+        unavailable_description = (
+            "Reversibile non è disponibile per questo formato. "
+            "Usa testo incollato, TXT o DOCX."
+        )
         for mode, card in self.mode_cards.items():
             selected = self.mode_radios[mode].isChecked()
+            unavailable = mode == "reversible" and not reversible_available
             object_name = "ModeCardSelected" if selected else "ModeCard"
             if card.objectName() != object_name:
                 card.setObjectName(object_name)
                 card.style().unpolish(card)
                 card.style().polish(card)
-            self.mode_descriptions[mode].setVisible(selected)
+            description = unavailable_description if unavailable else mode_note(mode)
+            self.mode_descriptions[mode].setText(description)
+            self.mode_descriptions[mode].setVisible(selected or unavailable)
+            self.mode_radios[mode].setAccessibleDescription(description)
 
     def _update_mode_notice(self, *args) -> None:
         self._refresh_mode_cards()
@@ -2487,18 +3737,35 @@ class MainWindow(QMainWindow):
             self.report_label.setVisible(True)
         elif provenance.kind == "restored":
             self._set_result_style("restored")
-            self.result_title_label.setText("Testo ricostruito")
+            self.result_title_label.setText("Dati personali ripristinati")
             self.result_subtitle_label.setText(
-                "La mappa locale ha reinserito i dati originali nel testo."
+                "Confronta la risposta dell’IA con il testo ricostruito prima di salvarlo. "
+                "I dati sono stati reinseriti soltanto sul tuo computer."
             )
-            self.result_state_label.setText("DATI RIPRISTINATI")
-            self.result_metric_label.setText("Mappa locale applicata")
+            self.result_state_label.setText("ATTENZIONE · DATI PERSONALI")
+            if provenance.excluded_findings:
+                self.result_metric_label.setText(
+                    f"Ripristinati {provenance.included_findings} di {provenance.total_findings} elementi"
+                )
+            else:
+                self.result_metric_label.setText("File di ripristino applicato")
             self.result_meta_label.setText("Modalità Reversibile")
             self.result_metric_label.setVisible(True)
             self.result_meta_label.setVisible(True)
             self.result_categories_label.setVisible(False)
+            missing_note = ""
+            if provenance.excluded_findings == 1:
+                missing_note = (
+                    "Un elemento del File di ripristino non compariva nella risposta e non è stato reinserito. "
+                )
+            elif provenance.excluded_findings:
+                missing_note = (
+                    f"{provenance.excluded_findings} elementi del File di ripristino non comparivano "
+                    "nella risposta e non sono stati reinseriti. "
+                )
             self.report_label.setText(
-                "Questo testo contiene nuovamente informazioni personali: conservalo e condividilo con cautela."
+                f"{missing_note}Questo testo contiene nuovamente dati personali. "
+                "Non inviarlo a servizi di IA. Se devi condividerlo, crea una nuova copia protetta."
             )
             self.report_label.setVisible(True)
         else:
@@ -2513,7 +3780,9 @@ class MainWindow(QMainWindow):
                 f"{source_label} Elaborazione completata interamente sul tuo computer."
             )
             use_document_binary = self.anonymized_document is not None and not self.output_text_dirty
-            if self._output_saved:
+            if provenance.mode == "reversible" and not self._reversible_map_saved:
+                result_state = "FILE DA SALVARE"
+            elif self._output_saved:
                 result_state = "SALVATA"
             elif self._result_used:
                 result_state = "COPIATA"
@@ -2557,6 +3826,9 @@ class MainWindow(QMainWindow):
         self.result_frame.setAccessibleDescription(accessible_summary)
         self.report_label.setAccessibleDescription(self.report_label.text())
         self.result_frame.setVisible(True)
+        if self._compact_height:
+            self.result_subtitle_label.setVisible(False)
+            self.result_categories_label.setVisible(False)
 
     def _set_styled_object_name(self, widget: QWidget, object_name: str) -> None:
         if widget.objectName() == object_name:
@@ -2633,8 +3905,16 @@ class MainWindow(QMainWindow):
             items.append("È stato usato l’OCR locale: confronta l’anteprima con il documento")
             needs_attention = True
         if provenance.map_required and not self._reversible_map_saved:
-            items.append("Salva la mappa cifrata prima di usare il risultato")
+            items.append("Salva il File di ripristino prima di usare il risultato")
             needs_attention = True
+        elif provenance.mode == "reversible" and provenance.kind == "anonymized":
+            if self._reversible_copy_copied:
+                items.append(
+                    "Prossimo passo: dopo aver usato l’IA, torna qui e seleziona "
+                    "«Incolla la risposta dell’IA»"
+                )
+            else:
+                items.append("Invia all’IA soltanto la copia protetta, mai il File di ripristino o la password")
         if self.output_text_dirty:
             items.append("Il risultato è stato modificato: il salvataggio sarà in TXT")
             needs_attention = True
@@ -2650,6 +3930,11 @@ class MainWindow(QMainWindow):
             and not self.document_text_dirty
             and not self._output_is_usable()
         )
+
+    def _reversible_mode_available(self) -> bool:
+        if self.loaded_document is None or self.document_text_dirty:
+            return True
+        return self.loaded_document.extension in REVERSIBLE_DOCUMENT_EXTENSIONS
 
     def _pdf_conversion_requested(self) -> bool:
         return self._pdf_choice_available() and self.pdf_choice_radios["text"].isChecked()
@@ -2671,6 +3956,7 @@ class MainWindow(QMainWindow):
             return
         self._review_confirmed = False
         self._result_used = False
+        self._reversible_copy_copied = False
         self._refresh_pdf_choice_cards()
         self._sync_action_state()
 
@@ -2681,11 +3967,20 @@ class MainWindow(QMainWindow):
         if self._pdf_conversion_requested():
             return "convert_pdf", "Trasforma e analizza", input_has_text
         if self._output_is_usable():
+            if self._is_restored_output():
+                label = "Salva di nuovo" if self._output_saved else "Salva testo ricostruito"
+                return "save_restored", label, output_has_text
+            if self._is_current_reversible_output():
+                if not self._reversible_map_saved:
+                    return "save_map", "Salva il file di ripristino", True
+                if self._reversible_copy_copied:
+                    return "restore", "Incolla la risposta dell’IA", True
+                return "copy", "Copia per l’IA", output_has_text
             use_document_binary = self.anonymized_document is not None and not self.output_text_dirty
             if use_document_binary:
                 label = "Salva di nuovo" if self._result_used else "Salva copia protetta"
                 return "save", label, True
-            label = "Copia di nuovo" if self._result_used else "Copia per ChatGPT"
+            label = "Copia di nuovo" if self._result_used else "Copia per l’IA"
             return "copy", label, output_has_text
         if not input_has_text:
             return "load", "Carica documento", True
@@ -2702,10 +3997,14 @@ class MainWindow(QMainWindow):
             self.open_file()
         elif kind == "convert_pdf":
             self._extract_document_as_text()
-        elif kind == "save":
+        elif kind in {"save", "save_restored"}:
             self.save_output()
+        elif kind == "save_map":
+            self.save_reversible_map()
         elif kind == "copy":
             self.copy_output()
+        elif kind == "restore":
+            self.restore_with_reversible_map()
         elif kind == "review":
             self._review_confirmed = True
             self.statusBar().showMessage(
@@ -2721,7 +4020,7 @@ class MainWindow(QMainWindow):
     def _review_secondary_action(self) -> None:
         kind, _label, _enabled = self._primary_state()
         if (
-            kind in {"copy", "save"}
+            kind in {"save_map", "copy", "save", "restore"}
             and self._output_provenance is not None
             and self._output_provenance.kind == "anonymized"
         ):
@@ -2788,6 +4087,10 @@ class MainWindow(QMainWindow):
         output_usable = self._output_is_usable()
         output_stale = self._managed_output_is_stale()
         busy = self._active_job is not None
+        self._refresh_text_panel_presentation()
+        self.source_view_toggle.setEnabled(
+            self._restored_comparison_active() and not busy
+        )
         pdf_choice_available = self._pdf_choice_available()
         self.pdf_choice_frame.setVisible(pdf_choice_available)
         self._refresh_pdf_choice_cards()
@@ -2802,8 +4105,13 @@ class MainWindow(QMainWindow):
             "analyze": "Analizza il testo corrente e prepara i dati rilevati per la revisione.",
             "review": "Conferma che hai controllato le evidenziazioni e le spunte dei dati rilevati.",
             "anonymize": "Conferma le spunte correnti e genera un nuovo risultato anonimizzato.",
-            "copy": "Copia la versione protetta negli appunti per usarla con ChatGPT o un altro strumento di IA.",
+            "copy": "Copia la versione protetta negli appunti per usarla con lo strumento di IA che preferisci.",
             "save": "Salva sul dispositivo una nuova copia protetta senza modificare il documento originale.",
+            "save_map": (
+                "Salva e cifra il File di ripristino prima che la copia protetta possa essere condivisa."
+            ),
+            "restore": "Apre lo spazio dedicato in cui incollare la risposta dell’IA e ripristinare i dati localmente.",
+            "save_restored": "Salva sul dispositivo il testo che contiene nuovamente i dati personali.",
         }
         self.primary_button.setAccessibleDescription(primary_descriptions[kind])
         if hasattr(self, "primary_action"):
@@ -2811,9 +4119,32 @@ class MainWindow(QMainWindow):
         self.primary_button.setEnabled(primary_enabled and not busy)
         self.load_button.setEnabled(not busy)
         self.load_button.setVisible(False)
-        self.copy_button.setEnabled(output_has_text and output_usable and not busy)
-        self.save_button.setText("Salva anche come file")
-        self.save_button.setAccessibleName("Salva anche come file")
+        copy_allowed = (
+            output_has_text
+            and output_usable
+            and not self._is_restored_output()
+            and (not self._is_current_reversible_output() or self._reversible_map_saved)
+        )
+        copy_blocked_by_map = (
+            self._is_current_reversible_output() and not self._reversible_map_saved
+        )
+        copy_description = (
+            "Disponibile dopo aver salvato il File di ripristino."
+            if copy_blocked_by_map
+            else "Copia la versione protetta negli appunti per usarla con lo strumento di IA che preferisci."
+        )
+        self.copy_button.setAccessibleDescription(copy_description)
+        self.copy_button.setToolTip(copy_description)
+        save_allowed = (
+            output_usable
+            and (not self._is_current_reversible_output() or self._reversible_map_saved)
+        )
+        self.copy_button.setEnabled(copy_allowed and not busy)
+        secondary_save_label = (
+            "Salva copia protetta" if self._is_current_reversible_output() else "Salva anche come file"
+        )
+        self.save_button.setText(secondary_save_label)
+        self.save_button.setAccessibleName(secondary_save_label)
         self.save_button.setVisible(kind == "copy" and output_usable)
         self.save_button.setEnabled(kind == "copy" and output_usable and not busy)
         self.clear_button.setVisible(has_anything)
@@ -2821,7 +4152,7 @@ class MainWindow(QMainWindow):
         reviewing = kind == "review"
         can_return_to_review = kind == "anonymize"
         final_anonymized_result = (
-            kind in {"copy", "save"}
+            kind in {"save_map", "copy", "save", "restore"}
             and output_usable
             and self._output_provenance is not None
             and self._output_provenance.kind == "anonymized"
@@ -2873,12 +4204,19 @@ class MainWindow(QMainWindow):
         )
         self.findings_panel.setVisible(not output_usable)
         self.document_toolbar.sync_secondary_visibility()
-        self.input_text.setReadOnly(busy)
+        self.input_text.setReadOnly(busy or self._is_restored_output())
         self.output_text.setEnabled(not output_stale and not busy)
         self.output_text.setReadOnly(self._analysis_preview_active)
         self.findings_panel.setEnabled(not busy)
-        for radio in self.mode_radios.values():
-            radio.setEnabled(not busy)
+        reversible_available = self._reversible_mode_available()
+        for mode, radio in self.mode_radios.items():
+            radio.setEnabled(not busy and (mode != "reversible" or reversible_available))
+        self._refresh_mode_cards()
+        self.mode_cards["reversible"].setToolTip(
+            ""
+            if reversible_available
+            else "Reversibile è disponibile per testo incollato, TXT e DOCX."
+        )
         self.output_text.setToolTip(
             "Il risultato è obsoleto: rianalizza e rigenera prima di copiarlo o salvarlo."
             if output_stale
@@ -2889,13 +4227,19 @@ class MainWindow(QMainWindow):
             self.load_map_action.setEnabled(not busy)
             self.restore_map_action.setEnabled(not busy)
             self.open_action.setEnabled(not busy)
-            self.copy_output_action.setEnabled(output_has_text and output_usable and not busy)
-            self.save_output_action.setEnabled(output_usable and not busy)
+            self.copy_output_action.setEnabled(copy_allowed and not busy)
+            self.copy_output_action.setToolTip(copy_description)
+            self.copy_output_action.setStatusTip(copy_description)
+            self.save_output_action.setText(
+                "Salva testo ricostruito..." if self._is_restored_output() else "Salva copia protetta..."
+            )
+            self.save_output_action.setEnabled(save_allowed and not busy)
             self.primary_action.setEnabled(primary_enabled and not busy)
             self.focus_search_action.setEnabled(
                 bool(self.findings) and self._findings_ready_for_filtering() and not busy
             )
             self.activity_action.setEnabled(not busy)
+        self._update_reversible_flow()
         self._update_map_status()
         self._update_workflow_steps()
         if kind != self._last_primary_phase and not busy:
@@ -2904,16 +4248,19 @@ class MainWindow(QMainWindow):
 
     def _update_map_status(self) -> None:
         if self.reversible_mapping and not self._reversible_map_saved:
-            label = f"Mappa da salvare · {len(self.reversible_mapping)} voci"
+            label = f"File di ripristino da salvare · {len(self.reversible_mapping)} voci"
             object_name = "MapStatusWarning"
         elif self.reversible_mapping and self.loaded_reversible_entries == self.reversible_mapping:
-            label = f"Mappa caricata · {len(self.reversible_mapping)} voci"
+            label = f"File di ripristino caricato · {len(self.reversible_mapping)} voci"
             object_name = "MapStatusReady"
         elif self.reversible_mapping:
-            label = f"Mappa salvata · {len(self.reversible_mapping)} voci"
+            label = f"File di ripristino salvato · {len(self.reversible_mapping)} voci"
+            object_name = "MapStatusReady"
+        elif self._restore_mapping:
+            label = f"File di ripristino disponibile · {len(self._restore_mapping)} voci"
             object_name = "MapStatusReady"
         else:
-            label = "Nessuna mappa attiva"
+            label = "Il File di ripristino verrà creato con la copia"
             object_name = "MapStatus"
         self.map_status_label.setText(label)
         self.map_status_label.setAccessibleDescription(label)
@@ -2925,9 +4272,70 @@ class MainWindow(QMainWindow):
             self._selected_mode() == "reversible"
             or bool(self.reversible_mapping)
             or bool(self.loaded_reversible_entries)
+            or bool(self._restore_mapping)
         )
         self.map_section_label.setVisible(show_map_status)
         self.map_status_label.setVisible(show_map_status)
+
+    def _update_reversible_flow(self) -> None:
+        visible = self._is_current_reversible_output()
+        self.reversible_flow_frame.setVisible(visible)
+        self.reversible_help_button.setEnabled(self._active_job is None)
+        if not visible:
+            self.reversible_restore_inline_button.setVisible(False)
+            return
+
+        if not self._reversible_map_saved:
+            current = 0
+            state_labels = ("DA SALVARE", "BLOCCATO", "BLOCCATO")
+        elif not self._reversible_copy_copied:
+            current = 1
+            state_labels = ("SALVATO", "PRONTA", "BLOCCATO")
+        else:
+            current = 2
+            state_labels = ("SALVATO", "COPIATO", "PRONTO")
+
+        restore_ready = current == 2
+        self.reversible_restore_inline_button.setVisible(restore_ready)
+        self.reversible_restore_inline_button.setEnabled(
+            restore_ready and self._active_job is None
+        )
+
+        object_names = {
+            "pending": "ReversibleStepPending",
+            "current": "ReversibleStepCurrent",
+            "done": "ReversibleStepDone",
+        }
+        accessible_parts: list[str] = []
+        for index, row in enumerate(self.reversible_step_frames):
+            step_state = "done" if index < current else "current" if index == current else "pending"
+            state_text = state_labels[index]
+            self.reversible_step_dots[index].setText("✓" if step_state == "done" else str(index + 1))
+            self.reversible_step_state_labels[index].setText(state_text)
+            self.reversible_step_state_labels[index].setVisible(
+                not (index == 2 and restore_ready)
+            )
+            action_hint = (
+                " Usa il pulsante Incolla qui la risposta dell’IA."
+                if index == 2 and restore_ready
+                else ""
+            )
+            row.setAccessibleDescription(
+                f"{state_text}. {'Passaggio corrente.' if step_state == 'current' else ''}{action_hint}"
+            )
+            accessible_parts.append(f"Passaggio {index + 1}: {state_text}")
+            object_name = object_names[step_state]
+            if row.objectName() != object_name:
+                row.setObjectName(object_name)
+                row.style().unpolish(row)
+                row.style().polish(row)
+                for child in row.findChildren(QLabel):
+                    child.style().unpolish(child)
+                    child.style().polish(child)
+                    child.updateGeometry()
+                row.updateGeometry()
+
+        self.reversible_flow_frame.setAccessibleDescription(". ".join(accessible_parts))
 
     def _workflow_step_states(self) -> list[str]:
         phase, _label, _enabled = self._primary_state()
@@ -2937,10 +4345,22 @@ class MainWindow(QMainWindow):
             "analyze": 1,
             "review": 2,
             "anonymize": 3,
+            "save_map": 4,
             "copy": 4,
             "save": 4,
+            "restore": 4,
+            "save_restored": 4,
         }[phase]
-        if phase in {"copy", "save"} and self._result_used:
+        ordinary_result_done = (
+            phase in {"copy", "save"}
+            and self._result_used
+            and not (
+                self._output_provenance is not None
+                and self._output_provenance.mode == "reversible"
+            )
+        )
+        restored_result_done = phase == "save_restored" and self._output_saved
+        if ordinary_result_done or restored_result_done:
             return ["done"] * len(self.step_rows)
         return [
             "done" if index < phase_index else "current" if index == phase_index else "pending"
@@ -2985,6 +4405,7 @@ class MainWindow(QMainWindow):
                 self.findings_stale = True
                 self._review_confirmed = False
                 self._result_used = False
+                self._reversible_copy_copied = False
                 self._mark_workflow_changed("il testo sorgente")
                 self._refresh_analysis_preview()
         self._sync_action_state()
@@ -3007,11 +4428,14 @@ class MainWindow(QMainWindow):
             self.output_text.setPlainText(text)
         finally:
             self._updating_output_text = False
+        self.output_text.setExtraSelections([])
         self.output_text_dirty = False
         if text.strip():
             self._show_result_workspace()
         elif not self._findings_ready_for_filtering():
             self._show_input_workspace()
+        self._align_output_scroll_to_source()
+        self._schedule_text_scroll_alignment()
         self._sync_action_state()
 
     def _set_analysis_preview(self, text: str) -> None:
@@ -3023,8 +4447,11 @@ class MainWindow(QMainWindow):
         finally:
             self._updating_output_text = False
         self.output_text_dirty = False
+        self._highlight_preview_findings()
         if text.strip():
             self._show_result_workspace()
+        self._align_output_scroll_to_source()
+        self._schedule_text_scroll_alignment()
         self._sync_action_state()
 
     def _refresh_analysis_preview(self) -> None:
@@ -3046,23 +4473,117 @@ class MainWindow(QMainWindow):
         )
         self._set_analysis_preview(preview_text)
 
-    def _set_output_presentation(self, *, preview: bool) -> None:
+    def _set_restored_comparison_source(self, text: str) -> None:
+        self._restored_ai_response = text
+        self._show_original_in_restored_comparison = False
+        self.ai_response_text.setPlainText(text)
+        cursor = self.ai_response_text.textCursor()
+        cursor.movePosition(QTextCursor.Start)
+        self.ai_response_text.setTextCursor(cursor)
+
+    def _reset_restored_comparison_state(self) -> None:
+        self._restored_ai_response = ""
+        self._show_original_in_restored_comparison = False
+        if hasattr(self, "ai_response_text"):
+            self.ai_response_text.clear()
+
+    def _restored_comparison_active(self) -> bool:
+        return bool(self._restored_ai_response and self._is_restored_output())
+
+    def _toggle_restored_comparison_source(self) -> None:
+        if not self._restored_comparison_active():
+            return
+        self._show_original_in_restored_comparison = (
+            not self._show_original_in_restored_comparison
+        )
+        self._refresh_text_panel_presentation()
+        self._align_visible_source_scroll_to_output()
+        visible_editor = (
+            self.input_text
+            if self._show_original_in_restored_comparison
+            else self.ai_response_text
+        )
+        visible_editor.setFocus(Qt.OtherFocusReason)
+
+    def _refresh_text_panel_presentation(self) -> None:
         if not hasattr(self, "output_panel_title"):
             return
-        if preview:
-            self.output_panel_title.setText("Anteprima anonimizzata")
+
+        restored_output = self._is_restored_output()
+        comparison_active = restored_output and bool(self._restored_ai_response)
+        if comparison_active:
+            self.source_view_toggle.setVisible(True)
+            self.source_view_notice.setVisible(True)
+            if self._show_original_in_restored_comparison:
+                self.source_view_stack.setCurrentWidget(self.input_text)
+                self.input_panel_title.setText("Documento originale")
+                self.source_view_notice.setText(
+                    "Documento di partenza · conservato senza modifiche"
+                )
+                self.source_view_toggle.setText("Mostra risposta IA")
+                self.source_view_toggle.setAccessibleName("Mostra risposta dell’IA")
+            else:
+                self.source_view_stack.setCurrentWidget(self.ai_response_text)
+                self.input_panel_title.setText("Risposta dell’IA")
+                self.source_view_notice.setText(
+                    "Prima del ripristino locale · testo incollato senza modifiche"
+                )
+                self.source_view_toggle.setText("Mostra originale")
+                self.source_view_toggle.setAccessibleName("Mostra documento originale")
+            self.source_view_notice.setAccessibleName("Testo mostrato nel confronto")
+            self.source_view_notice.setAccessibleDescription(
+                self.source_view_notice.text()
+            )
+        else:
+            self._show_original_in_restored_comparison = False
+            self.source_view_stack.setCurrentWidget(self.input_text)
+            self.input_panel_title.setText("Testo originale")
+            self.source_view_notice.setVisible(False)
+            self.source_view_toggle.setVisible(False)
+
+        if restored_output:
+            self.output_panel_title.setText("Testo ricostruito")
+            self.output_preview_inline_notice.setVisible(False)
+            self._set_styled_object_name(
+                self.output_preview_notice,
+                "RestoredOutputNotice",
+            )
+            self.output_preview_notice.setText(
+                "Contiene dati personali. Salvalo sul dispositivo e non inviarlo all’IA."
+            )
+            self.output_preview_notice.setAccessibleName("Avviso dati personali")
+            self.output_preview_notice.setAccessibleDescription(
+                self.output_preview_notice.text()
+            )
             self.output_preview_notice.setVisible(True)
+            self.output_text.setAccessibleName("Testo ricostruito con dati personali")
+            self.output_text.setAccessibleDescription(
+                "Risposta ricostruita localmente da OMISSIS. Contiene nuovamente i dati personali originali."
+            )
+            return
+
+        self._set_styled_object_name(self.output_preview_notice, "OutputPreviewNotice")
+        self.output_preview_notice.setAccessibleName("Stato dell’anteprima")
+        if self._analysis_preview_active:
+            self.output_panel_title.setText("Anteprima anonimizzata")
+            self.output_preview_inline_notice.setVisible(True)
+            self.output_preview_notice.setVisible(False)
             self.output_text.setAccessibleName("Anteprima anonimizzata")
             self.output_text.setAccessibleDescription(
                 "Anteprima aggiornata in base ai dati selezionati. Non è ancora il documento definitivo."
             )
             return
         self.output_panel_title.setText("Testo anonimizzato")
+        self.output_preview_inline_notice.setVisible(False)
         self.output_preview_notice.setVisible(False)
         self.output_text.setAccessibleName("Testo anonimizzato")
         self.output_text.setAccessibleDescription(
             "Risultato prodotto da OMISSIS. Se diventa obsoleto viene disabilitato fino alla rigenerazione."
         )
+
+    def _set_output_presentation(self, *, preview: bool) -> None:
+        self._analysis_preview_active = preview
+        self._refresh_text_panel_presentation()
 
     def _record_activity(
         self,
@@ -3128,26 +4649,126 @@ class MainWindow(QMainWindow):
 
     def _default_map_filename(self) -> str:
         if self.loaded_document:
-            return f"{self.loaded_document.path.stem}{MAP_EXTENSION}"
-        return f"omissis-mappa{MAP_EXTENSION}"
+            return f"{self.loaded_document.path.stem}-ripristino{MAP_EXTENSION}"
+        return f"omissis-ripristino{MAP_EXTENSION}"
 
     def _ask_passphrase(self, title: str, label: str, *, confirm: bool = False) -> str | None:
-        first, ok = QInputDialog.getText(self, title, label, QLineEdit.Password)
-        if not ok:
-            return None
-        if not first.strip():
-            self.statusBar().showMessage("La password non può essere vuota.", 5000)
-            return None
-        if not confirm:
-            return first
+        dialog = QDialog(self)
+        dialog.setObjectName("InfoDialog")
+        dialog.setWindowTitle(title)
+        dialog.setWindowModality(Qt.WindowModal)
+        dialog.setModal(True)
+        dialog.setFixedWidth(520)
+        dialog.setAccessibleName(title)
+        dialog.setAccessibleDescription(label)
 
-        second, ok = QInputDialog.getText(self, title, "Ripeti la password:", QLineEdit.Password)
-        if not ok:
+        heading = QLabel(title)
+        heading.setObjectName("DialogTitle")
+
+        details = QLabel(label)
+        details.setObjectName("DialogDetails")
+        details.setWordWrap(True)
+
+        password_label = QLabel("Password")
+        password_label.setObjectName("FieldLabel")
+        password_edit = QLineEdit()
+        password_edit.setObjectName("PassphraseEdit")
+        password_edit.setEchoMode(QLineEdit.Password)
+        password_edit.setPlaceholderText("Inserisci la password")
+        password_edit.setAccessibleName("Password del File di ripristino")
+        password_label.setBuddy(password_edit)
+
+        confirmation_label = QLabel("Ripeti la password")
+        confirmation_label.setObjectName("FieldLabel")
+        confirmation_edit = QLineEdit()
+        confirmation_edit.setObjectName("PassphraseConfirmationEdit")
+        confirmation_edit.setEchoMode(QLineEdit.Password)
+        confirmation_edit.setPlaceholderText("Inserisci di nuovo la password")
+        confirmation_edit.setAccessibleName("Conferma la password del File di ripristino")
+        confirmation_label.setBuddy(confirmation_edit)
+
+        validation_label = QLabel()
+        validation_label.setObjectName("RestoreValidationError")
+        validation_label.setWordWrap(True)
+        validation_label.setAccessibleName("Controllo della password")
+        validation_label.setVisible(False)
+
+        cancel_button = QPushButton("Annulla")
+        cancel_button.setObjectName("SecondaryButton")
+        cancel_button.setAutoDefault(False)
+        confirm_button = QPushButton("Conferma")
+        confirm_button.setObjectName("PrimaryButton")
+        confirm_button.setAutoDefault(False)
+
+        def show_validation_error(message: str, field: QLineEdit) -> None:
+            validation_label.setText(message)
+            validation_label.setAccessibleDescription(message)
+            validation_label.setVisible(True)
+            field.selectAll()
+            field.setFocus(Qt.OtherFocusReason)
+
+        def validate_and_accept() -> None:
+            password = password_edit.text()
+            if not password.strip():
+                show_validation_error(
+                    "Inserisci una password per proteggere il File di ripristino.",
+                    password_edit,
+                )
+                return
+            if confirm and not confirmation_edit.text():
+                show_validation_error(
+                    "Ripeti la password nel secondo campo.",
+                    confirmation_edit,
+                )
+                return
+            if confirm and password != confirmation_edit.text():
+                show_validation_error(
+                    "Le password non coincidono. Controllale e riprova.",
+                    confirmation_edit,
+                )
+                return
+            dialog.accept()
+
+        cancel_button.clicked.connect(dialog.reject)
+        confirm_button.clicked.connect(validate_and_accept)
+        if confirm:
+            password_edit.returnPressed.connect(
+                lambda: confirmation_edit.setFocus(Qt.OtherFocusReason)
+            )
+            confirmation_edit.returnPressed.connect(validate_and_accept)
+        else:
+            password_edit.returnPressed.connect(validate_and_accept)
+
+        button_row = QHBoxLayout()
+        button_row.addStretch(1)
+        button_row.addWidget(cancel_button)
+        button_row.addWidget(confirm_button)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(24, 22, 24, 18)
+        layout.setSpacing(11)
+        layout.addWidget(heading)
+        layout.addWidget(details)
+        layout.addWidget(password_label)
+        layout.addWidget(password_edit)
+        if confirm:
+            layout.addWidget(confirmation_label)
+            layout.addWidget(confirmation_edit)
+        layout.addWidget(validation_label)
+        layout.addLayout(button_row)
+        dialog.setLayout(layout)
+        dialog.setStyleSheet(APP_STYLE)
+        if confirm:
+            dialog.setTabOrder(password_edit, confirmation_edit)
+            dialog.setTabOrder(confirmation_edit, cancel_button)
+        else:
+            dialog.setTabOrder(password_edit, cancel_button)
+        dialog.setTabOrder(cancel_button, confirm_button)
+
+        QTimer.singleShot(0, lambda: password_edit.setFocus(Qt.OtherFocusReason))
+        if dialog.exec() != QDialog.Accepted:
             return None
-        if first != second:
-            self.statusBar().showMessage("Le password non coincidono.", 6000)
-            return None
-        return first
+        return password_edit.text()
 
 
 def main() -> int:

@@ -57,7 +57,7 @@ Su Windows viene salvato nella cartella dati applicazione dell'utente:
 
 Il registro resta sul dispositivo. Dall'app desktop puoi consultarlo, esportarlo in CSV, disattivarlo, scegliere quante operazioni conservare o cancellarlo. Il limite predefinito è di 1.000 operazioni. Registro, impostazioni ed esportazioni vengono scritti in modo atomico e, sui sistemi compatibili, con permessi riservati all'utente.
 
-## Mappe reversibili
+## File di ripristino
 
 La modalità Reversibile crea segnaposti numerati come:
 
@@ -66,9 +66,9 @@ Mario Rossi -> <PERSONA_1>
 mario@example.com -> <EMAIL_1>
 ```
 
-Per ricostruire una risposta generata dall'IA, OMISSIS ha bisogno della corrispondenza tra segnaposto e valore reale. Questa corrispondenza viene salvata solo se scegli **Strumenti > Salva mappa reversibile**.
+Per ricostruire una risposta generata dall'IA, OMISSIS ha bisogno della corrispondenza tra segnaposto e valore reale. Questa corrispondenza viene salvata nel **File di ripristino** soltanto quando scegli di crearlo.
 
-La mappa:
+Il File di ripristino:
 
 - resta sul tuo dispositivo;
 - viene cifrata con una password scelta da te;
@@ -76,9 +76,9 @@ La mappa:
 - non viene inviata a server o API esterne;
 - contiene dati reali e quindi va trattata come un file sensibile.
 
-Il file viene sostituito solo dopo che la nuova mappa cifrata è stata scritta completamente; sui sistemi compatibili viene creato con permessi riservati all'utente.
+Il file viene sostituito solo dopo che i nuovi dati cifrati sono stati scritti completamente; sui sistemi compatibili viene creato con permessi riservati all'utente.
 
-Se perdi la password o elimini la mappa, OMISSIS non può ricostruire automaticamente i valori reali.
+Se perdi la password o elimini il File di ripristino, OMISSIS non può ricostruire automaticamente i valori reali.
 
 ## Web app
 
@@ -207,5 +207,5 @@ Prima di incollare un risultato in un chatbot o inviarlo a terzi:
 2. controlla il report e i dati rilevati;
 3. rileggi il testo anonimizzato;
 4. verifica nomi, luoghi, date, importi, ruoli e riferimenti indiretti;
-5. se usi Reversibile, salva la mappa cifrata e non condividerla;
+5. se usi Reversibile, salva il File di ripristino cifrato e non condividerlo;
 6. per i PDF, apri il file finale e controlla visivamente gli oscuramenti.
