@@ -60,7 +60,10 @@ MODE_NOTES = {
         "Per documenti ad alto rischio valuta Massima protezione."
     ),
     "maximum": "Massima protezione usa segnaposto completi e redige anche date comuni riconosciute.",
-    "reversible": "Reversibile usa segnaposto numerati e permette di salvare una mappa locale cifrata.",
+    "reversible": (
+        "Sostituisce i dati con etichette come <PERSONA_1>. Al termine salverai un File di ripristino "
+        "cifrato, necessario per reinserire i dati nella risposta dell’IA."
+    ),
 }
 SOURCE_LABELS = {
     "italian_rules": "Regole italiane locali",
@@ -125,7 +128,10 @@ def review_checklist(findings: list[Finding], mode: AnonymizationMode) -> list[s
     if mode == "maximum":
         items.append("Massima protezione è consigliata prima di condividere testi con chatbot o servizi esterni.")
     elif mode == "reversible":
-        items.append("Reversibile è pensata per ChatGPT: salva la mappa cifrata e non condividerla con servizi esterni.")
+        items.append(
+            "Reversibile è pensata per lavorare con l’IA: salva il File di ripristino e non condividerlo "
+            "con servizi esterni."
+        )
     else:
         items.append(
             "Standard mantiene più contesto: controlla con attenzione iniziali, date e dettagli che potrebbero identificare persone."

@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import os
 
-from privacy_guardian.italian_locations import contains_address_marker, should_accept_ner_location
+from privacy_guardian.italian_locations import (
+    contains_address_marker,
+    is_legal_ner_false_positive,
+    should_accept_ner_location,
+)
 from privacy_guardian.models import Finding
 
 
@@ -61,6 +65,7 @@ class NerPersonRecognizer:
         words = name.split()
         return (
             len(words) >= 2
+            and not is_legal_ner_false_positive(name)
             and not contains_address_marker(name)
             and all(self._is_name_word(word) for word in words)
         )

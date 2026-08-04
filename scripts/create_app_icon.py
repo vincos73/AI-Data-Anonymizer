@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -12,18 +12,16 @@ ICONSET = ASSETS / "app_icon.iconset"
 
 def build_icon(size: int) -> Image.Image:
     image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-
-    glow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    glow_draw = ImageDraw.Draw(glow)
-    glow_draw.ellipse(
-        (int(size * 0.12), int(size * 0.12), int(size * 0.88), int(size * 0.88)),
-        fill=(0, 137, 184, 210),
-    )
-    image.alpha_composite(glow.filter(ImageFilter.GaussianBlur(int(size * 0.1))))
-
     draw = ImageDraw.Draw(image)
-    cyan = (0, 137, 184, 255)
-    black = (0, 0, 0, 255)
+    tile_margin = int(size * 0.06)
+    draw.rounded_rectangle(
+        (tile_margin, tile_margin, size - tile_margin, size - tile_margin),
+        radius=int(size * 0.19),
+        fill=(18, 24, 31, 255),
+    )
+
+    cyan = (79, 184, 231, 255)
+    light = (232, 237, 242, 255)
     line = max(2, int(size * 0.018))
 
     def rect(x: float, y: float, w: float, h: float, fill: tuple[int, int, int, int], outline: bool = False) -> None:
@@ -40,13 +38,13 @@ def build_icon(size: int) -> Image.Image:
 
     rect(0.18, 0.22, 0.42, 0.05, cyan, outline=True)
     rect(0.66, 0.22, 0.16, 0.05, cyan, outline=True)
-    rect(0.18, 0.34, 0.34, 0.06, black)
-    rect(0.56, 0.34, 0.26, 0.06, black)
-    rect(0.18, 0.48, 0.18, 0.06, black)
+    rect(0.18, 0.34, 0.34, 0.06, light)
+    rect(0.56, 0.34, 0.26, 0.06, light)
+    rect(0.18, 0.48, 0.18, 0.06, light)
     rect(0.42, 0.48, 0.32, 0.06, cyan, outline=True)
-    rect(0.18, 0.62, 0.50, 0.06, black)
+    rect(0.18, 0.62, 0.50, 0.06, light)
     rect(0.73, 0.62, 0.09, 0.06, cyan, outline=True)
-    rect(0.18, 0.76, 0.13, 0.06, black)
+    rect(0.18, 0.76, 0.13, 0.06, light)
     rect(0.38, 0.76, 0.36, 0.06, cyan, outline=True)
 
     return image
@@ -69,6 +67,9 @@ def save_iconset() -> None:
     }
     source = build_icon(1024)
     source.save(ASSETS / "app_icon.png")
+    # Pillow writes a complete multi-resolution ICNS directly. Keep the
+    # iconset as well for platforms where iconutil accepts generated PNGs.
+    source.save(ASSETS / "app_icon.icns", format="ICNS")
     source.save(
         ASSETS / "app_icon.ico",
         sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],

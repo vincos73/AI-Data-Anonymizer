@@ -18,11 +18,20 @@ EDITOR_PLACEHOLDER_COLOR = "#8899AA"
 EDITOR_SELECTION_BACKGROUND_COLOR = "#2B6D8F"
 EDITOR_SELECTION_TEXT_COLOR = "#FFFFFF"
 
+PAPER_EDITOR_BACKGROUND_COLOR = "#F7F8F7"
+PAPER_EDITOR_DISABLED_BACKGROUND_COLOR = "#EEF5F7"
+PAPER_EDITOR_TEXT_COLOR = "#10161A"
+PAPER_EDITOR_PLACEHOLDER_COLOR = "#59656C"
+PAPER_EDITOR_SELECTION_BACKGROUND_COLOR = "#006D91"
+PAPER_EDITOR_SELECTION_TEXT_COLOR = "#FFFFFF"
+
 # Inline entity highlights sit over the dark editor background. Keep the
 # ordinary state clearly visible and make the active finding decisively
 # brighter without sacrificing white-text contrast for any category color.
-FINDING_HIGHLIGHT_ALPHA = 96
-FINDING_SELECTED_HIGHLIGHT_ALPHA = 144
+FINDING_HIGHLIGHT_ALPHA = 112
+FINDING_SELECTED_HIGHLIGHT_ALPHA = 160
+PAPER_FINDING_HIGHLIGHT_ALPHA = 96
+PAPER_FINDING_SELECTED_HIGHLIGHT_ALPHA = 176
 
 
 APP_STYLE = """
@@ -60,6 +69,83 @@ QMessageBox QLabel#qt_msgbox_informativelabel {
 QDialog#InfoDialog {
     background: #12181F;
     color: #E8EDF2;
+}
+
+QDialog#EntityTypeDialog {
+    background: transparent;
+}
+
+QDialog#DiscardWorkDialog {
+    background: transparent;
+}
+
+QFrame#EntityTypeDialogSurface {
+    background: #161D25;
+    color: #E8EDF2;
+    border: 1px solid #35414E;
+    border-radius: 14px;
+}
+
+QFrame#DiscardWorkDialogSurface {
+    background: #161D25;
+    color: #E8EDF2;
+    border: 1px solid #465563;
+    border-radius: 14px;
+}
+
+QFrame#DiscardWorkDialogSurface QLabel {
+    background: transparent;
+    border: 0;
+}
+
+QLabel#DiscardMessage {
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+QLabel#DiscardItems {
+    color: #C7D3DD;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+QFrame#EntityTypeDialogSurface QLabel {
+    background: transparent;
+    border: 0;
+}
+
+QFrame#EntityTypeDialogSurface QLabel#DialogTitle {
+    font-size: 20px;
+}
+
+QFrame#EntityTypeDialogSurface QLabel#DialogDetails {
+    color: #AABBCB;
+    font-size: 12.5px;
+}
+
+QPushButton#DialogCloseButton {
+    min-width: 30px;
+    min-height: 30px;
+    max-width: 30px;
+    max-height: 30px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: #AABBCB;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+QPushButton#DialogCloseButton:hover {
+    background: #232D38;
+    border-color: #35414E;
+    color: #FFFFFF;
+}
+
+QPushButton#DialogCloseButton:focus {
+    border: 2px solid #7DD8FF;
 }
 
 QDialog#InfoDialog QLabel {
@@ -123,6 +209,37 @@ QComboBox {
     border: 1px solid #232D38;
     border-radius: 6px;
     padding: 4px 8px;
+}
+
+QComboBox#EntityTypeCombo {
+    min-height: 40px;
+    padding: 0 12px;
+    background: #0D1218;
+    border: 1px solid #35414E;
+    border-radius: 8px;
+    color: #E8EDF2;
+    font-size: 13.5px;
+}
+
+QComboBox#EntityTypeCombo:hover {
+    border-color: #4B5C6B;
+}
+
+QComboBox#EntityTypeCombo:focus,
+QComboBox#EntityTypeCombo:on {
+    border-color: #4FB8E7;
+}
+
+QComboBox#EntityTypeCombo::drop-down {
+    width: 38px;
+    border: 0;
+    background: transparent;
+}
+
+QComboBox#EntityTypeCombo::down-arrow {
+    image: none;
+    width: 0;
+    height: 0;
 }
 
 QComboBox:on {
@@ -358,6 +475,223 @@ QLabel#MapStatusWarning {
     color: #F0C66B;
 }
 
+/* ---------- Reversible handoff flow ---------- */
+
+QFrame#ReversibleFlow {
+    background: #161D25;
+    border: 1px solid #6A4E16;
+    border-radius: 10px;
+}
+
+QLabel#ReversibleFlowTitle {
+    background: transparent;
+    border: 0;
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 750;
+}
+
+QLabel#ReversibleFlowIntro {
+    background: transparent;
+    border: 0;
+    color: #D9CDAE;
+    font-size: 11.5px;
+    line-height: 1.4;
+}
+
+QPushButton#LinkButton {
+    min-height: 24px;
+    padding: 2px 6px;
+    background: transparent;
+    border: 0;
+    color: #7DD8FF;
+    font-size: 11.5px;
+    font-weight: 650;
+}
+
+QPushButton#LinkButton:hover {
+    background: transparent;
+    color: #C9EAF8;
+    text-decoration: underline;
+}
+
+QPushButton#LinkButton:focus {
+    border: 2px solid #7DD8FF;
+}
+
+QFrame#ReversibleStepPending,
+QFrame#ReversibleStepCurrent,
+QFrame#ReversibleStepDone {
+    background: #12181F;
+    border: 1px solid #232D38;
+    border-radius: 8px;
+}
+
+QFrame#ReversibleStepCurrent {
+    background: #14202B;
+    border-color: #2B6D8F;
+}
+
+QFrame#ReversibleStepDone {
+    background: #15261F;
+    border-color: #2E6B4A;
+}
+
+QLabel#ReversibleStepDot {
+    background: #161D25;
+    border: 1px solid #35414E;
+    border-radius: 11px;
+    color: #AABBCB;
+    font-size: 11px;
+    font-weight: 750;
+}
+
+QFrame#ReversibleStepCurrent QLabel#ReversibleStepDot {
+    background: #4FB8E7;
+    border-color: #4FB8E7;
+    color: #0D1218;
+}
+
+QFrame#ReversibleStepDone QLabel#ReversibleStepDot {
+    background: #7DD8A8;
+    border-color: #7DD8A8;
+    color: #102019;
+}
+
+QLabel#ReversibleStepTitle {
+    background: transparent;
+    border: 0;
+    color: #AABBCB;
+    font-size: 12.5px;
+    font-weight: 650;
+}
+
+QLabel#ReversibleStepDescription {
+    background: transparent;
+    border: 0;
+    color: #8899AA;
+    font-size: 11px;
+}
+
+QFrame#ReversibleStepCurrent QLabel#ReversibleStepTitle {
+    color: #FFFFFF;
+}
+
+QFrame#ReversibleStepCurrent QLabel#ReversibleStepDescription {
+    color: #C9EAF8;
+}
+
+QFrame#ReversibleStepDone QLabel#ReversibleStepTitle {
+    color: #A8E8C4;
+}
+
+QFrame#ReversibleStepDone QLabel#ReversibleStepDescription {
+    color: #91BBA3;
+}
+
+QLabel#ReversibleStepState {
+    background: transparent;
+    border: 0;
+    color: #8192A3;
+    font-family: "IBM Plex Mono", "Menlo", monospace;
+    font-size: 9.5px;
+    font-weight: 700;
+}
+
+QFrame#ReversibleStepCurrent QLabel#ReversibleStepState {
+    color: #7DD8FF;
+}
+
+QFrame#ReversibleStepDone QLabel#ReversibleStepState {
+    color: #7DD8A8;
+}
+
+QPushButton#ReversibleInlineAction {
+    min-height: 20px;
+    padding: 1px 8px;
+    background: #4FB8E7;
+    border: 1px solid #7DD8FF;
+    border-radius: 7px;
+    color: #0D1218;
+    font-size: 11.5px;
+    font-weight: 750;
+}
+
+QPushButton#ReversibleInlineAction:hover {
+    background: #7DD8FF;
+    border-color: #C9EAF8;
+}
+
+QPushButton#ReversibleInlineAction:focus {
+    border: 2px solid #FFFFFF;
+}
+
+QPushButton#ReversibleInlineAction:disabled {
+    background: #26333E;
+    border-color: #35414E;
+    color: #8192A3;
+}
+
+QLabel#FieldLabel {
+    background: transparent;
+    border: 0;
+    color: #E8EDF2;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+QLineEdit#PassphraseEdit,
+QLineEdit#PassphraseConfirmationEdit,
+QLineEdit#RestorePasswordEdit {
+    background: #0D1218;
+    color: #E8EDF2;
+    border: 1px solid #35414E;
+    border-radius: 7px;
+    padding: 7px 10px;
+    min-height: 24px;
+    selection-background-color: #4FB8E7;
+    selection-color: #10161A;
+    placeholder-text-color: #9AA8B2;
+}
+
+QLineEdit#PassphraseEdit:focus,
+QLineEdit#PassphraseConfirmationEdit:focus,
+QLineEdit#RestorePasswordEdit:focus {
+    border: 1px solid #4FB8E7;
+}
+
+QLabel#RestoreMapStatus {
+    background: #161D25;
+    border: 1px solid #35414E;
+    border-radius: 8px;
+    color: #D9CDAE;
+    padding: 8px 10px;
+    font-size: 11.5px;
+}
+
+QLabel#RestoreValidation,
+QLabel#RestoreValidationReady,
+QLabel#RestoreValidationError {
+    background: #161D25;
+    border: 1px solid #35414E;
+    border-radius: 8px;
+    color: #AABBCB;
+    padding: 8px 10px;
+    font-size: 11.5px;
+}
+
+QLabel#RestoreValidationReady {
+    background: #15261F;
+    border-color: #2E6B4A;
+    color: #A8E8C4;
+}
+
+QLabel#RestoreValidationError {
+    background: #2A1D0F;
+    border-color: #6A4E16;
+    color: #F0C66B;
+}
+
 /* ---------- Main area ---------- */
 
 QFrame#DocumentToolbar {
@@ -588,6 +922,79 @@ QLabel#OutputPreviewNotice {
     line-height: 1.35;
 }
 
+QLabel#OutputPreviewInlineNotice {
+    background: transparent;
+    color: #9EDCF7;
+    border: 0;
+    padding: 0;
+    font-size: 11.5px;
+    font-weight: 500;
+}
+
+QFrame#DocumentAppearanceSelector {
+    background: #161D25;
+    border: 1px solid #232D38;
+    border-radius: 8px;
+}
+
+QFrame#DocumentAppearanceSelector QLabel {
+    background: transparent;
+    border: 0;
+}
+
+QLabel#DocumentAppearanceLabel {
+    color: #AABBCB;
+    font-size: 11.5px;
+    font-weight: 650;
+}
+
+QPushButton#DocumentAppearanceButton {
+    min-height: 26px;
+    padding: 0 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    color: #AABBCB;
+    font-size: 11.5px;
+    font-weight: 650;
+}
+
+QPushButton#DocumentAppearanceButton:hover {
+    background: #232D38;
+    border-color: #35414E;
+    color: #FFFFFF;
+}
+
+QPushButton#DocumentAppearanceButton:checked {
+    background: #C9EAF8;
+    border-color: #7DD8FF;
+    color: #0D1218;
+}
+
+QPushButton#DocumentAppearanceButton:focus {
+    border: 2px solid #7DD8FF;
+}
+
+QLabel#ComparisonSourceNotice {
+    background: transparent;
+    color: #AAB8C5;
+    border: 0;
+    padding: 0;
+    font-size: 11.5px;
+    line-height: 1.35;
+}
+
+QLabel#RestoredOutputNotice {
+    background: #2A210F;
+    color: #F0C86E;
+    border: 1px solid #5C471D;
+    border-radius: 7px;
+    padding: 7px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
 QFrame#Panel {
     background: #1A222B;
     border: 1px solid #232D38;
@@ -614,6 +1021,24 @@ QTextEdit:disabled {
     background: #161D25;
     color: #8899AA;
     border-color: #35414E;
+}
+
+QTextEdit[documentAppearance="paper"] {
+    background: #F7F8F7;
+    color: #10161A;
+    border-color: #AEBBC3;
+    selection-background-color: #006D91;
+    selection-color: #FFFFFF;
+}
+
+QTextEdit[documentAppearance="paper"]:focus {
+    border: 1px solid #0089B8;
+}
+
+QTextEdit[documentAppearance="paper"]:disabled {
+    background: #EEF5F7;
+    color: #59656C;
+    border-color: #B8C4CA;
 }
 
 QPushButton {
@@ -683,6 +1108,33 @@ QPushButton#SecondaryButton:hover {
     background: #232D38;
     color: #E8EDF2;
     border-color: #35414E;
+}
+
+QPushButton#SecondaryButton:focus {
+    border: 2px solid #7DD8FF;
+    color: #E8EDF2;
+}
+
+QPushButton#DestructiveButton {
+    min-height: 36px;
+    background: #3A2022;
+    border: 1px solid #A85F66;
+    color: #FFECEF;
+    font-weight: 700;
+}
+
+QPushButton#DestructiveButton:hover {
+    background: #4A282B;
+    border-color: #D27B83;
+    color: #FFFFFF;
+}
+
+QPushButton#DestructiveButton:pressed {
+    background: #2D181A;
+}
+
+QPushButton#DestructiveButton:focus {
+    border: 2px solid #7DD8FF;
 }
 
 QSplitter::handle {

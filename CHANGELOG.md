@@ -4,6 +4,61 @@ Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
 ## [In sviluppo]
 
+## [0.6.21] - 2026-08-04
+
+### Migliorato
+- Un selettore `Documento: Scuro / Carta chiara` cambia insieme i tre pannelli di lettura e ricorda localmente la preferenza.
+- La modalità Carta chiara usa inchiostro, selezione ed evidenziazioni ad alto contrasto senza modificare l'interfaccia scura circostante.
+- Il marchio nell'interfaccia e l'icona dell'app hanno una resa piatta e nitida, senza l'alone sfocato attorno al simbolo OMISSIS.
+
+## [0.6.20] - 2026-08-04
+
+### Migliorato
+- Il selettore del tipo di dato mostra una freccia coerente e visibile su macOS e negli altri ambienti Qt.
+- Il testo nei pannelli Originale, Risposta dell'IA e risultato anonimizzato usa una dimensione più leggibile con maggiore interlinea.
+- La conferma per scartare lavoro non salvato usa un dialogo OMISSIS scuro, con avviso e azione distruttiva riconoscibili anche senza affidarsi soltanto al colore.
+
+## [0.6.19] - 2026-08-04
+
+### Migliorato
+- Tutte le sostituzioni sono evidenziate da subito anche nell'anteprima anonimizzata; la selezione corrente resta distinguibile con un'evidenziazione più intensa.
+- Il disclaimer dell'anteprima è più breve e affiancato al titolo, così testo originale e anteprima iniziano alla stessa altezza.
+- Il dialogo per classificare un dato aggiunto manualmente adotta il tema OMISSIS, mostra la selezione e usa azioni esplicite e accessibili.
+
+## [0.6.18] - 2026-08-04
+
+### Migliorato
+- Il dato attivo viene evidenziato anche nella posizione corrispondente dell'anteprima anonimizzata, compresi iniziali e segnaposto numerati della modalità Reversibile.
+- Le evidenziazioni nel testo originale sono più nette sullo sfondo scuro, mantenendo il testo bianco leggibile per tutte le categorie.
+
+## [0.6.17] - 2026-08-04
+
+### Migliorato
+- Il testo originale e il testo anonimizzato scorrono insieme, in entrambe le direzioni, mantenendo la posizione relativa anche quando l'anteprima viene aggiornata.
+
+### Corretto
+- Il NER locale non interpreta più come località comuni espressioni giuridiche e istituzionali quali `Difetto di Motivazione`, `Istituto Professionale`, `Mancata Pronuncia` e `Giudice delle Leggi`.
+- I nomi delle Corti di appello non vengono più inglobati in un'unica località: `Potenza` e `Firenze` restano riconosciute separatamente come toponimi reali.
+- `Autorità Giudiziaria` e le altre locuzioni giuridiche controllate non vengono più interpretate come persone quando il modello spaCy cambia etichetta in base al contesto.
+
+## [0.6.16] - 2026-08-04
+
+### Migliorato
+- Un dato aggiunto manualmente viene propagato a tutte le varianti di maiuscole e minuscole, conservando la grafia originale per la ricostruzione reversibile.
+
+### Corretto
+- Le espressioni `Via Gradata` e `Via Preliminare` non vengono più interpretate come indirizzi.
+- Le parole `Comparsa` e `Note`, quando seguono etichette come `Località` o `Frazione`, non vengono più interpretate come località.
+
+## [0.6.15] - 2026-08-04
+
+### Migliorato
+- La modalità Reversibile guida l'utente attraverso salvataggio del File di ripristino, condivisione della copia protetta e inserimento della risposta dell'IA.
+- Dopo il ripristino, la risposta dell'IA con i segnaposti e il testo ricostruito sono mostrati affiancati; il documento originale resta disponibile con un comando secondario e il risultato sensibile ha un avviso persistente.
+
+### Corretto
+- La creazione della password del File di ripristino usa un'unica finestra coerente per inserimento e conferma, evitando la doppia richiesta con dimensioni diverse.
+
 ## [0.6.7] - 2026-07-31
 
 ### Corretto

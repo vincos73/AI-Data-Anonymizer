@@ -6,14 +6,24 @@ The main product is the desktop app: install it, open a document, anonymize it l
 
 The web app exists only as an advanced option for developers, local demos, or self-hosted deployments on infrastructure you control.
 
-Current source version: **v0.6.14**. Published builds may temporarily have an earlier version; use the repository [Releases page](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) and check the version shown in the app.
+Current version: **v0.6.21**.
+
+## Download the Desktop App
+
+| System | Download |
+| --- | --- |
+| Mac with Apple Silicon (M1 or later) | Open the [latest release](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) and download the artifact beginning with `OMISSIS-macOS-Apple-Silicon` (`.dmg` or `.zip`) |
+| Windows | Open the [latest release](https://github.com/vincos73/AI-Data-Anonymizer/releases/latest) and download `OMISSIS-Setup.exe`; `OMISSIS-Windows.zip` remains available as a portable build |
+
+Checksums for every published artifact are available in `SHA256SUMS.txt` on the release page.
 
 ## What It Does
 
 - Detects and anonymizes common Italian personal and business data.
 - Works with pasted text and uploaded documents.
 - Offers a standard mode and a maximum-protection mode.
-- Offers a reversible mode with numbered placeholders and a locally encrypted map in the desktop app.
+- Offers a reversible mode with numbered placeholders and a locally encrypted restoration file in the desktop app.
+- After restoration, compares the protected AI response and the reconstructed text side by side while keeping the original available on demand.
 - In standard mode, preserves initials while keeping territorial and academic institution roles readable for contextual understanding.
 - In standard mode, does not anonymize dates.
 - In maximum-protection mode, replaces detected personal data with full placeholders and also redacts common date formats.
@@ -103,9 +113,10 @@ Typical workflow:
 4. Review every detected value. Checked means “will be anonymized”; unchecked means “will remain visible”. Search, filter, or add a missing selection manually.
 5. Click **Ho controllato, continua**, then **Crea copia protetta**. The side workflow always shows the current step.
 6. Review the structured final report with protected categories, mode, format, save state, and safety warnings. The detections list closes to focus on the original/protected comparison and can be reopened with **Modifica selezioni**.
-7. Read the result before sharing it, then use **Copia per ChatGPT** for text or **Salva copia protetta** for a document. The original text or file is not modified.
-8. If you need an audit trail, open **Strumenti > Registro attività**.
-9. If you use reversible mode, save the local encrypted map from **Strumenti > Salva mappa reversibile**.
+7. Compare the original and protected preview: the panes scroll together and every detected value is highlighted in both. Use **Documento: Scuro / Carta chiara** to choose the most comfortable reading surface; the preference is stored only on the device.
+8. Read the result before sharing it, then use **Copia per l’IA** for text or **Salva copia protetta** for a document. The original text or file is not modified.
+9. If you need an audit trail, open **Strumenti > Registro attività**.
+10. In reversible mode, follow the three contextual steps: save the encrypted **File di ripristino**, send only the protected copy, then paste the AI response back into OMISSIS to restore the original values locally.
 
 The desktop and web apps default to Standard mode to preserve more of the document structure, roles, and context. Choose maximum protection for high-risk documents or when redacting as many identifying details as possible matters more than readability.
 

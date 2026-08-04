@@ -173,14 +173,14 @@ Come usarla:
 1. Clicca "Carica documento" per scegliere un file .txt, .md, .csv, .doc, .docx o .pdf.
 2. Clicca "Analizza dati" e controlla le evidenziazioni e le spunte.
 3. Clicca "Ho controllato, continua", quindi "Crea copia protetta".
-4. Usa "Copia per ChatGPT" per il testo oppure "Salva copia protetta" per salvare il documento.
+4. Usa "Copia per l'IA" per il testo oppure "Salva copia protetta" per salvare il documento.
    Per il testo puoi anche scegliere "Salva anche come file".
 
 Nota sui PDF:
 I PDF con testo selezionabile vengono esportati come PDF rasterizzato con oscuramenti permanenti. Il testo originale non resta selezionabile nel file finale. I PDF scansionati o composti solo da immagini richiedono prima OCR.
 
 Nota sulla modalita reversibile:
-Se usi "Reversibile con mappa locale", salva anche la mappa da Strumenti > Salva mappa reversibile. La mappa e cifrata con la password scelta da te e serve per ricostruire localmente le risposte generate dall'IA.
+Salva il File di ripristino prima di copiare la versione protetta. Quando ricevi la risposta dell'IA, usa "Incolla qui la risposta dell'IA" nel terzo passaggio. Il File di ripristino e cifrato con la password scelta da te e non deve essere condiviso con servizi esterni.
 
 Se macOS dice che l'app non puo essere aperta perche proviene da uno sviluppatore non identificato, stai usando una build non notarizzata:
 

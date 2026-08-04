@@ -368,6 +368,16 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertFalse(any(finding.entity_type == "LOCATION" for finding in findings))
         self.assertEqual(self.engine.anonymize(text, findings, "maximum"), text)
 
+    def test_legal_document_terms_are_not_labeled_as_locations(self) -> None:
+        self.engine._ner = None
+        for text in ("Località Comparsa", "LOCALITÀ COMPARSA", "Frazione Note", "FRAZIONE NOTE"):
+            with self.subTest(text=text):
+                self.assertFalse(
+                    any(entity_type == "LOCATION" for entity_type, _ in self.findings_for(text))
+                )
+
+        self.assertIn(("LOCATION", "Parrutta"), self.findings_for("Località Parrutta"))
+
     def test_detects_qualified_administration_with_place(self) -> None:
         findings = self.findings_for("amministrazione provinciale di Potenza")
         self.assertIn(("TERRITORIAL_BODY", "amministrazione provinciale di Potenza"), findings)
@@ -624,6 +634,21 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertEqual(self.findings_for("procediamo in via preliminare entro il 12 del mese"), [])
         self.assertEqual(self.findings_for("rispondere via email entro il 15"), [])
 
+    def test_capitalized_address_idioms_are_not_matched(self) -> None:
+        samples = (
+            "Procediamo in Via Preliminare entro il 12 del mese",
+            "PROCEDIAMO IN VIA PRELIMINARE ENTRO IL 12 DEL MESE",
+            "La scelta avviene per Via Gradata",
+            "LA SCELTA AVVIENE PER VIA GRADATA",
+        )
+        for text in samples:
+            with self.subTest(text=text):
+                self.assertFalse(
+                    any(entity_type == "ADDRESS" for entity_type, _ in self.findings_for(text))
+                )
+
+        self.assertIn(("ADDRESS", "Via Appia 12"), self.findings_for("Residente in Via Appia 12."))
+
     def test_pec_delivery_channel_is_not_matched_as_street_address(self) -> None:
         text = "La comunicazione viene inviata via PEC o via Posta."
 
@@ -794,6 +819,7 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         cases = (
             ("Il corrispettivo è espresso in Euro.", "Euro"),
             ("Parte Venditrice", "Parte Venditrice"),
+            ("Località Comparsa", "Località Comparsa"),
         )
         for text, location_value in cases:
             with self.subTest(location_value=location_value):
@@ -820,6 +846,132 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
 
                 self.assertNotIn(("LOCATION", location_value, "ner_local"), values)
                 self.assertEqual(engine.anonymize(text, findings, "maximum"), text)
+
+    def test_optional_local_ner_rejects_legal_phrases_as_locations(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        cases = (
+            ("Corte di Appello di Potenza", "Potenza"),
+            ("Corte Appello Firenze", "Firenze"),
+            ("Provincia", None),
+            ("Collegio", None),
+            ("Giudice di merito", None),
+            ("Comuni alle Province", None),
+            ("Comuni alle Province presentano osservazioni", None),
+            ("Difetto di Motivazione", None),
+            ("Istituto Professionale", None),
+            ("Mancata Pronuncia", None),
+            ("Giudice delle Leggi", None),
+            ("Spetta alle Regioni", None),
+            ("Province", None),
+            ("Autorità Giudiziaria", None),
+        )
+        for text, retained_location in cases:
+            with self.subTest(text=text):
+                def fake_nlp(value: str):
+                    return SimpleNamespace(
+                        ents=[
+                            SimpleNamespace(
+                                label_="LOC",
+                                text=value,
+                                start_char=0,
+                                end_char=len(value),
+                            )
+                        ]
+                    )
+
+                engine = PrivacyEngine()
+                engine._ner = NerPersonRecognizer(fake_nlp)
+                findings = engine.analyze(text, "maximum")
+                values = [
+                    (finding.entity_type, text[finding.start : finding.end], finding.source)
+                    for finding in findings
+                ]
+
+                self.assertNotIn(("LOCATION", text, "ner_local"), values)
+                if retained_location:
+                    self.assertIn(
+                        ("LOCATION", retained_location, "location_dictionary"),
+                        values,
+                    )
+
+        text = "Corte Franca"
+
+        def real_location_nlp(value: str):
+            return SimpleNamespace(
+                ents=[
+                    SimpleNamespace(
+                        label_="LOC",
+                        text=value,
+                        start_char=0,
+                        end_char=len(value),
+                    )
+                ]
+            )
+
+        engine = PrivacyEngine()
+        engine._ner = NerPersonRecognizer(real_location_nlp)
+        self.assertTrue(
+            any(
+                finding.entity_type == "LOCATION"
+                and text[finding.start : finding.end] == "Corte Franca"
+                for finding in engine.analyze(text, "maximum")
+            )
+        )
+
+    def test_optional_local_ner_rejects_legal_phrases_as_people(self) -> None:
+        from types import SimpleNamespace
+
+        from privacy_guardian.ner_recognizer import NerPersonRecognizer
+
+        false_people = (
+            "Corte di Appello di Potenza",
+            "Corte Appello Firenze",
+            "Giudice di merito",
+            "Comuni alle Province",
+            "Difetto di Motivazione",
+            "Istituto Professionale",
+            "Mancata Pronuncia",
+            "Giudice delle Leggi",
+            "Spetta alle Regioni",
+            "Autorità Giudiziaria",
+            "AUTORITÀ GIUDIZIARIA",
+        )
+        for false_person in false_people:
+            with self.subTest(false_person=false_person):
+                text = f"{false_person}; Wolfgang Keller"
+
+                def fake_nlp(value: str):
+                    true_person = "Wolfgang Keller"
+                    true_start = value.index(true_person)
+                    return SimpleNamespace(
+                        ents=[
+                            SimpleNamespace(
+                                label_="PER",
+                                text=false_person,
+                                start_char=0,
+                                end_char=len(false_person),
+                            ),
+                            SimpleNamespace(
+                                label_="PER",
+                                text=true_person,
+                                start_char=true_start,
+                                end_char=true_start + len(true_person),
+                            ),
+                        ]
+                    )
+
+                engine = PrivacyEngine()
+                engine._ner = NerPersonRecognizer(fake_nlp)
+                values = [
+                    (finding.entity_type, text[finding.start : finding.end], finding.source)
+                    for finding in engine.analyze(text, "maximum")
+                ]
+
+                self.assertNotIn(("PERSON", false_person, "ner_local"), values)
+                self.assertIn(("PERSON", "Wolfgang Keller", "ner_local"), values)
 
     def test_optional_local_ner_does_not_turn_notary_name_into_location(self) -> None:
         from types import SimpleNamespace
@@ -1200,8 +1352,8 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         payload = report_payload([], "reversible")
 
         self.assertEqual(payload["mode_label"], "Reversibile")
-        self.assertIn("mappa locale cifrata", payload["mode_note"])
-        self.assertIn("salva la mappa cifrata", payload["checklist"][0])
+        self.assertIn("File di ripristino", payload["mode_note"])
+        self.assertIn("salva il File di ripristino", payload["checklist"][0])
 
     def test_entity_labels_are_human_readable(self) -> None:
         self.assertEqual(entity_label("PERSON"), "persona")
@@ -1361,8 +1513,7 @@ class ExcludedValuePairsTest(unittest.TestCase):
 
 
 class AddExtraValueFindingsTest(unittest.TestCase):
-    """add_extra_value_findings aggiunge un finding per ogni occorrenza letterale di un
-    valore selezionato manualmente, senza duplicare quelle già coperte."""
+    """Le selezioni manuali si propagano senza perdere offset o grafia originali."""
 
     def test_adds_a_finding_for_every_occurrence(self) -> None:
         value = "ABC9988"
@@ -1389,11 +1540,29 @@ class AddExtraValueFindingsTest(unittest.TestCase):
         result = document_service.add_extra_value_findings(text, [], frozenset({("PERSON", "Mario Rossi")}))
         self.assertEqual(result, [])
 
-    def test_case_sensitive_exact_match(self) -> None:
-        text = "valore ABC9988 e abc9988 minuscolo"
-        result = document_service.add_extra_value_findings(text, [], frozenset({("IDENTITY_DOCUMENT", "ABC9988")}))
-        self.assertEqual(len(result), 1)
-        self.assertEqual(text[result[0].start : result[0].end], "ABC9988")
+    def test_case_variants_are_all_matched(self) -> None:
+        text = "STELLANTIS, Stellantis e stellantis."
+        result = document_service.add_extra_value_findings(
+            text,
+            [],
+            frozenset({("ORGANIZATION", "STELLANTIS")}),
+        )
+
+        self.assertEqual(
+            [text[finding.start : finding.end] for finding in result],
+            ["STELLANTIS", "Stellantis", "stellantis"],
+        )
+
+    def test_unicode_casefold_preserves_original_character_boundaries(self) -> None:
+        text = "ÈLITE, èlite, Straße, STRASSE, ß S"
+        elite = document_service.casefolded_literal_spans(text, "Èlite")
+        street = document_service.casefolded_literal_spans(text, "STRASSE")
+        single_s = document_service.casefolded_literal_spans(text, "S")
+
+        self.assertEqual([text[start:end] for start, end in elite], ["ÈLITE", "èlite"])
+        self.assertEqual([text[start:end] for start, end in street], ["Straße", "STRASSE"])
+        self.assertEqual(text[single_s[-1][0] : single_s[-1][1]], "S")
+        self.assertNotIn((text.index("ß"), text.index("ß") + 1), single_s)
 
     def test_no_extra_values_returns_findings_unchanged(self) -> None:
         findings = [Finding("EMAIL_ADDRESS", 0, 5, 0.9)]
@@ -1879,7 +2048,8 @@ class DocumentAnonymizationTest(unittest.TestCase):
         self.assertLess(self._region_mean_intensity(result.data, second_box, 792), 30)
 
     def test_docx_redacts_manual_selection_in_bold_run_and_table_cell(self) -> None:
-        manual_value = "ABC9988"
+        manual_value = "STELLANTIS"
+        case_variant = "Stellantis"
         docx_path = self.base / "selezione_manuale.docx"
         doc = Document()
         paragraph = doc.add_paragraph("Documento numero ")
@@ -1887,7 +2057,7 @@ class DocumentAnonymizationTest(unittest.TestCase):
         bold_run.bold = True
         table = doc.add_table(rows=1, cols=2)
         table.rows[0].cells[0].text = "Riferimento:"
-        table.rows[0].cells[1].text = manual_value
+        table.rows[0].cells[1].text = case_variant
         doc.save(docx_path)
         source_doc = Document(docx_path)
 
@@ -1895,16 +2065,18 @@ class DocumentAnonymizationTest(unittest.TestCase):
             load_document(docx_path),
             self.engine,
             mode="maximum",
-            extra_values=frozenset({("IDENTITY_DOCUMENT", manual_value)}),
+            extra_values=frozenset({("ORGANIZATION", manual_value)}),
         )
         out_docx = self.base / result.filename
         out_docx.write_bytes(result.data)
         output_doc = Document(out_docx)
 
         output_paragraph = output_doc.paragraphs[0]
-        self.assertNotIn(manual_value, output_paragraph.text)
-        self.assertTrue(any(run.bold and manual_value not in run.text for run in output_paragraph.runs))
-        self.assertNotIn(manual_value, output_doc.tables[0].rows[0].cells[1].text)
+        self.assertNotIn(manual_value.casefold(), output_paragraph.text.casefold())
+        self.assertTrue(
+            any(run.bold and manual_value.casefold() not in run.text.casefold() for run in output_paragraph.runs)
+        )
+        self.assertNotIn(manual_value.casefold(), output_doc.tables[0].rows[0].cells[1].text.casefold())
 
         # Struttura preservata.
         self.assertEqual(len(output_doc.paragraphs), len(source_doc.paragraphs))
@@ -1912,29 +2084,33 @@ class DocumentAnonymizationTest(unittest.TestCase):
 
         with zipfile.ZipFile(BytesIO(result.data)) as package:
             payload = package.read("word/document.xml")
-            self.assertNotIn(manual_value.encode("utf-8"), payload)
+            self.assertNotIn(manual_value.casefold().encode("utf-8"), payload.lower())
 
     def test_docx_reversible_manual_selection_enters_mapping(self) -> None:
-        manual_value = "ABC9988"
+        manual_value = "STELLANTIS"
+        source_text = "STELLANTIS collabora con Stellantis e stellantis."
         docx_path = self.base / "selezione_manuale_reversibile.docx"
         doc = Document()
-        doc.add_paragraph(f"Documento numero {manual_value} rilasciato oggi.")
+        doc.add_paragraph(source_text)
         doc.save(docx_path)
 
         result = anonymize_loaded_document(
             load_document(docx_path),
             self.engine,
             mode="reversible",
-            extra_values=frozenset({("IDENTITY_DOCUMENT", manual_value)}),
+            extra_values=frozenset({("ORGANIZATION", manual_value)}),
         )
         out_docx = self.base / result.filename
         out_docx.write_bytes(result.data)
         output_text = "\n".join(paragraph.text for paragraph in Document(out_docx).paragraphs)
 
-        self.assertNotIn(manual_value, output_text)
-        self.assertIn("<DOCUMENTO_IDENTITA_1>", output_text)
-        self.assertIn(manual_value, [entry.value for entry in result.reversible_mapping])
-        self.assertEqual(restore_text(output_text, result.reversible_mapping), f"Documento numero {manual_value} rilasciato oggi.")
+        self.assertNotIn(manual_value.casefold(), output_text.casefold())
+        self.assertEqual(output_text.count("<ORGANIZZAZIONE_"), 3)
+        self.assertEqual(
+            {entry.value for entry in result.reversible_mapping},
+            {"STELLANTIS", "Stellantis", "stellantis"},
+        )
+        self.assertEqual(restore_text(output_text, result.reversible_mapping), source_text)
 
     def test_docx_extra_value_absent_from_text_is_a_no_op(self) -> None:
         docx_path = self.base / "selezione_manuale_assente.docx"
@@ -2246,8 +2422,19 @@ class DocumentAnonymizationTest(unittest.TestCase):
         pdf.drawString(72, 720, "Il sottoscritto Mario Rossi email mario@example.com")
         pdf.save()
 
-        with self.assertRaisesRegex(ValueError, "modalità reversibile non è disponibile per i PDF"):
+        with self.assertRaisesRegex(ValueError, "Reversibile è disponibile per testo incollato, file TXT e DOCX"):
             anonymize_loaded_document(load_document(pdf_path), self.engine, mode="reversible")
+
+    def test_markdown_and_csv_reject_reversible_document_output(self) -> None:
+        for suffix in (".md", ".csv"):
+            with self.subTest(suffix=suffix):
+                source = self.base / f"documento{suffix}"
+                source.write_text("Il sottoscritto Mario Rossi email mario@example.com", encoding="utf-8")
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "Reversibile è disponibile per testo incollato, file TXT e DOCX",
+                ):
+                    anonymize_loaded_document(load_document(source), self.engine, mode="reversible")
 
     @unittest.skipUnless(Path("/usr/bin/textutil").exists(), "textutil is required for .doc support")
     def test_accepts_legacy_doc_and_outputs_docx(self) -> None:

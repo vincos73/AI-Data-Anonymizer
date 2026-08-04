@@ -39,6 +39,13 @@ _TRIE_END = ""
 _FIELD_DELIMITERS = "\n\r\t,;|"
 _LOCATION_CONTEXT = (
     re.compile(r"\b(?:a|ad|in|da|dal|dalla|dai|dalle|presso|verso)\s+$", re.IGNORECASE),
+    # Se spaCy ingloba il nome dell'ufficio giudiziario, il relativo finding NER
+    # viene scartato; questo contesto permette comunque al dizionario ISTAT di
+    # conservare il solo toponimo finale (Potenza/Firenze negli esempi reali).
+    re.compile(
+        r"\bcorte(?:\s+di)?\s+appello(?:\s+di)?\s+$",
+        re.IGNORECASE,
+    ),
     re.compile(
         r"\b(?:nato|nata|residente|domiciliato|domiciliata|vive|abitante|sede|luogo|"
         r"localit[aà]|citt[aà]|comune|provincia|regione|territorio)"
@@ -57,10 +64,27 @@ _AMBIGUOUS_LOCATION_FOLLOWING = {
 }
 _NER_LOCATION_EXACT_REJECTIONS = frozenset(
     {
+        "collegio",
         "euro",
         "parte venditrice",
+        "provincia",
+        "province",
     }
 )
+_LEGAL_NER_FALSE_POSITIVE = re.compile(
+    r"\b(?:"
+    r"corte(?:\s+di)?\s+appello|"
+    r"giudice\s+(?:di\s+merito|delle\s+leggi)|"
+    r"comuni?\s+alle\s+province|"
+    r"difetto\s+di\s+motivazione|"
+    r"istituto\s+professionale|"
+    r"mancata\s+pronuncia|"
+    r"spetta\s+alle\s+regioni|"
+    r"autorità\s+giudiziaria"
+    r")\b"
+)
+_AMBIGUOUS_NON_LOCATION_TERMS = frozenset({"comparsa", "note"})
+_LOCATION_LABELS = frozenset({"localita", "località", "frazione"})
 _LOCATION_NAME_WORD = r"[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*"
 _LOCATION_NAME = (
     rf"{_LOCATION_NAME_WORD}"
@@ -114,6 +138,11 @@ def normalize_location_name(value: str) -> str:
     return " ".join(token.casefold() for token in _LOCATION_TOKEN.findall(normalized))
 
 
+def is_legal_ner_false_positive(value: str) -> bool:
+    """Recognize legal phrases spaCy may mislabel as either a place or a person."""
+    return _LEGAL_NER_FALSE_POSITIVE.search(normalize_location_name(value)) is not None
+
+
 @lru_cache(maxsize=1)
 def load_italian_locations() -> ItalianLocationIndex:
     grouped: dict[str, set[str]] = {"comune": set(), "regione": set(), "uts": set()}
@@ -134,6 +163,21 @@ def load_italian_locations() -> ItalianLocationIndex:
         municipalities=frozenset(grouped["comune"]),
         regions=frozenset(grouped["regione"]),
         territorial_areas=frozenset(grouped["uts"]),
+    )
+
+
+def _is_ambiguous_non_location_candidate(value: str) -> bool:
+    """Reject legal-document words unless the official location index knows them."""
+    normalized = normalize_location_name(value)
+    parts = normalized.split(maxsplit=1)
+    candidate = (
+        parts[1]
+        if len(parts) == 2 and parts[0] in _LOCATION_LABELS
+        else normalized
+    )
+    return (
+        candidate in _AMBIGUOUS_NON_LOCATION_TERMS
+        and not load_italian_locations().contains(candidate)
     )
 
 
@@ -235,6 +279,8 @@ def should_accept_ner_location(text: str, start: int, end: int, value: str) -> b
         or _PERSON_TITLE_MARKER.search(value)
         or has_person_title_context(text, start)
         or normalized in _NER_LOCATION_EXACT_REJECTIONS
+        or is_legal_ner_false_positive(value)
+        or _is_ambiguous_non_location_candidate(value)
         or re.search(r"\n[ \t]*\n", value)
     ):
         return False
@@ -281,6 +327,8 @@ def labeled_locality_findings(text: str) -> list[Finding]:
             for part in _LOCATION_LIST_SEPARATOR.split(names):
                 value = part.strip(" \t.;:")
                 if not value:
+                    continue
+                if _is_ambiguous_non_location_candidate(value):
                     continue
                 relative_start = names.find(value, cursor)
                 if relative_start < 0:
