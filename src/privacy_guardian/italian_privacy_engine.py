@@ -207,6 +207,12 @@ class ItalianPrivacyRecognizer:
         r"(?=\s*,?\s+(?i:nato|nata|residente|domiciliato|domiciliata|codice\s+fiscale|"
         r"c\.?\s*f\.?|email|e-mail|pec|tel\.?|telefono|cell\.?|cellulare)\b)"
     )
+    # CAPITAL_NAME_WORD ammette il punto per supportare iniziali e abbreviazioni.
+    # Nei documenti legali "Allegato" è invece una nuova intestazione, non parte
+    # del nome che la precede (anche quando l'estrazione PDF unisce le righe).
+    PERSON_SECTION_BOUNDARY = re.compile(
+        r"\.(?=\s+(?i:allegat[oi])\b)"
+    )
     # Candidati "nome proprio" senza contesto forte: la scansione parte da ogni parola
     # capitalizzata che sia un nome di battesimo italiano noto (dizionario locale, vedi
     # first_names.py) e prova a estendere da lì. Ancorarsi al nome — invece che a una
@@ -609,7 +615,7 @@ class ItalianPrivacyRecognizer:
         for pattern in (self.PERSON, self.PERSON_TRAILING_CONTEXT):
             for match in pattern.finditer(text):
                 start = match.start("name")
-                end = self._trim_end(text, match.end("name"), trim_period=True)
+                end = self._trim_person_end(text, start, match.end("name"))
                 name = text[start:end].strip()
                 if self._looks_like_person_name(name):
                     findings.append(Finding("PERSON", start, end, 0.84))
@@ -634,16 +640,17 @@ class ItalianPrivacyRecognizer:
             match = self.DICTIONARY_PERSON_FROM_NAME.match(text, token.start())
             if match is None:
                 continue
-            candidate = match.group(0)
+            end = self._trim_person_end(text, match.start(), match.end())
+            candidate = text[match.start() : end]
             if not self._looks_like_person_name(candidate):
                 continue
             preceding = text[max(0, match.start() - 16) : match.start()]
             if self.STREET_PRECEDING_GUARD.search(preceding):
                 continue
             findings.append(
-                Finding("PERSON", match.start(), match.end(), self.DICTIONARY_PERSON_SCORE, source="name_dictionary")
+                Finding("PERSON", match.start(), end, self.DICTIONARY_PERSON_SCORE, source="name_dictionary")
             )
-            last_end = match.end()
+            last_end = end
         return findings
 
     def _surname_first_person_findings(self, text: str) -> list[Finding]:
@@ -807,6 +814,11 @@ class ItalianPrivacyRecognizer:
         while end > 0 and text[end - 1] in chars:
             end -= 1
         return end
+
+    def _trim_person_end(self, text: str, start: int, end: int) -> int:
+        end = self._trim_end(text, end, trim_period=True)
+        boundary = self.PERSON_SECTION_BOUNDARY.search(text, start, end)
+        return boundary.start() if boundary else end
 
     def _compact_iban(self, value: str) -> str:
         return re.sub(r"[\s-]", "", value).upper()
