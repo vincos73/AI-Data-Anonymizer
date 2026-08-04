@@ -23,6 +23,14 @@ ACADEMIC_NAME_WORD = rf"(?!(?i:Universit[aà]|Dipartimento)\b){INSTITUTION_NAME_
 LOWER_ADDRESS_WORD = r"[a-zà-öø-ÿ]{2,}"
 ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ0-9][{LETTER}0-9&'’.-]*|[A-Z0-9&]{{2,}}|&)"
 PREFIX_ORG_WORD = rf"(?:[A-ZÀ-ÖØ-Þ][{LETTER}&'’-]*|[A-Z0-9&]{{2,}}|&)"
+ADDRESS_CONNECTOR = r"(?:(?i:di|del|dello|della|dei|degli|delle)[ \t]+|(?i:dell['’]))"
+ORG_CONNECTOR = r"(?i:di|del|dello|della|dei|degli|delle|da|dal|dalla|e)"
+ORG_FIELD_BOUNDARY = r"(?!(?i:p\.?[ \t]*iva|c\.?[ \t]*f\.?|iban|pec|e-?mail|tel\.?|telefono)\b)"
+COMPANY_LEGAL_SUFFIX = (
+    r"(?i:s\.?[ \t]*r\.?[ \t]*l\.?|s\.?[ \t]*p\.?[ \t]*a\.?|"
+    r"s\.?[ \t]*n\.?[ \t]*c\.?|s\.?[ \t]*a\.?[ \t]*s\.?|"
+    r"soc\.?[ \t]*coop\.?|cooperativa|onlus|aps|ets|s\.?[ \t]*s\.?)"
+)
 EMAIL_VALUE = r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
 
 # Official IBAN lengths by country code (ISO 13616 registry).
@@ -91,7 +99,7 @@ class ItalianPrivacyRecognizer:
         re.IGNORECASE,
     )
     VEHICLE_PLATE = re.compile(
-        r"\b(?i:targa(?:\s+(?:veicolo|auto|autovettura|aziendale)){0,3}|targato|targata|"
+        r"\b(?i:targa(?:\s+(?:veicolo|auto|autovettura|mezzo|automezzo|aziendale)){0,3}|targato|targata|"
         r"veicolo\s+targato|auto\s+targata|autovettura\s+targata)"
         r"\s*(?i:n\.?|num\.?|nr\.?|numero)?\s*[:#-]?\s*"
         r"(?P<plate>[A-Z]{2}\s*\d{3}\s*[A-Z]{2}|[A-Z]{1,2}\s*\d{5,6}|[A-Z]{2}\s*\d{5})\b",
@@ -131,17 +139,18 @@ class ItalianPrivacyRecognizer:
     )
     ADDRESS = re.compile(
         rf"\b(?i:via|v\.|viale|v\.le|piazza|p\.zza|piazzale|corso|c\.so|vicolo|largo|strada|contrada|"
-        rf"localit[aà]|loc\.|frazione)\s+"
-        rf"(?:{CAPITAL_WORD}|[A-Z0-9]{{1,5}})(?:\s+(?:{CAPITAL_WORD}|[a-zà-öø-ÿ]{{2,}}|[A-Z0-9]{{1,5}})){{0,7}}"
+        rf"localit[aà]|loc\.|frazione)[ \t]+"
+        rf"(?:{ADDRESS_CONNECTOR})?(?:{CAPITAL_WORD}|[A-Z0-9]{{1,5}})"
+        rf"(?:[ \t]+(?:{CAPITAL_WORD}|[a-zà-öø-ÿ]{{2,}}|[A-Z0-9]{{1,5}})){{0,7}}"
         # (?![0-9]) impedisce al civico di fermarsi a metà di un CAP a 5 cifre
         # ("45, 00185 Roma" non deve diventare "45, 0018" lasciando "5 Roma" in chiaro)
-        rf"(?:\s*,?\s+\d{{1,4}}(?![0-9])[A-Za-z]?)?"
-        rf"(?:\s*,?\s*(?:\d{{5}}\s+)?{CAPITAL_WORD}(?:\s+{CAPITAL_WORD}){{0,2}})?",
+        rf"(?:[ \t]*,?[ \t]+\d{{1,4}}(?![0-9])[A-Za-z]?)?"
+        rf"(?:[ \t]*,?[ \t]*(?:\d{{5}}[ \t]+)?{CAPITAL_WORD}(?:[ \t]+{CAPITAL_WORD}){{0,2}})?",
     )
     ADDRESS_LOWERCASE = re.compile(
-        rf"\b(?:via|viale|piazza|piazzale|corso|vicolo|largo|strada|contrada|frazione|località|localita)\s+"
-        rf"(?P<name>{LOWER_ADDRESS_WORD}(?:\s+{LOWER_ADDRESS_WORD}){{0,3}})"
-        rf"\s*,?\s+n?\.?\s*\d{{1,4}}(?:\s*/\s*[A-Za-z]|[A-Za-z])?\b"
+        rf"\b(?:via|viale|piazza|piazzale|corso|vicolo|largo|strada|contrada|frazione|località|localita)[ \t]+"
+        rf"(?P<name>{LOWER_ADDRESS_WORD}(?:[ \t]+{LOWER_ADDRESS_WORD}){{0,3}})"
+        rf"[ \t]*,?[ \t]+n?\.?[ \t]*\d{{1,4}}(?:[ \t]*/[ \t]*[A-Za-z]|[A-Za-z])?\b"
     )
     ADDRESS_NAME_STOPWORDS = {
         "email", "e-mail", "mail", "pec", "fax", "sms", "telefono", "telematica", "posta",
@@ -155,17 +164,20 @@ class ItalianPrivacyRecognizer:
         r"preliminare\b|gradata\b)",
         re.IGNORECASE,
     )
+    NON_STREET_CORSO = re.compile(
+        r"^corso\s+(?:di\s+)?(?:laurea|studi|formazione|economia|giurisprudenza|"
+        r"medicina|ingegneria|informatica)\b",
+        re.IGNORECASE,
+    )
     COMPANY_SUFFIX = re.compile(
-        rf"\b(?:{ORG_WORD}(?:\s+|$)){{1,8}}"
-        r"(?i:s\.?\s*r\.?\s*l\.?|s\.?\s*p\.?\s*a\.?|s\.?\s*n\.?\s*c\.?|s\.?\s*a\.?\s*s\.?|"
-        r"soc\.?\s*coop\.?|cooperativa|onlus|aps|ets|s\.?\s*s\.?)"
-        r"(?!\w)",
+        rf"\b{ORG_WORD}(?:[ \t]+(?:{ORG_WORD}|{ORG_CONNECTOR})){{0,7}}[ \t]+"
+        rf"{COMPANY_LEGAL_SUFFIX}(?!\w)",
     )
     COMPANY_PREFIX = re.compile(
         rf"\b(?i:ditta(?:\s+individuale)?|societ[aà]|impresa|azienda|ragione\s+sociale|denominazione|cooperativa)"
-        rf"\s+(?:{PREFIX_ORG_WORD}(?:\s+|$)){{1,6}}"
-        r"(?:(?i:s\.?\s*r\.?\s*l\.?|s\.?\s*p\.?\s*a\.?|s\.?\s*n\.?\s*c\.?|s\.?\s*a\.?\s*s\.?|"
-        r"soc\.?\s*coop\.?|cooperativa|onlus|aps|ets|s\.?\s*s\.?)\b)?",
+        rf"\s+{ORG_FIELD_BOUNDARY}{PREFIX_ORG_WORD}"
+        rf"(?:[ \t]+{ORG_FIELD_BOUNDARY}(?:{PREFIX_ORG_WORD}|{ORG_CONNECTOR})){{0,6}}"
+        rf"(?:[ \t]+{COMPANY_LEGAL_SUFFIX})?(?![.\w])",
     )
     SEPARATED_COMPANY_SUFFIX = re.compile(
         rf"\b(?P<name>{ORG_WORD}(?:[ \t]+{ORG_WORD}){{0,5}})"
@@ -178,11 +190,11 @@ class ItalianPrivacyRecognizer:
         r"prof\.?ssa|prof\.?|notaio|notaia|sottoscritto|sottoscritta|cliente|referente|rappresentante|"
         r"titolare|nato|nata|intestatario|intestataria|intestato\s+a|intestata\s+a|"
         r"beneficiario|beneficiaria)\s+"
-        rf"(?P<name>{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}})",
+        rf"(?P<name>{CAPITAL_NAME_WORD}(?:[ \t]+{CAPITAL_NAME_WORD}){{1,3}})",
     )
     CREDIT_CARD = re.compile(r"(?<![\w-])(?!0)\d(?:[ -]?\d){12,18}(?![\w-])")
     POSTAL_CODE_CITY = re.compile(
-        r"\b(?P<cap>\d{5})\s+(?P<city>[A-ZÀ-Ù][a-zà-ù]+(?:\s+[A-ZÀ-Ù][a-zà-ù]+){0,3})\b"
+        r"(?<![\w-])(?P<cap>\d{5})[ \t]+(?P<city>[A-ZÀ-Ù][a-zà-ù]+(?:[ \t]+[A-ZÀ-Ù][a-zà-ù]+){0,3})\b"
     )
     LABELED_POSTAL_CODE = re.compile(
         r"\b(?i:cap|c\.?\s*a\.?\s*p\.?|codice\s+postale|"
@@ -204,7 +216,7 @@ class ItalianPrivacyRecognizer:
         re.IGNORECASE,
     )
     PERSON_TRAILING_CONTEXT = re.compile(
-        rf"\b(?P<name>{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}})\b"
+        rf"\b(?P<name>{CAPITAL_NAME_WORD}(?:[ \t]+{CAPITAL_NAME_WORD}){{1,3}})\b"
         r"(?=\s*,?\s+(?i:nato|nata|residente|domiciliato|domiciliata|codice\s+fiscale|"
         r"c\.?\s*f\.?|email|e-mail|pec|tel\.?|telefono|cell\.?|cellulare)\b)"
     )
@@ -220,7 +232,7 @@ class ItalianPrivacyRecognizer:
     # generica sequenza di maiuscole — evita che una maiuscola precedente non-nome
     # ("Repubblica Sergio Mattarella") consumi il candidato e nasconda la persona.
     CAPITAL_NAME_TOKEN = re.compile(rf"\b{CAPITAL_NAME_WORD}\b")
-    DICTIONARY_PERSON_FROM_NAME = re.compile(rf"{CAPITAL_NAME_WORD}(?:\s+{CAPITAL_NAME_WORD}){{1,3}}\b")
+    DICTIONARY_PERSON_FROM_NAME = re.compile(rf"{CAPITAL_NAME_WORD}(?:[ \t]+{CAPITAL_NAME_WORD}){{1,3}}\b")
     SURNAME_FIRST_PERSON = re.compile(
         rf"\b(?P<surname>{UPPER_NAME_WORD}(?:[ \t]+{UPPER_NAME_WORD}){{0,2}})"
         rf"[ \t]+(?P<given>{CAPITAL_NAME_WORD}(?:[ \t]+{CAPITAL_NAME_WORD}){{0,2}})\b"
@@ -304,6 +316,7 @@ class ItalianPrivacyRecognizer:
         findings.extend(self._international_phone_findings(text))
         findings.extend(self._codice_fiscale_findings(text))
         findings.extend(self._labeled_codice_fiscale_findings(text))
+        findings.extend(self._tabular_labeled_codice_fiscale_findings(text))
         findings.extend(self._partita_iva_findings(text))
         findings.extend(self._iban_findings(text))
         findings.extend(self._sdi_code_findings(text))
@@ -385,6 +398,63 @@ class ItalianPrivacyRecognizer:
             Finding("CODICE_FISCALE", match.start("cf"), match.end("cf"), 0.9)
             for match in self.LABELED_CODICE_FISCALE.finditer(text)
         ]
+
+    def _tabular_labeled_codice_fiscale_findings(self, text: str) -> list[Finding]:
+        """Accetta CF strutturalmente plausibili in una colonna CSV/TSV esplicita.
+
+        Il contesto della colonna è forte quanto un'etichetta testuale, ma resta
+        circoscritto a file tabellari: un codice con checksum errato non viene
+        quindi accettato liberamente nel testo corrente.
+        """
+        findings: list[Finding] = []
+        lines = text.splitlines(keepends=True)
+        offsets: list[int] = []
+        offset = 0
+        for line in lines:
+            offsets.append(offset)
+            offset += len(line)
+
+        for header_index, line in enumerate(lines[:-1]):
+            header = line.rstrip("\r\n")
+            delimiter = max((",", ";", "\t"), key=header.count)
+            if header.count(delimiter) == 0:
+                continue
+            headers = header.split(delimiter)
+            cf_columns = [
+                index
+                for index, value in enumerate(headers)
+                if re.fullmatch(
+                    r"(?i:c\.?[ \t]*f\.?|codice[ \t]+fiscale)",
+                    value.strip(" \t\"'"),
+                )
+            ]
+            if not cf_columns:
+                continue
+
+            for row_index in range(header_index + 1, len(lines)):
+                row = lines[row_index].rstrip("\r\n")
+                if not row:
+                    break
+                cells = row.split(delimiter)
+                for column in cf_columns:
+                    if column >= len(cells):
+                        continue
+                    raw_cell = cells[column]
+                    candidate = raw_cell.strip(" \t\"'")
+                    if (
+                        candidate != candidate.upper()
+                        or self.CODICE_FISCALE.fullmatch(candidate) is None
+                    ):
+                        continue
+                    cell_start = sum(len(value) + 1 for value in cells[:column])
+                    value_start = cell_start + raw_cell.find(candidate)
+                    start = offsets[row_index] + value_start
+                    findings.append(
+                        Finding("CODICE_FISCALE", start, start + len(candidate), 0.9)
+                    )
+            break
+
+        return findings
 
     def _partita_iva_findings(self, text: str) -> list[Finding]:
         return [
@@ -471,6 +541,7 @@ class ItalianPrivacyRecognizer:
             for finding in findings
             if not (
                 self.NON_STREET_VIA.match(text[finding.start : finding.end])
+                or self.NON_STREET_CORSO.match(text[finding.start : finding.end])
                 or (
                     re.match(
                         r"(?i:localit[aà]|frazione)\b",
@@ -702,7 +773,7 @@ class ItalianPrivacyRecognizer:
         words = name.split()
         if len(words) < 2 or any(word.strip(" .") in self.PERSON_STOPWORDS for word in words):
             return False
-        return True
+        return not self._looks_like_organization(name)
 
     def propagate_person_coreferences(self, text: str, findings: list[Finding]) -> list[Finding]:
         """Estende i PERSON con contesto forte alle altre occorrenze dello stesso nome o cognome."""

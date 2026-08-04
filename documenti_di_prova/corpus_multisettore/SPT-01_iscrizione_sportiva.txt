@@ -1,0 +1,9 @@
+DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS
+
+Atleta: Riccardo Bernardi
+Nato a Verona il 17/04/2006
+Codice fiscale: BRNRCR06D17L781J
+Telefono del genitore: 345 610 9934
+Email: famiglia.bernardi@example.com
+
+Disciplina: pallavolo; categoria Under 21; certificato medico acquisito.

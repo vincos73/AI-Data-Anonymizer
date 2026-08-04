@@ -10,7 +10,7 @@ La web app esiste solo come opzione avanzata per sviluppatori, demo locali o ins
 
 ## Scarica App Desktop
 
-Versione attuale: **v0.6.21**.
+Versione attuale: **v0.6.22**.
 
 | Sistema | Download |
 | --- | --- |

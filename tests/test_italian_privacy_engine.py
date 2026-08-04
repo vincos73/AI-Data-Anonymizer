@@ -238,6 +238,22 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn(("ORGANIZATION", "ditta individuale Mario Rossi"), findings)
         self.assertIn(("PARTITA_IVA", "12345678903"), findings)
 
+    def test_organization_fields_allow_connectors_without_crossing_lines(self) -> None:
+        samples = (
+            ("Società\nRete Sicura S.p.A.\nTelefono: 0801234567", "Società\nRete Sicura S.p.A."),
+            ("Società\nOfficina del Sud S.n.c.\nEmail: prova@example.com", "Società\nOfficina del Sud S.n.c."),
+        )
+        for text, expected in samples:
+            with self.subTest(text=text):
+                self.assertIn(("ORGANIZATION", expected), self.findings_for(text))
+
+    def test_company_name_is_not_misclassified_as_person(self) -> None:
+        text = "Aurora Digitale S.r.l."
+        findings = self.findings_for(text)
+
+        self.assertIn(("ORGANIZATION", text), findings)
+        self.assertNotIn("PERSON", [entity_type for entity_type, _value in findings])
+
     def test_detects_organizations_with_ampersand(self) -> None:
         findings = self.findings_for("Contratto con Rossi & Figli S.r.l. per la fornitura.")
         self.assertIn(("ORGANIZATION", "Rossi & Figli S.r.l."), findings)
@@ -446,6 +462,22 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertNotIn("00185", anonymized)
         self.assertFalse(any(char.isdigit() for char in anonymized))
 
+    def test_address_connectors_are_detected_without_swallowing_next_field(self) -> None:
+        samples = (
+            "Via delle Magnolie 17",
+            "Via del Glicine 9",
+            "Via dei Pini 6",
+            "Via delle Industrie 5",
+            "Via dell'Unità 3",
+            "Via dell’Europa 4",
+        )
+        for address in samples:
+            with self.subTest(address=address):
+                text = f"Residenza: {address}\nFascicolo RG 4567/2026"
+                findings = self.findings_for(text)
+                self.assertIn(("ADDRESS", address), findings)
+                self.assertIn(("PROTOCOL_CASE_NUMBER", "RG 4567/2026"), findings)
+
     def test_detects_structured_italian_data(self) -> None:
         text = "IBAN IT60X0542811101000000123456 CF RSSMRA80A01H501U email mario.rossi@example.com tel +39 333 123 4567"
         anonymized = self.engine.anonymize(text)
@@ -489,6 +521,24 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertFalse(any(entity_type == "CODICE_FISCALE" for entity_type, _ in self.findings_for("CF ABC")))
         self.assertFalse(
             any(entity_type == "CODICE_FISCALE" for entity_type, _ in self.findings_for("C.F.R. Milano"))
+        )
+
+    def test_tabular_codice_fiscale_header_is_strong_context(self) -> None:
+        text = (
+            "Dipendente,Codice fiscale,Voce\n"
+            "ROSSI Marco,RSSMRC88A01H501T,Rimborso\n"
+        )
+        self.assertFalse(self.engine._recognizer._valid_codice_fiscale("RSSMRC88A01H501T"))
+        self.assertIn(
+            ("CODICE_FISCALE", "RSSMRC88A01H501T"),
+            self.findings_for(text),
+        )
+
+    def test_invalid_codice_fiscale_without_label_or_column_is_not_detected(self) -> None:
+        text = "Il riferimento interno è RSSMRC88A01H501T."
+        self.assertNotIn(
+            "CODICE_FISCALE",
+            [entity_type for entity_type, _value in self.findings_for(text)],
         )
 
     def test_detects_foreign_ibans_with_checksum(self) -> None:
@@ -613,6 +663,20 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
     def test_amount_followed_by_currency_is_not_matched_as_address(self) -> None:
         findings = self.findings_for("Il compenso pattuito è di 10000 Euro da corrispondere in due rate.")
         self.assertNotIn("ADDRESS", [entity_type for entity_type, _ in findings])
+
+    def test_identifier_with_hyphen_is_not_a_postal_code_city(self) -> None:
+        findings = self.findings_for("Matricola DIP-00427\nSede operativa")
+        self.assertEqual(
+            [value for entity_type, value in findings if entity_type == "ADDRESS" and "00427" in value],
+            [],
+        )
+
+    def test_academic_course_is_not_a_street_address(self) -> None:
+        text = "Iscritta all'università, corso di Economia."
+        self.assertNotIn(
+            ("ADDRESS", "corso di Economia"),
+            self.findings_for(text),
+        )
 
     def test_detects_international_phone_numbers(self) -> None:
         text = "Contatti: +44 20 7946 0958, +1 415 555 0132 e +39 333 123 4567."
@@ -820,6 +884,10 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
             ("Il corrispettivo è espresso in Euro.", "Euro"),
             ("Parte Venditrice", "Parte Venditrice"),
             ("Località Comparsa", "Località Comparsa"),
+            (
+                "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+                "INTERAMENTE FITTIZI - DOCUMENTO",
+            ),
         )
         for text, location_value in cases:
             with self.subTest(location_value=location_value):
@@ -1316,6 +1384,12 @@ class ItalianPrivacyEngineTest(unittest.TestCase):
         self.assertIn("<TARGA_VEICOLO>", anonymized)
         self.assertNotIn("CA12345AA", anonymized)
         self.assertNotIn("AB123CD", anonymized)
+
+    def test_detects_vehicle_plate_after_mezzo_qualifier(self) -> None:
+        self.assertIn(
+            ("VEHICLE_PLATE", "CD456EF"),
+            self.findings_for("Targa mezzo: CD456EF"),
+        )
 
     def test_document_and_plate_codes_require_clear_context(self) -> None:
         text = "La pratica CA12345AA e la sigla AB123CD non sono sufficienti da sole."

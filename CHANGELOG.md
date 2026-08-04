@@ -4,6 +4,17 @@ Tutte le modifiche rilevanti a questo progetto sono documentate in questo file.
 
 ## [In sviluppo]
 
+## [0.6.22] - 2026-08-04
+
+### Corretto
+- Gli indirizzi con connettori come `Via delle Magnolie` e `Via dell’Unità` vengono riconosciuti senza inglobare i campi della riga successiva.
+- I nomi societari con connettori, le targhe introdotte da `Targa mezzo` e i codici fiscali in colonne CSV esplicite vengono protetti correttamente.
+- Identificativi con trattino e descrizioni come `corso di Economia` non vengono più interpretati come indirizzi; il NER locale preserva anche le intestazioni dei documenti sintetici di test.
+- Il valutatore del corpus distingue la copertura completa dalla classificazione e gestisce correttamente valori ripetuti e punteggiatura terminale.
+
+### Aggiunto
+- Corpus sintetico multi-settore con 35 documenti in TXT, CSV, DOCX e PDF, compresi due PDF scansionati, più manifest, baseline automatica e kit per beta tester esterni.
+
 ## [0.6.21] - 2026-08-04
 
 ### Migliorato

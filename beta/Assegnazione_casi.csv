@@ -1,0 +1,11 @@
+tester_id,profilo,sistema_operativo,casi_massima_protezione,caso_standard,caso_reversibile,note
+T01,Amministrazione o contabilità,Windows 11,"FIN-01;FIN-02;FOR-01",FIN-01,FOR-01,"Verificare fattura, IBAN e salvataggio DOCX"
+T02,HR o selezione,Windows 11,"LAV-01;LAV-02;LAV-03",LAV-01,LAV-01,"Confrontare CV e distinta CSV"
+T03,Sanità o servizi alla persona,macOS Apple Silicon,"SAN-01;SAN-02;SAN-04",SAN-01,SAN-01,"Includere il PDF scansionato"
+T04,Scuola o università,macOS Apple Silicon,"IST-01;IST-02;SPT-01",IST-02,IST-02,"Controllare dati di minori e contesto didattico"
+T05,Professionista o consulente,Windows 11,"PRO-01;LEG-01;PA-01",PRO-01,LEG-01,"Verificare PEC e numeri di pratica"
+T06,Piccola impresa o back office,macOS Apple Silicon,"SRV-01;SRV-02;RET-01",SRV-01,SRV-01,"Confrontare TXT e CSV"
+T07,Privacy o compliance,Windows 11,"IMM-02;SOC-01;TUR-02",SOC-01,IMM-02,"Includere catasto e PDF scansionato"
+T08,Utente non tecnico,macOS Apple Silicon,"TUR-01;EVT-01;MED-01",TUR-01,TUR-01,"Osservare soprattutto comprensibilità del flusso"
+T09,Tecnologia o assistenza,Windows 11,"TEC-01;SRV-04;LOG-01",TEC-01,TEC-01,"Controllare esportazione e messaggi di errore"
+T10,Utente non tecnico,macOS Apple Silicon,"IMM-01;SRV-03;TRP-01",SRV-03,TRP-01,"Osservare installazione e controllo finale"

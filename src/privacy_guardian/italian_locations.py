@@ -22,7 +22,7 @@ _INSTITUTION_MARKER = re.compile(
     re.IGNORECASE,
 )
 _NON_LOCATION_MARKER = re.compile(
-    r"\b(?:corpo|relazione|servizio|personale|ispettori|ufficio|comando)\b",
+    r"\b(?:corpo|relazione|servizio|personale|ispettori|ufficio|comando|documento|fittizi)\b",
     re.IGNORECASE,
 )
 _PERSON_TITLE_MARKER = re.compile(
