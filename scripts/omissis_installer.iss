@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #error AppVersion deve essere passato a ISCC, per esempio /DAppVersion=0.6.21
+  #error AppVersion deve essere passato a ISCC, per esempio /DAppVersion=0.6.22
 #endif
 
 #define AppName "OMISSIS"

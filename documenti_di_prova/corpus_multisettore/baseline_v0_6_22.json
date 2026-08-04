@@ -1,0 +1,1672 @@
+{
+  "generated_at": "2026-08-04T16:09:00.210947+00:00",
+  "omissis_version": "0.6.22",
+  "ner_active": true,
+  "mode": "maximum",
+  "summary": {
+    "detected": 175,
+    "preserved": 98
+  },
+  "cases": [
+    {
+      "id": "SAN-01",
+      "sector": "Sanità",
+      "file": "SAN-01_referto_laboratorio.docx",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Giulia Ferri",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "FRRGLI85C45F205X",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via delle Magnolie 17",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "giulia.ferri@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "+39 333 410 7286",
+          "status": "detected"
+        },
+        {
+          "entity_type": "HEALTH_CARD",
+          "value": "8038 0000 1111 2222 3333",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "valori glicemici",
+          "status": "preserved"
+        },
+        {
+          "value": "controllo annuale",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "SAN-02",
+      "sector": "Sanità",
+      "file": "SAN-02_lettera_dimissione.pdf",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Luca Moretti",
+          "status": "detected"
+        },
+        {
+          "entity_type": "LOCATION",
+          "value": "Bologna",
+          "status": "detected"
+        },
+        {
+          "entity_type": "DATE",
+          "value": "14/09/1977",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "MRTLCU77P14A944Z",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Corso Mazzini 42",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "051 555 0198",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "polmonite risolta",
+          "status": "preserved"
+        },
+        {
+          "value": "Terapia domiciliare",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "SAN-03",
+      "sector": "Sanità",
+      "file": "SAN-03_prenotazioni.csv",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Sara De Luca",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "sara.deluca@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "+39 347 221 9084",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PERSON",
+          "value": "Paolo Greco",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "paolo.greco@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "+39 349 715 4432",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "Visita cardiologica",
+          "status": "preserved"
+        },
+        {
+          "value": "Ecografia addominale",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "SAN-04",
+      "sector": "Psicologia",
+      "file": "SAN-04_nota_colloquio_scansione.pdf",
+      "ocr_pages": [
+        1
+      ],
+      "finding_count": 4,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Elena Gatti",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via del Glicine 9",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "055 420 1188",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "elena.gatti@example.com",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "miglioramento del sonno",
+          "status": "preserved"
+        },
+        {
+          "value": "Nessuna variazione",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "LAV-01",
+      "sector": "Lavoro e HR",
+      "file": "LAV-01_curriculum.docx",
+      "ocr_pages": [],
+      "finding_count": 5,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Martina Riva",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via Manzoni 31",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "martina.riva@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "+39 335 802 6194",
+          "status": "detected"
+        },
+        {
+          "entity_type": "DATE",
+          "value": "02/12/1991",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "Python",
+          "status": "preserved"
+        },
+        {
+          "value": "gestione progetti",
+          "status": "preserved"
+        },
+        {
+          "value": "comunicazione digitale",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "LAV-02",
+      "sector": "Lavoro e HR",
+      "file": "LAV-02_distinta_pagamenti.csv",
+      "ocr_pages": [],
+      "finding_count": 3,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "ROSSI Marco",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "RSSMRC88A01H501T",
+          "status": "detected"
+        },
+        {
+          "entity_type": "IBAN",
+          "value": "IT60 X054 2811 1010 0000 0123 456",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "Rimborso trasferta",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "LAV-03",
+      "sector": "Lavoro e HR",
+      "file": "LAV-03_nota_selezione.txt",
+      "ocr_pages": [],
+      "finding_count": 4,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Elena Costa",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "elena.costa@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "333 650 4471",
+          "status": "detected"
+        },
+        {
+          "entity_type": "DATE",
+          "value": "18/06/2026",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "responsabile operations",
+          "status": "preserved"
+        },
+        {
+          "value": "Profilo coerente",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "LAV-04",
+      "sector": "Lavoro e HR",
+      "file": "LAV-04_idoneita_mansione.docx",
+      "ocr_pages": [],
+      "finding_count": 3,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Andrea Villa",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "VLLNDR90E15L219Q",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Piazza Statuto 6",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "DIP-00427",
+          "status": "preserved"
+        },
+        {
+          "value": "idoneo alla mansione",
+          "status": "preserved"
+        },
+        {
+          "value": "pausa visiva",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "IST-01",
+      "sector": "Scuola",
+      "file": "IST-01_comunicazione_famiglia.pdf",
+      "ocr_pages": [],
+      "finding_count": 7,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Davide Conti",
+          "status": "detected"
+        },
+        {
+          "entity_type": "LOCATION",
+          "value": "Bari",
+          "status": "detected"
+        },
+        {
+          "entity_type": "DATE",
+          "value": "09/03/2012",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via Dante 28",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PERSON",
+          "value": "Chiara Conti",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "chiara.conti@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "+39 340 919 2375",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "laboratorio di robotica educativa",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "IST-02",
+      "sector": "Università",
+      "file": "IST-02_borsa_studio.docx",
+      "ocr_pages": [],
+      "finding_count": 5,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Francesca Longo",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "LNGFNC01D62F839R",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "francesca.longo@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "IBAN",
+          "value": "IT60 X054 2811 1010 0000 0123 456",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ORGANIZATION",
+          "value": "Università degli Studi di Napoli Federico II",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "corso di Economia",
+          "status": "preserved"
+        },
+        {
+          "value": "mobilità internazionale",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "FIN-01",
+      "sector": "Amministrazione e finanza",
+      "file": "FIN-01_fattura.pdf",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "ORGANIZATION",
+          "value": "Aurora Digitale S.r.l.",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Viale Europa 45",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PARTITA_IVA",
+          "value": "12345678903",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PEC_ADDRESS",
+          "value": "auroradigitale@pec.example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "SDI_CODE",
+          "value": "ABC1234",
+          "status": "detected"
+        },
+        {
+          "entity_type": "IBAN",
+          "value": "IT60 X054 2811 1010 0000 0123 456",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "consulenza organizzativa",
+          "status": "preserved"
+        },
+        {
+          "value": "Imponibile euro 2.400,00",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "FIN-02",
+      "sector": "Banca",
+      "file": "FIN-02_bonifico.txt",
+      "ocr_pages": [],
+      "finding_count": 5,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Matteo Serra",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "SRRMTT79H04I452V",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ORGANIZATION",
+          "value": "Studio Quercia S.a.s.",
+          "status": "detected"
+        },
+        {
+          "entity_type": "IBAN",
+          "value": "IT60 X054 2811 1010 0000 0123 456",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CREDIT_CARD",
+          "value": "4111 1111 1111 1111",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "anticipo progetto editoriale",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "FIN-03",
+      "sector": "Assicurazioni",
+      "file": "FIN-03_denuncia_sinistro.docx",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Simone Barbieri",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via Po 12",
+          "status": "detected"
+        },
+        {
+          "entity_type": "IDENTITY_DOCUMENT",
+          "value": "U1234567A",
+          "status": "detected"
+        },
+        {
+          "entity_type": "VEHICLE_PLATE",
+          "value": "AB123CD",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PROTOCOL_CASE_NUMBER",
+          "value": "SIN 7824/2026",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "06 702 1189",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "urto a bassa velocità",
+          "status": "preserved"
+        },
+        {
+          "value": "nessun ferito",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "IMM-01",
+      "sector": "Condominio",
+      "file": "IMM-01_verbale_condominio.pdf",
+      "ocr_pages": [],
+      "finding_count": 4,
+      "expected_remove": [
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via Verdi 18",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PERSON",
+          "value": "Laura Neri",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PERSON",
+          "value": "Roberto Sala",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "roberto.sala@example.com",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "manutenzione dell'ascensore",
+          "status": "preserved"
+        },
+        {
+          "value": "vano scale",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "IMM-02",
+      "sector": "Immobiliare",
+      "file": "IMM-02_scheda_catastale.docx",
+      "ocr_pages": [],
+      "finding_count": 8,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Monica Pellegrini",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "PLLMNC82R55G273W",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via dei Pini 6",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CATASTO",
+          "value": "24",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CATASTO",
+          "value": "318",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CATASTO",
+          "value": "7",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CATASTO",
+          "value": "A/3",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "appartamento ad uso abitativo",
+          "status": "preserved"
+        },
+        {
+          "value": "pertinenza",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "SRV-01",
+      "sector": "Commercio elettronico",
+      "file": "SRV-01_conferma_ordine.txt",
+      "ocr_pages": [],
+      "finding_count": 4,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Alessio Rinaldi",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "alessio.rinaldi@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "+39 338 770 2541",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via Roma 77",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "ORD-2026-4451",
+          "status": "preserved"
+        },
+        {
+          "value": "cuffie wireless",
+          "status": "preserved"
+        },
+        {
+          "value": "consegna standard",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "SRV-02",
+      "sector": "Assistenza clienti",
+      "file": "SRV-02_ticket_assistenza.csv",
+      "ocr_pages": [],
+      "finding_count": 3,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Beatrice Romano",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "beatrice.romano@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "320 441 9087",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "TCK-21904",
+          "status": "preserved"
+        },
+        {
+          "value": "Accesso bloccato dopo aggiornamento",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "SRV-03",
+      "sector": "Energia",
+      "file": "SRV-03_bolletta_energia.pdf",
+      "ocr_pages": [],
+      "finding_count": 5,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Stefano Amato",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "MTASFN76B11C351K",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via Etnea 104",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "stefano.amato@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "095 601 8821",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "284 kWh",
+          "status": "preserved"
+        },
+        {
+          "value": "Energia Casa Verde",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "SRV-04",
+      "sector": "Telecomunicazioni",
+      "file": "SRV-04_reclamo_telefonia.txt",
+      "ocr_pages": [],
+      "finding_count": 4,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Giorgio Piras",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via Sardegna 22",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "giorgio.piras@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "070 440 1882",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "LINEA-77821",
+          "status": "preserved"
+        },
+        {
+          "value": "disconnessioni serali",
+          "status": "preserved"
+        },
+        {
+          "value": "piano tariffario",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "TUR-01",
+      "sector": "Turismo",
+      "file": "TUR-01_prenotazione_hotel.docx",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Valentina Farina",
+          "status": "detected"
+        },
+        {
+          "entity_type": "IDENTITY_DOCUMENT",
+          "value": "YA1234567",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "valentina.farina@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "+39 346 512 8804",
+          "status": "detected"
+        },
+        {
+          "entity_type": "DATE",
+          "value": "21/09/2026",
+          "status": "detected"
+        },
+        {
+          "entity_type": "DATE",
+          "value": "24/09/2026",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "Camera doppia uso singola",
+          "status": "preserved"
+        },
+        {
+          "value": "colazione inclusa",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "TUR-02",
+      "sector": "Viaggi",
+      "file": "TUR-02_rimborso_viaggio_scansione.pdf",
+      "ocr_pages": [
+        1
+      ],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Fabio Caruso",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "CRSFBA84L22F205N",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "fabio.caruso@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "IBAN",
+          "value": "IT60 X054 2811 1010 0000 0123 456",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PROTOCOL_CASE_NUMBER",
+          "value": "RIM 9138/2026",
+          "status": "detected"
+        },
+        {
+          "entity_type": "DATE",
+          "value": "3 luglio 2026",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "cancellazione del collegamento ferroviario",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "PA-01",
+      "sector": "Pubblica amministrazione",
+      "file": "PA-01_comunicazione_protocollo.docx",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PROTOCOL_CASE_NUMBER",
+          "value": "18472/2026",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PERSON",
+          "value": "Silvia Fontana",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "FNTSLV73A41L219M",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Corso Francia 15",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PEC_ADDRESS",
+          "value": "silvia.fontana@pec.example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "TERRITORIAL_BODY",
+          "value": "Comune di Torino",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "avvio del procedimento",
+          "status": "preserved"
+        },
+        {
+          "value": "efficienza energetica",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "SOC-01",
+      "sector": "Servizi sociali",
+      "file": "SOC-01_relazione_sociale.pdf",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Nadia Esposito",
+          "status": "detected"
+        },
+        {
+          "entity_type": "LOCATION",
+          "value": "Salerno",
+          "status": "detected"
+        },
+        {
+          "entity_type": "DATE",
+          "value": "06/08/1988",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via Mercanti 33",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "+39 339 234 6008",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "nadia.esposito@example.com",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "orientamento al lavoro",
+          "status": "preserved"
+        },
+        {
+          "value": "sostegno temporaneo",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "ETS-01",
+      "sector": "Terzo settore",
+      "file": "ETS-01_registro_donazioni.csv",
+      "ocr_pages": [],
+      "finding_count": 4,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Ilaria Bassi",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "ilaria.bassi@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PERSON",
+          "value": "Claudio Testa",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "claudio.testa@example.com",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "Emporio solidale",
+          "status": "preserved"
+        },
+        {
+          "value": "Doposcuola di quartiere",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "SPT-01",
+      "sector": "Sport",
+      "file": "SPT-01_iscrizione_sportiva.txt",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Riccardo Bernardi",
+          "status": "detected"
+        },
+        {
+          "entity_type": "LOCATION",
+          "value": "Verona",
+          "status": "detected"
+        },
+        {
+          "entity_type": "DATE",
+          "value": "17/04/2006",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "BRNRCR06D17L781J",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "345 610 9934",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "famiglia.bernardi@example.com",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "pallavolo",
+          "status": "preserved"
+        },
+        {
+          "value": "Under 21",
+          "status": "preserved"
+        },
+        {
+          "value": "certificato medico acquisito",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "LOG-01",
+      "sector": "Logistica",
+      "file": "LOG-01_documento_consegna.pdf",
+      "ocr_pages": [],
+      "finding_count": 5,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Federica Marchetti",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via Adriatica 56",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "071 208 4419",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "federica.marchetti@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "VEHICLE_PLATE",
+          "value": "CD456EF",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "4 colli non deperibili",
+          "status": "preserved"
+        },
+        {
+          "value": "09:00-12:00",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "TEC-01",
+      "sector": "Tecnologia",
+      "file": "TEC-01_incidente_sicurezza.docx",
+      "ocr_pages": [],
+      "finding_count": 4,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Pietro Fabbri",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "pietro.fabbri@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "+39 334 713 0882",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ORGANIZATION",
+          "value": "Rete Sicura S.p.A.",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "HOST-LAB-27",
+          "status": "preserved"
+        },
+        {
+          "value": "Nessuna esfiltrazione rilevata",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "MKT-01",
+      "sector": "Marketing e CRM",
+      "file": "MKT-01_contatti_evento.csv",
+      "ocr_pages": [],
+      "finding_count": 4,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Camilla Guerra",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ORGANIZATION",
+          "value": "Nord Est Media S.r.l.",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "camilla.guerra@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "+39 348 120 7745",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "Automazione marketing",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "PRO-01",
+      "sector": "Professionisti",
+      "file": "PRO-01_incarico_freelance.txt",
+      "ocr_pages": [],
+      "finding_count": 5,
+      "expected_remove": [
+        {
+          "entity_type": "ORGANIZATION",
+          "value": "Blu Progetti S.r.l.",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Piazza Dante 11",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PERSON",
+          "value": "Anna Vitale",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "VTLNNA86T41F839D",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PEC_ADDRESS",
+          "value": "anna.vitale@pec.example.com",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "euro 3.200 oltre accessori",
+          "status": "preserved"
+        },
+        {
+          "value": "revisione del piano editoriale",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "EVT-01",
+      "sector": "Eventi",
+      "file": "EVT-01_lista_accrediti.pdf",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Marco De Angelis",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "marco.deangelis@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "333 908 1127",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PERSON",
+          "value": "Teresa Rizzi",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "teresa.rizzi@example.com",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "Forum Innovazione Locale",
+          "status": "preserved"
+        },
+        {
+          "value": "Laboratorio servizi digitali",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "LEG-01",
+      "sector": "Legale",
+      "file": "LEG-01_promemoria_pratica.docx",
+      "ocr_pages": [],
+      "finding_count": 5,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Enrico Bellini",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "BLLNRC71M09D612Y",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via San Marco 14",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PROTOCOL_CASE_NUMBER",
+          "value": "RG 4567/2026",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PEC_ADDRESS",
+          "value": "enrico.bellini@pec.example.com",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "documentazione contrattuale",
+          "status": "preserved"
+        },
+        {
+          "value": "memoria riepilogativa",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "TRP-01",
+      "sector": "Trasporti",
+      "file": "TRP-01_duplicato_abbonamento.txt",
+      "ocr_pages": [],
+      "finding_count": 5,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Ornella Fiore",
+          "status": "detected"
+        },
+        {
+          "entity_type": "CODICE_FISCALE",
+          "value": "FRORLL68E50F839S",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "ornella.fiore@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "081 710 4406",
+          "status": "detected"
+        },
+        {
+          "entity_type": "IDENTITY_DOCUMENT",
+          "value": "CA12345AA",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "tessera di viaggio deteriorata",
+          "status": "preserved"
+        },
+        {
+          "value": "senza variazione della tratta",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "FOR-01",
+      "sector": "Fornitori",
+      "file": "FOR-01_onboarding_fornitore.docx",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Massimo Orlando",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ORGANIZATION",
+          "value": "Officina del Sud S.n.c.",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PARTITA_IVA",
+          "value": "12345678903",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via delle Industrie 5",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PEC_ADDRESS",
+          "value": "officinadelsud@pec.example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "SDI_CODE",
+          "value": "A1B2C3",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "manutenzione impianti",
+          "status": "preserved"
+        },
+        {
+          "value": "pagamento previsto a 30 giorni",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "RET-01",
+      "sector": "Commercio",
+      "file": "RET-01_tessere_fedelta.csv",
+      "ocr_pages": [],
+      "finding_count": 3,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Marta Guidi",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "marta.guidi@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "329 703 1822",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "LOY-41028",
+          "status": "preserved"
+        },
+        {
+          "value": "Prodotti senza glutine",
+          "status": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "MED-01",
+      "sector": "Media",
+      "file": "MED-01_liberatoria_intervista.pdf",
+      "ocr_pages": [],
+      "finding_count": 6,
+      "expected_remove": [
+        {
+          "entity_type": "PERSON",
+          "value": "Rosa Coppola",
+          "status": "detected"
+        },
+        {
+          "entity_type": "LOCATION",
+          "value": "Matera",
+          "status": "detected"
+        },
+        {
+          "entity_type": "DATE",
+          "value": "23/11/1983",
+          "status": "detected"
+        },
+        {
+          "entity_type": "ADDRESS",
+          "value": "Via Lucana 63",
+          "status": "detected"
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "value": "rosa.coppola@example.com",
+          "status": "detected"
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "value": "+39 331 667 2401",
+          "status": "detected"
+        }
+      ],
+      "must_remain": [
+        {
+          "value": "DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS",
+          "status": "preserved"
+        },
+        {
+          "value": "podcast dedicato all'innovazione sociale",
+          "status": "preserved"
+        }
+      ]
+    }
+  ],
+  "metrics": {
+    "removal_rate_percent": 100.0,
+    "preservation_rate_percent": 100.0
+  }
+}

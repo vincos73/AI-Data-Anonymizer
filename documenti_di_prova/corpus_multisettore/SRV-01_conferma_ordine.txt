@@ -1,0 +1,9 @@
+DATI INTERAMENTE FITTIZI - DOCUMENTO DI TEST OMISSIS
+
+Cliente: Alessio Rinaldi
+Email: alessio.rinaldi@example.com
+Telefono: +39 338 770 2541
+Consegna: Via Roma 77, 35121 Padova
+Ordine: ORD-2026-4451
+
+Prodotto: cuffie wireless; quantità 1; consegna standard.

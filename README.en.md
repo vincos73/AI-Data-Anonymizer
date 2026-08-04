@@ -6,7 +6,7 @@ The main product is the desktop app: install it, open a document, anonymize it l
 
 The web app exists only as an advanced option for developers, local demos, or self-hosted deployments on infrastructure you control.
 
-Current version: **v0.6.21**.
+Current version: **v0.6.22**.
 
 ## Download the Desktop App
 
